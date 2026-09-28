@@ -1,4 +1,4 @@
-// EvalStake Chess - Main Frontend Application Controller
+// Centipawn Chess - Main Frontend Application Controller
 // PRD Version 2.1 Specification for Base-First Hackathon Implementation
 
 (function () {
@@ -230,7 +230,7 @@
     }
 
     function getPlayerProfile() {
-        const saved = localStorage.getItem('evalstake_profile');
+        const saved = localStorage.getItem('centipawn_profile') || localStorage.getItem('evalstake_profile');
         if (saved) {
             try { return JSON.parse(saved); } catch (e) { }
         }
@@ -344,7 +344,7 @@
                 <div class="brand-section">
                     <div class="brand-logo" id="landing-brand-logo">
                         <div class="brand-glyph">♟</div>
-                        <span class="brand-name">EVALSTAKE</span>
+                        <span class="brand-name">CENTIPAWN</span>
                     </div>
                     <span class="brand-badge mono">BASE PROTOCOL</span>
                     <span class="mono" style="color:var(--accent-green);font-size:11px;">● 84532 TESTNET</span>
@@ -401,7 +401,7 @@
                         <div class="feature-icon-badge">💎</div>
                         <h3 class="feature-title">Proportional Resignation Equity</h3>
                         <p class="feature-desc">
-                            Unlike traditional winner-takes-all wagering where resigning forfeits 100% of your stake, EvalStake calculates continuous Stockfish centipawn equity past Ply 20 and returns your proportional pot share.
+                            Unlike traditional winner-takes-all wagering where resigning forfeits 100% of your stake, Centipawn calculates continuous Stockfish centipawn equity past Ply 20 and returns your proportional pot share.
                         </p>
                     </div>
                     <div class="feature-card">
@@ -707,7 +707,7 @@
                     </button>
                     <div class="brand-logo" id="nav-brand-logo">
                         <div class="brand-glyph">♟</div>
-                        <span class="brand-name">EVALSTAKE</span>
+                        <span class="brand-name">CENTIPAWN</span>
                     </div>
                     <span class="brand-badge mono">BASE SEPOLIA</span>
                     <span class="mono" style="color:var(--accent-green);font-size:10px;">● 0% PROTOCOL FEE</span>
@@ -1967,7 +1967,7 @@
             const stake = activeStakeEl ? parseFloat(activeStakeEl.dataset.stake) : 10;
 
             const profile = { gamerTag, elo, avatar, tc, stake };
-            localStorage.setItem('evalstake_profile', JSON.stringify(profile));
+            localStorage.setItem('centipawn_profile', JSON.stringify(profile));
 
             // Sync with Player A HUD
             const nameEl = document.getElementById('name-player-a');

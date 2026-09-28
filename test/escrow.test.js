@@ -1,11 +1,11 @@
-// Comprehensive Test Suite for EvalStake Chess Invariants & Formula
+// Comprehensive Test Suite for Centipawn Chess Invariants & Formula
 // PRD Version 2.1 Acceptance Criteria & Security Tests
 
 const { ethers } = require('ethers');
 const assert = require('assert');
 const { describe, it } = require('node:test');
 
-describe('EvalStake Chess PRD v2.1 Invariant & Settlement Tests', () => {
+describe('Centipawn Chess PRD v2.1 Invariant & Settlement Tests', () => {
     // PRD Section 11 & 12 Formula Tests
     // -------------------------------------------------------------
     function calculateResignationPayout(evalCp, playerAIsWhite, plies) {

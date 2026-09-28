@@ -1,4 +1,4 @@
-// EvalStake Chess - Server & Oracle Attestation Engine
+// Centipawn Chess - Server & Oracle Attestation Engine
 // PRD Version 2.1 Specification for Base-First Hackathon Build
 
 const http = require('http');
@@ -497,7 +497,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
     console.log(`=======================================================`);
-    console.log(`  EVALSTAKE CHESS (PRD v2.1)`);
+    console.log(`  CENTIPAWN CHESS (PRD v2.1)`);
     console.log(`  Server running at http://localhost:${PORT}`);
     console.log(`  Network: Base Sepolia (84532) | Fee: 0% | Asset: USDC`);
     console.log(`  Oracle Signer: ${oracleWallet.address}`);
