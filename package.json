@@ -1,0 +1,27 @@
+{
+  "name": "centipawn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/escrow.test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mathan-dotcom/Centipawn.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Mathan-dotcom/Centipawn/issues"
+  },
+  "homepage": "https://github.com/Mathan-dotcom/Centipawn#readme",
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "ethers": "^6.17.0",
+    "stockfish.js": "^10.0.2"
+  }
+}
