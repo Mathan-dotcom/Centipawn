@@ -331,10 +331,10 @@
             <div class="loader-ring ring-1"></div>
             <div class="loader-ring ring-2"></div>
             <div class="loader-ring ring-3"></div>
-            <div class="loader-center-glyph">o.</div>
+            <div class="loader-center-glyph">♟</div>
         </div>
         <div class="loader-brand">
-            <span class="mono">COLOSSEUM WEB3 PROTOCOL // ARCHITECTURE</span>
+            <span class="mono">CENTIPAWN WEB3 PROTOCOL // BASE L2 ARCHITECTURE</span>
             <h2 class="loader-title">INITIALIZING ARENA ENVIRONMENT</h2>
         </div>
         <div class="loader-track-wrap">
@@ -346,13 +346,13 @@
                 <span class="loader-pct" id="loader-pct">0%</span>
             </div>
         </div>
-        <div class="loader-footnote mono">ZERO-KNOWLEDGE ROLLUPS · 2026 OFFICIAL CERTIFICATE</div>
+        <div class="loader-footnote mono">CENTIPAWN PROPORTIONAL CHESS · 2026 GENESIS CERTIFICATE</div>
     </div>
 </div>
 
 <!-- Background Wordmark -->
 <div id="bg">
-    <h1>COLOSSEUM</h1>
+    <h1>CENTIPAWN</h1>
 </div>
 
 <!-- 3D Scene Host Elements -->
@@ -444,37 +444,41 @@
             rr(ctx, 36, 36, 1128, 1584, 10); ctx.stroke();
 
             const M = 74;
-            ctx.fillStyle = '#ffffff'; ctx.font = '700 104px "Inter Tight", Inter, sans-serif';
-            ctx.fillText('o.', M, 190);
+            ctx.fillStyle = '#ffffff'; ctx.font = '700 96px "Copperplate Gothic Bold", "Cinzel", serif';
+            ctx.fillText('♟ CP.', M, 190);
 
-            ctx.font = '500 106px "Inter Tight", Inter, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,.52)';
-            ctx.fillText('Studio of the Week.', M, 392);
-            ctx.fillText('Feb 14, 2026', M, 518);
-            ctx.font = '600 110px "Inter Tight", Inter, sans-serif'; ctx.fillStyle = '#ffffff';
-            ctx.fillText('Nocturne Studio.', M, 664);
+            ctx.font = '600 70px "Copperplate Gothic Bold", "Cinzel", serif';
+            ctx.fillStyle = 'rgba(255,255,255,.60)';
+            ctx.fillText('Base Sepolia Arena.', M, 350);
+            ctx.fillText('PRD Specification v2.1', M, 450);
+            ctx.font = '700 92px "Copperplate Gothic Bold", "Cinzel", serif'; ctx.fillStyle = '#ffffff';
+            ctx.fillText('Centipawn Protocol.', M, 580);
 
-            ctx.font = '600 34px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.90)';
-            ['By Nocturne Studio', 'Ilya Marchetti', 'Dara Okonkwo'].forEach((s, i) =>
-                ctx.fillText(s, M + 4, 752 + i * 45));
+            ctx.font = '600 32px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.90)';
+            [
+                '• Proportional Pot Resignation (≥ 20 Plies)',
+                '• EIP-712 ECDSA Oracle Attestation',
+                '• 10-Minute Timeout Protection · 0% Fee'
+            ].forEach((s, i) =>
+                ctx.fillText(s, M + 4, 675 + i * 48));
 
-            const px = 592, py = 1158;
-            ctx.font = '700 24px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.92)';
-            ctx.fillText('2026 Official Certificate.', px, py);
-            ctx.font = '500 22px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.68)';
-            const endY = wrapL(ctx, 'The orbit jury is proud to declare this website Studio of the Week in recognition of the great talent and effort invested in its creation.', px, py + 36, 296, 28);
-            [0, 1, 2].forEach(i => signature(ctx, px + 6 + i * 100, endY + 24, 0.86, i * 5 + 3, 'rgba(255,255,255,.62)'));
+            const px = 520, py = 1130;
+            ctx.font = '700 24px "Copperplate Gothic Bold", "Cinzel", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.95)';
+            ctx.fillText('2026 Genesis Escrow Certificate.', px, py);
+            ctx.font = '500 21px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.72)';
+            const endY = wrapL(ctx, 'Official cryptographic certificate attesting on-chain settlement on Base Sepolia. Resign past ply 20 to salvage remaining centipawn pot equity directly to your wallet.', px, py + 36, 360, 28);
+            [0, 1, 2].forEach(i => signature(ctx, px + 6 + i * 115, endY + 28, 0.86, i * 5 + 3, 'rgba(255,255,255,.62)'));
 
             ctx.save(); ctx.translate(1200 - M - 24, 1236); ctx.rotate(Math.PI / 2);
-            ctx.font = '500 23px Inter, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.62)';
-            ctx.fillText('—', 0, 0); ctx.fillText('SOTW', 48, 0);
+            ctx.font = '500 22px "Copperplate Gothic Bold", "Cinzel", sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.62)';
+            ctx.fillText('—', 0, 0); ctx.fillText('CENTIPAWN // BASE', 48, 0);
             ctx.restore();
 
-            ctx.font = '700 34px "Inter Tight", Inter, sans-serif'; ctx.fillStyle = '#ffffff';
-            ctx.fillText('orbit.', M, 1516);
-            const w = ctx.measureText('orbit.').width;
-            ctx.font = '500 34px "Inter Tight", Inter, sans-serif';
-            ctx.fillStyle = 'rgba(255,255,255,.62)'; ctx.fillText(' winners', M + w, 1516);
+            ctx.font = '700 34px "Copperplate Gothic Bold", "Cinzel", serif'; ctx.fillStyle = '#ffffff';
+            ctx.fillText('CENTIPAWN.', M, 1516);
+            const w = ctx.measureText('CENTIPAWN.').width;
+            ctx.font = '500 30px Inter, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,.62)'; ctx.fillText('  Web3 Chess Arena', M + w, 1516);
         }
 
         function makeCertTexture() {
