@@ -495,6 +495,14 @@ const server = http.createServer(async (req, res) => {
     });
 });
 
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`[Server] Port ${PORT} is already active and serving Centipawn Chess at http://localhost:${PORT}`);
+    } else {
+        console.error('[Server] Unexpected server error:', err);
+    }
+});
+
 server.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`  CENTIPAWN CHESS (PRD v2.1)`);

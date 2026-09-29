@@ -980,15 +980,15 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                     document.fonts.load('600 34px "Inter"'),
                     document.fonts.load('500 22px "Inter"')
                 ]).then(() => document.fonts.ready),
-                new Promise(r => setTimeout(r, 2500))
-            ]).then(boot);
+                new Promise(r => setTimeout(r, 1200))
+            ]).then(boot).catch(boot);
         } else boot();
 
         /* ======================================================================
-           8. 5-SECOND STARTER LOADER TIMER & ORCHESTRATION
+           8. FAST & RELIABLE LOADER ORCHESTRATION (AUTO-LOADS LANDING PAGE)
            ====================================================================== */
         const loaderStartTime = performance.now();
-        const LOADER_DURATION = 5000; // Exactly 5 seconds
+        const LOADER_DURATION = 1800; // Crisp 1.8s loader
         const loaderEl = document.getElementById('loader');
         const loaderFill = document.getElementById('loader-fill');
         const loaderPct = document.getElementById('loader-pct');
@@ -996,12 +996,28 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
 
         const statusMilestones = [
             { at: 0.0, text: "INITIALIZING CRYPTOGRAPHIC RUNTIME..." },
-            { at: 0.20, text: "COMPILING ZERO-KNOWLEDGE CIRCUITS..." },
-            { at: 0.44, text: "SYNCHRONIZING ON-CHAIN ARENAS..." },
-            { at: 0.68, text: "FETCHING HOLOGRAPHIC CERTIFICATE..." },
-            { at: 0.88, text: "CALIBRATING QUANTUM OPTICS..." },
-            { at: 1.0, text: "ARENA CERTIFICATE READY // DRAG TO ROTATE" }
+            { at: 0.25, text: "COMPILING ZERO-KNOWLEDGE CIRCUITS..." },
+            { at: 0.50, text: "SYNCHRONIZING ON-CHAIN ARENAS..." },
+            { at: 0.75, text: "FETCHING HOLOGRAPHIC CERTIFICATE..." },
+            { at: 0.90, text: "CALIBRATING QUANTUM OPTICS..." },
+            { at: 1.0, text: "ARENA READY // LOADING CENTIPAWN..." }
         ];
+
+        let loaderTransitionTriggered = false;
+        function finishLoaderAndEnterLanding() {
+            if (loaderTransitionTriggered) return;
+            loaderTransitionTriggered = true;
+            if (loaderEl) loaderEl.classList.add('done');
+            loaderDone = true;
+            if (window.transitionToLandingPage) {
+                window.transitionToLandingPage();
+            } else if (window.showLandingPage) {
+                window.showLandingPage();
+            }
+        }
+
+        // Safety fallback timer: guarantee landing page loads within 2.2 seconds even if backgrounded
+        setTimeout(finishLoaderAndEnterLanding, 2200);
 
         function runLoaderTick(now) {
             const elapsed = now - loaderStartTime;
@@ -1023,11 +1039,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             if (progress < 1) {
                 requestAnimationFrame(runLoaderTick);
             } else {
-                setTimeout(() => {
-                    if (loaderEl) loaderEl.classList.add('done');
-                    loaderDone = true;
-                    if (hintEl && !hintUsed) hintEl.style.opacity = '1';
-                }, 180);
+                setTimeout(finishLoaderAndEnterLanding, 180);
             }
         }
         requestAnimationFrame(runLoaderTick);
