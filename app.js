@@ -352,10 +352,10 @@
 
                 <nav class="landing-nav-links">
                     <a href="#landing-hero" class="landing-nav-btn active">Overview</a>
-                    <a href="#section-reg" class="landing-nav-btn">Registration</a>
-                    <a href="#section-stats" class="landing-nav-btn">Stats & Telemetry</a>
-                    <a href="#section-settings" class="landing-nav-btn">Settings</a>
-                    <a href="#section-lobby" class="landing-nav-btn">Lobby</a>
+                    <a href="#tab-lobby" class="landing-nav-btn" data-nav-tab="tab-lobby">Lobby</a>
+                    <a href="#tab-profile" class="landing-nav-btn" data-nav-tab="tab-profile">Profile</a>
+                    <a href="#tab-stats" class="landing-nav-btn" data-nav-tab="tab-stats">Telemetry</a>
+                    <a href="#tab-settings" class="landing-nav-btn" data-nav-tab="tab-settings">Settings</a>
                 </nav>
 
                 <div style="display:flex;align-items:center;gap:12px;">
@@ -395,300 +395,324 @@
                     </div>
                 </section>
 
-                <!-- 3 Feature Highlights -->
-                <div class="landing-grid-3">
-                    <div class="feature-card">
-                        <div class="feature-icon-badge">💎</div>
-                        <h3 class="feature-title">Proportional Resignation Equity</h3>
-                        <p class="feature-desc">
-                            Unlike traditional winner-takes-all wagering where resigning forfeits 100% of your stake, Centipawn calculates continuous Stockfish centipawn equity past Ply 20 and returns your proportional pot share.
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon-badge">⏱️</div>
-                        <h3 class="feature-title">10-Minute Timeout Protection</h3>
-                        <p class="feature-desc">
-                            Non-custodial Base Sepolia smart contract with automatic 600s cancellation timeout. If opponent disconnects or stalls before ply 20, 100% refund is guaranteed.
-                        </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon-badge">⚡</div>
-                        <h3 class="feature-title">Non-Custodial Base Escrow</h3>
-                        <p class="feature-desc">
-                            Direct smart-contract escrow on Base with EIP-712 ECDSA oracle signature verification and 0% protocol fee for the hackathon launch.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Split Section 1: Player Registration & Stats Dashboard -->
-                <div class="landing-split-section">
-                    <!-- Registration & Profile Card -->
-                    <div class="section-card" id="section-reg">
-                        <div class="section-card-title">
-                            <span>👤</span>
-                            <span>Player Registration & Identity</span>
-                        </div>
-                        <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                            Configure your player profile. Your gamer tag, avatar, and rating will be registered with your connected Base Sepolia address.
-                        </p>
-
-                        <div class="form-group">
-                            <label class="form-label" for="reg-gamer-tag">GAMER TAG / CHESS ALIAS</label>
-                            <input type="text" class="form-input" id="reg-gamer-tag" value="GrandmasterZero" placeholder="Enter gamer tag">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">AVATAR BADGE</label>
-                            <div class="avatar-selector" id="reg-avatar-list">
-                                <div class="avatar-opt active" data-avatar="♟" title="Cyber Knight">♟</div>
-                                <div class="avatar-opt" data-avatar="♚" title="Quantum King">♚</div>
-                                <div class="avatar-opt" data-avatar="♛" title="Neural Queen">♛</div>
-                                <div class="avatar-opt" data-avatar="♜" title="Base Rook">♜</div>
-                                <div class="avatar-opt" data-avatar="♝" title="Crypto Bishop">♝</div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="reg-wallet-addr">CONNECTED WALLET (BASE SEPOLIA)</label>
-                            <div style="display:flex;gap:8px;">
-                                <input type="text" class="form-input" id="reg-wallet-addr" readonly value="0x892aF6E22C991316bDf255d648f57F43e4A142C1" style="font-family:'JetBrains Mono',monospace;color:var(--accent-cyan);flex:1;">
-                                <button class="btn-primary" id="btn-copy-wallet" style="font-size:11px;padding:8px 12px;">Copy</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label" for="reg-elo">CHESS TITLE / RATING</label>
-                            <input type="text" class="form-input" id="reg-elo" value="1850 Arena Elo" placeholder="e.g. 1850 FIDE">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">PREFERRED TIME CONTROL</label>
-                            <div style="display:flex;gap:8px;">
-                                <button class="btn-primary reg-tc-btn" data-tc="0">3+2 Blitz</button>
-                                <button class="btn-primary reg-tc-btn active" data-tc="1">5+3 Rapid</button>
-                                <button class="btn-primary reg-tc-btn" data-tc="2">10+0 Classical</button>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">DEFAULT STAKE AMOUNT</label>
-                            <div style="display:flex;gap:8px;">
-                                <button class="btn-primary reg-stake-btn" data-stake="5">5 USDC</button>
-                                <button class="btn-primary reg-stake-btn active" data-stake="10">10 USDC</button>
-                                <button class="btn-primary reg-stake-btn" data-stake="25">25 USDC</button>
-                                <button class="btn-primary reg-stake-btn" data-stake="50">50 USDC</button>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:10px;">
-                            <button class="btn-hero-primary" id="btn-save-profile" style="width:100%;justify-content:center;">
-                                💾 Save & Register Profile
-                            </button>
+                <!-- Minimalist 3-Pill Feature Strip -->
+                <div class="landing-pills-row">
+                    <div class="landing-pill">
+                        <span class="pill-icon">💎</span>
+                        <div class="pill-text">
+                            <span class="pill-title">Proportional Resignation Equity</span>
+                            <span class="pill-sub">Stockfish centipawn curve past Ply 20</span>
                         </div>
                     </div>
-
-                    <!-- Stats & Protocol Telemetry Card -->
-                    <div class="section-card" id="section-stats">
-                        <div class="section-card-title">
-                            <span>📊</span>
-                            <span>Performance Stats & Telemetry</span>
+                    <div class="landing-pill">
+                        <span class="pill-icon">⏱️</span>
+                        <div class="pill-text">
+                            <span class="pill-title">10-Min Timeout Protection</span>
+                            <span class="pill-sub">600s automatic refund for stalled games</span>
                         </div>
-                        <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                            Lifetime player telemetry across Base Sepolia smart escrow matches. Proportional equity records total capital saved from binary 0-value resignations.
-                        </p>
-
-                        <!-- 4 Metrics Grid -->
-                        <div class="stats-metric-grid">
-                            <div class="stat-metric-box">
-                                <span class="stat-metric-lbl">TOTAL MATCHES</span>
-                                <span class="stat-metric-val" id="stat-matches-count">38</span>
-                                <span style="font-size:10px;color:var(--dim);">26W · 8L (Resign) · 4D</span>
-                            </div>
-                            <div class="stat-metric-box">
-                                <span class="stat-metric-lbl">WIN RATE</span>
-                                <span class="stat-metric-val" style="color:var(--accent-green);" id="stat-win-rate">68.4%</span>
-                                <span style="font-size:10px;color:var(--accent-green);">Top 5% on Arena</span>
-                            </div>
-                            <div class="stat-metric-box">
-                                <span class="stat-metric-lbl">NET USDC EARNED</span>
-                                <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-net-usdc">+342.50</span>
-                                <span style="font-size:10px;color:var(--dim);">USDC on Base</span>
-                            </div>
-                            <div class="stat-metric-box" style="border-color:rgba(112,214,255,0.35);background:rgba(112,214,255,0.06);">
-                                <span class="stat-metric-lbl" style="color:var(--accent-cyan);">EQUITY SALVAGED</span>
-                                <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-equity-saved">+84.20</span>
-                                <span style="font-size:10px;color:var(--dim);">Saved via Resignation Eval</span>
-                            </div>
-                        </div>
-
-                        <!-- Protocol Security Box -->
-                        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
-                            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ffffff;display:flex;justify-content:space-between;">
-                                <span>ESCROW PROTOCOL HEALTH:</span>
-                                <span style="color:var(--accent-green);">● ONLINE</span>
-                            </div>
-                            <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                <span>Smart Contract:</span>
-                                <span class="mono" style="color:var(--ink-pure);">0x389a...c2A1 (Base)</span>
-                            </div>
-                            <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                <span>Settlement Oracle:</span>
-                                <span class="mono" style="color:var(--ink-pure);">EIP-712 ECDSA Verified</span>
-                            </div>
-                            <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                <span>Safety Timeout:</span>
-                                <span class="mono" style="color:var(--accent-green);">10 Min Auto-Refund</span>
-                            </div>
-                            <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                <span>Protocol Fee:</span>
-                                <span class="mono" style="color:var(--accent-green);">0% (Hackathon Free)</span>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:auto;">
-                            <button class="btn-primary" id="btn-view-specs" style="width:100%;padding:10px;font-size:12px;background:rgba(255,255,255,0.06);">
-                                📜 Read PRD Mathematical Payout Spec (v2.1)
-                            </button>
+                    </div>
+                    <div class="landing-pill">
+                        <span class="pill-icon">⚡</span>
+                        <div class="pill-text">
+                            <span class="pill-title">0% Protocol Fee On-Chain</span>
+                            <span class="pill-sub">EIP-712 cryptographic oracle attestation</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Split Section 2: Settings & Match Lobby -->
-                <div class="landing-split-section">
-                    <!-- Settings Card -->
-                    <div class="section-card" id="section-settings">
-                        <div class="section-card-title">
-                            <span>⚙️</span>
-                            <span>Game & Arena Settings</span>
-                        </div>
+                <!-- Segmented Control Hub: Match Lobby, Profile, Telemetry, Settings -->
+                <div class="landing-hub-container" id="landing-hub">
+                    <div class="landing-hub-tabs">
+                        <button class="hub-tab-btn active" data-tab="tab-lobby">
+                            <span class="hub-tab-icon">🏛️</span>
+                            <span>Active Match Lobby</span>
+                        </button>
+                        <button class="hub-tab-btn" data-tab="tab-profile">
+                            <span class="hub-tab-icon">👤</span>
+                            <span>Player Identity</span>
+                        </button>
+                        <button class="hub-tab-btn" data-tab="tab-stats">
+                            <span class="hub-tab-icon">📊</span>
+                            <span>Protocol Telemetry</span>
+                        </button>
+                        <button class="hub-tab-btn" data-tab="tab-settings">
+                            <span class="hub-tab-icon">⚙️</span>
+                            <span>Arena Settings</span>
+                        </button>
+                    </div>
 
-                        <div class="setting-row">
-                            <div>
-                                <div class="setting-title">Sound Effects (Web Audio API)</div>
-                                <div class="setting-desc">Synthesized audio for moves, captures, checks, and settlement chords</div>
+                    <!-- Tab Panel 1: Active Match Lobby (Default Active) -->
+                    <div class="hub-tab-panel active" id="tab-lobby">
+                        <div class="section-card" id="section-lobby">
+                            <div class="section-card-title">
+                                <span>🏛️</span>
+                                <span>Open Arena Challenges & Liquidity</span>
                             </div>
-                            <label class="switch">
-                                <input type="checkbox" id="setting-sound-toggle" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
+                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
+                                Open challenges waiting on Base Sepolia. Matches not accepted within 10 minutes auto-refund the creator.
+                            </p>
 
-                        <div class="setting-row">
-                            <div>
-                                <div class="setting-title">Board Visual Theme</div>
-                                <div class="setting-desc">Visual styling of the 8x8 squares and glowing borders</div>
+                            <div style="overflow-x:auto;">
+                                <table class="challenges-table">
+                                    <thead>
+                                        <tr>
+                                            <th>CREATOR</th>
+                                            <th>RATING</th>
+                                            <th>STAKE</th>
+                                            <th>TIME</th>
+                                            <th>EXPIRY</th>
+                                            <th>ACTION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="challenges-table-body">
+                                        <tr>
+                                            <td>
+                                                <div class="challenge-player-cell">
+                                                    <div class="challenge-avatar-mini">♚</div>
+                                                    <span>GM_Hikaru</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="mono" style="color:var(--accent-cyan);">2240</span></td>
+                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">25.00 USDC</span></td>
+                                            <td><span class="mono" style="color:var(--dim);">5+3 Rapid</span></td>
+                                            <td><span class="mono" style="color:#fbbf24;">08:42</span></td>
+                                            <td><button class="btn-join-match" data-stake="25" data-tc="1" data-opp="GM_Hikaru">Join Match</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="challenge-player-cell">
+                                                    <div class="challenge-avatar-mini">♟</div>
+                                                    <span>BasePawn</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="mono" style="color:var(--accent-cyan);">1720</span></td>
+                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">10.00 USDC</span></td>
+                                            <td><span class="mono" style="color:var(--dim);">3+2 Blitz</span></td>
+                                            <td><span class="mono" style="color:#fbbf24;">06:15</span></td>
+                                            <td><button class="btn-join-match" data-stake="10" data-tc="0" data-opp="BasePawn">Join Match</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div class="challenge-player-cell">
+                                                    <div class="challenge-avatar-mini">♛</div>
+                                                    <span>ZeroKnight</span>
+                                                </div>
+                                            </td>
+                                            <td><span class="mono" style="color:var(--accent-cyan);">1980</span></td>
+                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">50.00 USDC</span></td>
+                                            <td><span class="mono" style="color:var(--dim);">10+0 Classical</span></td>
+                                            <td><span class="mono" style="color:#fbbf24;">09:30</span></td>
+                                            <td><button class="btn-join-match" data-stake="50" data-tc="2" data-opp="ZeroKnight">Join Match</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <select class="form-input" id="setting-board-theme" style="width:160px;">
-                                <option value="obsidian" selected>Obsidian Glass</option>
-                                <option value="cyber">Neon Cyber</option>
-                                <option value="walnut">Warm Walnut</option>
-                            </select>
-                        </div>
 
-                        <div class="setting-row">
-                            <div>
-                                <div class="setting-title">Stockfish Engine Difficulty</div>
-                                <div class="setting-desc">Depth and calculation plies for auto-play evaluation</div>
+                            <div style="display:flex;gap:12px;margin-top:auto;">
+                                <button class="btn-hero-primary" id="btn-create-lobby-match" style="flex:1;justify-content:center;">
+                                    ⚡ Create Custom Challenge
+                                </button>
                             </div>
-                            <select class="form-input" id="setting-engine-depth" style="width:160px;">
-                                <option value="10">Fast (10-Ply)</option>
-                                <option value="18" selected>Deep (18-Ply)</option>
-                                <option value="24">Master (24-Ply)</option>
-                            </select>
-                        </div>
-
-                        <div class="setting-row">
-                            <div>
-                                <div class="setting-title">Auto-Queen Promotion</div>
-                                <div class="setting-desc">Automatically promote pawns to Queens on the 8th rank</div>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="setting-auto-queen" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-
-                        <div style="background:rgba(112,214,255,0.06);border:1px solid rgba(112,214,255,0.25);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-                            <div>
-                                <div style="font-weight:600;font-size:13px;color:#ffffff;">Base Sepolia USDC Faucet</div>
-                                <div style="font-size:11px;color:var(--dim);margin-top:2px;">Claim 100 Mock USDC test tokens for instant arena staking</div>
-                            </div>
-                            <button class="btn-hero-primary" id="setting-faucet-btn" style="padding:8px 16px;font-size:12px;">
-                                💧 Claim 100 USDC
-                            </button>
                         </div>
                     </div>
 
-                    <!-- Active Match Lobby Card -->
-                    <div class="section-card" id="section-lobby">
-                        <div class="section-card-title">
-                            <span>🏛️</span>
-                            <span>Active Match Lobby & Challenges</span>
-                        </div>
-                        <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                            Open challenges waiting on Base Sepolia. Matches not accepted within 10 minutes auto-refund the creator.
-                        </p>
+                    <!-- Tab Panel 2: Player Registration & Identity -->
+                    <div class="hub-tab-panel" id="tab-profile">
+                        <div class="section-card" id="section-reg">
+                            <div class="section-card-title">
+                                <span>👤</span>
+                                <span>Player Registration & Identity</span>
+                            </div>
+                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
+                                Configure your player profile. Your gamer tag, avatar, and rating will be registered with your connected Base Sepolia address.
+                            </p>
 
-                        <div style="overflow-x:auto;">
-                            <table class="challenges-table">
-                                <thead>
-                                    <tr>
-                                        <th>CREATOR</th>
-                                        <th>RATING</th>
-                                        <th>STAKE</th>
-                                        <th>TIME</th>
-                                        <th>EXPIRY</th>
-                                        <th>ACTION</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="challenges-table-body">
-                                    <tr>
-                                        <td>
-                                            <div class="challenge-player-cell">
-                                                <div class="challenge-avatar-mini">♚</div>
-                                                <span>GM_Hikaru</span>
-                                            </div>
-                                        </td>
-                                        <td><span class="mono" style="color:var(--accent-cyan);">2240</span></td>
-                                        <td><span class="mono" style="color:#ffffff;font-weight:600;">25.00 USDC</span></td>
-                                        <td><span class="mono" style="color:var(--dim);">5+3 Rapid</span></td>
-                                        <td><span class="mono" style="color:#fbbf24;">08:42</span></td>
-                                        <td><button class="btn-join-match" data-stake="25" data-tc="1" data-opp="GM_Hikaru">Join Match</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="challenge-player-cell">
-                                                <div class="challenge-avatar-mini">♟</div>
-                                                <span>BasePawn</span>
-                                            </div>
-                                        </td>
-                                        <td><span class="mono" style="color:var(--accent-cyan);">1720</span></td>
-                                        <td><span class="mono" style="color:#ffffff;font-weight:600;">10.00 USDC</span></td>
-                                        <td><span class="mono" style="color:var(--dim);">3+2 Blitz</span></td>
-                                        <td><span class="mono" style="color:#fbbf24;">06:15</span></td>
-                                        <td><button class="btn-join-match" data-stake="10" data-tc="0" data-opp="BasePawn">Join Match</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="challenge-player-cell">
-                                                <div class="challenge-avatar-mini">♛</div>
-                                                <span>ZeroKnight</span>
-                                            </div>
-                                        </td>
-                                        <td><span class="mono" style="color:var(--accent-cyan);">1980</span></td>
-                                        <td><span class="mono" style="color:#ffffff;font-weight:600;">50.00 USDC</span></td>
-                                        <td><span class="mono" style="color:var(--dim);">10+0 Classical</span></td>
-                                        <td><span class="mono" style="color:#fbbf24;">09:30</span></td>
-                                        <td><button class="btn-join-match" data-stake="50" data-tc="2" data-opp="ZeroKnight">Join Match</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                            <div class="form-group">
+                                <label class="form-label" for="reg-gamer-tag">GAMER TAG / CHESS ALIAS</label>
+                                <input type="text" class="form-input" id="reg-gamer-tag" value="GrandmasterZero" placeholder="Enter gamer tag">
+                            </div>
 
-                        <div style="display:flex;gap:12px;margin-top:auto;">
-                            <button class="btn-hero-primary" id="btn-create-lobby-match" style="flex:1;justify-content:center;">
-                                ⚡ Create Custom Challenge
-                            </button>
+                            <div class="form-group">
+                                <label class="form-label">AVATAR BADGE</label>
+                                <div class="avatar-selector" id="reg-avatar-list">
+                                    <div class="avatar-opt active" data-avatar="♟" title="Cyber Knight">♟</div>
+                                    <div class="avatar-opt" data-avatar="♚" title="Quantum King">♚</div>
+                                    <div class="avatar-opt" data-avatar="♛" title="Neural Queen">♛</div>
+                                    <div class="avatar-opt" data-avatar="♜" title="Base Rook">♜</div>
+                                    <div class="avatar-opt" data-avatar="♝" title="Crypto Bishop">♝</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="reg-wallet-addr">CONNECTED WALLET (BASE SEPOLIA)</label>
+                                <div style="display:flex;gap:8px;">
+                                    <input type="text" class="form-input" id="reg-wallet-addr" readonly value="0x892aF6E22C991316bDf255d648f57F43e4A142C1" style="font-family:'JetBrains Mono',monospace;color:var(--accent-cyan);flex:1;">
+                                    <button class="btn-primary" id="btn-copy-wallet" style="font-size:11px;padding:8px 12px;">Copy</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="reg-elo">CHESS TITLE / RATING</label>
+                                <input type="text" class="form-input" id="reg-elo" value="1850 Arena Elo" placeholder="e.g. 1850 FIDE">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">PREFERRED TIME CONTROL</label>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="btn-primary reg-tc-btn" data-tc="0">3+2 Blitz</button>
+                                    <button class="btn-primary reg-tc-btn active" data-tc="1">5+3 Rapid</button>
+                                    <button class="btn-primary reg-tc-btn" data-tc="2">10+0 Classical</button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">DEFAULT STAKE AMOUNT</label>
+                                <div style="display:flex;gap:8px;">
+                                    <button class="btn-primary reg-stake-btn" data-stake="5">5 USDC</button>
+                                    <button class="btn-primary reg-stake-btn active" data-stake="10">10 USDC</button>
+                                    <button class="btn-primary reg-stake-btn" data-stake="25">25 USDC</button>
+                                    <button class="btn-primary reg-stake-btn" data-stake="50">50 USDC</button>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:10px;">
+                                <button class="btn-hero-primary" id="btn-save-profile" style="width:100%;justify-content:center;">
+                                    💾 Save & Register Profile
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Panel 3: Stats & Protocol Telemetry -->
+                    <div class="hub-tab-panel" id="tab-stats">
+                        <div class="section-card" id="section-stats">
+                            <div class="section-card-title">
+                                <span>📊</span>
+                                <span>Performance Stats & Telemetry</span>
+                            </div>
+                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
+                                Lifetime player telemetry across Base Sepolia smart escrow matches. Proportional equity records total capital saved from binary 0-value resignations.
+                            </p>
+
+                            <!-- 4 Metrics Grid -->
+                            <div class="stats-metric-grid">
+                                <div class="stat-metric-box">
+                                    <span class="stat-metric-lbl">TOTAL MATCHES</span>
+                                    <span class="stat-metric-val" id="stat-matches-count">38</span>
+                                    <span style="font-size:10px;color:var(--dim);">26W · 8L (Resign) · 4D</span>
+                                </div>
+                                <div class="stat-metric-box">
+                                    <span class="stat-metric-lbl">WIN RATE</span>
+                                    <span class="stat-metric-val" style="color:var(--accent-green);" id="stat-win-rate">68.4%</span>
+                                    <span style="font-size:10px;color:var(--accent-green);">Top 5% on Arena</span>
+                                </div>
+                                <div class="stat-metric-box">
+                                    <span class="stat-metric-lbl">NET USDC EARNED</span>
+                                    <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-net-usdc">+342.50</span>
+                                    <span style="font-size:10px;color:var(--dim);">USDC on Base</span>
+                                </div>
+                                <div class="stat-metric-box" style="border-color:rgba(112,214,255,0.35);background:rgba(112,214,255,0.06);">
+                                    <span class="stat-metric-lbl" style="color:var(--accent-cyan);">EQUITY SALVAGED</span>
+                                    <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-equity-saved">+84.20</span>
+                                    <span style="font-size:10px;color:var(--dim);">Saved via Resignation Eval</span>
+                                </div>
+                            </div>
+
+                            <!-- Protocol Security Box -->
+                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+                                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ffffff;display:flex;justify-content:space-between;">
+                                    <span>ESCROW PROTOCOL HEALTH:</span>
+                                    <span style="color:var(--accent-green);">● ONLINE</span>
+                                </div>
+                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
+                                    <span>Smart Contract:</span>
+                                    <span class="mono" style="color:var(--ink-pure);">0x389a...c2A1 (Base)</span>
+                                </div>
+                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
+                                    <span>Settlement Oracle:</span>
+                                    <span class="mono" style="color:var(--ink-pure);">EIP-712 ECDSA Verified</span>
+                                </div>
+                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
+                                    <span>Safety Timeout:</span>
+                                    <span class="mono" style="color:var(--accent-green);">10 Min Auto-Refund</span>
+                                </div>
+                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
+                                    <span>Protocol Fee:</span>
+                                    <span class="mono" style="color:var(--accent-green);">0% (Hackathon Free)</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:auto;">
+                                <button class="btn-primary" id="btn-view-specs" style="width:100%;padding:10px;font-size:12px;background:rgba(255,255,255,0.06);">
+                                    📜 Read PRD Mathematical Payout Spec (v2.1)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Panel 4: Arena Settings -->
+                    <div class="hub-tab-panel" id="tab-settings">
+                        <div class="section-card" id="section-settings">
+                            <div class="section-card-title">
+                                <span>⚙️</span>
+                                <span>Game & Arena Settings</span>
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-title">Sound Effects (Web Audio API)</div>
+                                    <div class="setting-desc">Synthesized audio for moves, captures, checks, and settlement chords</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="setting-sound-toggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-title">Board Visual Theme</div>
+                                    <div class="setting-desc">Visual styling of the 8x8 squares and glowing borders</div>
+                                </div>
+                                <select class="form-input" id="setting-board-theme" style="width:160px;">
+                                    <option value="obsidian" selected>Obsidian Glass</option>
+                                    <option value="cyber">Neon Cyber</option>
+                                    <option value="walnut">Warm Walnut</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-title">Stockfish Engine Difficulty</div>
+                                    <div class="setting-desc">Depth and calculation plies for auto-play evaluation</div>
+                                </div>
+                                <select class="form-input" id="setting-engine-depth" style="width:160px;">
+                                    <option value="10">Fast (10-Ply)</option>
+                                    <option value="18" selected>Deep (18-Ply)</option>
+                                    <option value="24">Master (24-Ply)</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-title">Auto-Queen Promotion</div>
+                                    <div class="setting-desc">Automatically promote pawns to Queens on the 8th rank</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="setting-auto-queen" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div style="background:rgba(112,214,255,0.06);border:1px solid rgba(112,214,255,0.25);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                                <div>
+                                    <div style="font-weight:600;font-size:13px;color:#ffffff;">Base Sepolia USDC Faucet</div>
+                                    <div style="font-size:11px;color:var(--dim);margin-top:2px;">Claim 100 Mock USDC test tokens for instant arena staking</div>
+                                </div>
+                                <button class="btn-hero-primary" id="setting-faucet-btn" style="padding:8px 16px;font-size:12px;">
+                                    💧 Claim 100 USDC
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2034,6 +2058,52 @@
         // Create Challenge from Lobby Card
         document.getElementById('btn-create-lobby-match')?.addEventListener('click', () => {
             modalLobby.classList.add('open');
+        });
+
+        // Landing Minimalist Hub Tab Switching Logic
+        function activateLandingTab(tabId) {
+            const tabPanels = document.querySelectorAll('.hub-tab-panel');
+            const tabBtns = document.querySelectorAll('.hub-tab-btn');
+            const navLinks = document.querySelectorAll('.landing-nav-btn[data-nav-tab]');
+
+            tabPanels.forEach(p => {
+                p.classList.toggle('active', p.id === tabId);
+            });
+
+            tabBtns.forEach(b => {
+                b.classList.toggle('active', b.dataset.tab === tabId);
+            });
+
+            navLinks.forEach(l => {
+                l.classList.toggle('active', l.dataset.navTab === tabId);
+            });
+        }
+
+        document.querySelectorAll('.hub-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                if (targetTab) activateLandingTab(targetTab);
+            });
+        });
+
+        document.querySelectorAll('.landing-nav-btn[data-nav-tab]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTab = link.dataset.navTab;
+                if (targetTab) {
+                    activateLandingTab(targetTab);
+                    document.getElementById('landing-hub')?.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Overview nav button scrolls to top
+        const overviewNavBtn = document.querySelector('.landing-nav-btn[href="#landing-hero"]');
+        overviewNavBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.landing-nav-btn').forEach(l => l.classList.remove('active'));
+            overviewNavBtn.classList.add('active');
+            document.getElementById('landing-hero')?.scrollIntoView({ behavior: 'smooth' });
         });
     }
 
