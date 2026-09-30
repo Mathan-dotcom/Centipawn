@@ -7,16 +7,42 @@ const path = require('path');
 const { ethers } = require('ethers');
 const { Chess } = require('chess.js');
 
+// Lightweight zero-dependency .env parser
+try {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        envContent.split(/\r?\n/).forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#')) {
+                const eqIdx = trimmed.indexOf('=');
+                if (eqIdx > 0) {
+                    const k = trimmed.slice(0, eqIdx).trim();
+                    const v = trimmed.slice(eqIdx + 1).trim();
+                    if (!process.env[k]) process.env[k] = v;
+                }
+            }
+        });
+    }
+} catch (e) {
+    console.warn('[Env] Notice reading .env:', e.message);
+}
+
 const PORT = process.env.PORT || 3000;
 const BASE_CHAIN_ID = 84532; // Base Sepolia Testnet
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT || '0x389a9B48f07662f3a4B3E03410a831f24dE3c2A1';
+
+// Circle Official Base Sepolia Testnet USDC Contract Address (Exact 42 hex chars checksummed)
+const OFFICIAL_BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+const RAW_USDC = process.env.USDC_ADDRESS || OFFICIAL_BASE_SEPOLIA_USDC;
+const VERIFIED_USDC = ethers.isAddress(RAW_USDC) ? ethers.getAddress(RAW_USDC) : ethers.getAddress(OFFICIAL_BASE_SEPOLIA_USDC);
 
 // Locked PRD Parameters
 const LOCKED_PARAMS = {
     NETWORK: 'Base Sepolia',
     CHAIN_ID: BASE_CHAIN_ID,
     STAKE_ASSET: 'USDC (ERC-20)',
-    USDC_ADDRESS: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // Base Sepolia USDC
+    USDC_ADDRESS: VERIFIED_USDC, // Base Sepolia USDC (Exactly 42 characters)
     PLATFORM_FEE_BPS: 0,
     JOIN_TIMEOUT_MS: 10 * 60 * 1000, // 10 minutes
     MIN_RESIGN_PLIES: 20,
@@ -28,8 +54,10 @@ const LOCKED_PARAMS = {
 };
 
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
-const ORACLE_PRIVATE_KEY = process.env.ORACLE_KEY || '0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d';
-const oracleWallet = new ethers.Wallet(ORACLE_PRIVATE_KEY);
+if (!process.env.ORACLE_KEY) {
+    throw new Error('[Security] Missing ORACLE_KEY in environment. Set ORACLE_KEY in local .env per PRD §22.');
+}
+const oracleWallet = new ethers.Wallet(process.env.ORACLE_KEY);
 console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
 
 // In-Memory Matches Database
@@ -308,9 +336,15 @@ const server = http.createServer(async (req, res) => {
     // API ROUTES
     // ---------------------------------------------------------
     if (pathname === '/api/status' && req.method === 'GET') {
+        const usdc = ethers.getAddress(LOCKED_PARAMS.USDC_ADDRESS);
         return sendJSON(200, {
             status: 'ok',
-            config: LOCKED_PARAMS,
+            config: {
+                ...LOCKED_PARAMS,
+                USDC_ADDRESS: usdc
+            },
+            usdcAddress: usdc,
+            usdcAddressLength: usdc.length,
             oracleAddress: oracleWallet.address,
             escrowContract: ESCROW_CONTRACT_ADDRESS,
             activeMatchesCount: matches.size

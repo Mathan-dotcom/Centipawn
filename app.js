@@ -412,6 +412,78 @@
                 createLobbyBtn.innerHTML = '⚡ Create Custom Challenge';
             }
         }
+
+        // 7. Player Registration Onboarding Step Sync (§21)
+        const regAddrInput = document.getElementById('reg-wallet-addr');
+        if (regAddrInput) {
+            regAddrInput.value = walletState.connected ? walletState.address : 'Wallet Not Connected';
+        }
+
+        const step1El = document.getElementById('reg-step-1');
+        const step2El = document.getElementById('reg-step-2');
+        const step3El = document.getElementById('reg-step-3');
+        const step4El = document.getElementById('reg-step-4');
+        const regMsgEl = document.getElementById('reg-onboarding-msg');
+        const regActionsEl = document.getElementById('reg-onboarding-actions');
+
+        if (step1El && step2El && step3El && step4El && regMsgEl) {
+            if (prdState === 'DISCONNECTED') {
+                step1El.style.color = '#fbbf24';
+                step2El.style.color = 'var(--dim)';
+                step3El.style.color = 'var(--dim)';
+                step4El.style.color = 'var(--dim)';
+                regMsgEl.innerHTML = '<span style="color:#fbbf24;">● Step 1: Wallet not connected.</span> Connect Coinbase Smart Wallet or Injected Web3 to register.';
+                if (regActionsEl) {
+                    regActionsEl.style.display = 'block';
+                    regActionsEl.innerHTML = '<button class="btn-primary" id="btn-reg-connect" style="font-size:11px;padding:6px 12px;background:linear-gradient(135deg,#70d6ff,#a78bfa);color:#08080a;font-weight:700;">🔑 Connect Wallet</button>';
+                    document.getElementById('btn-reg-connect')?.addEventListener('click', () => {
+                        document.getElementById('modal-connect-wallet')?.classList.add('open');
+                    });
+                }
+            } else if (prdState === 'WRONG_NETWORK') {
+                step1El.style.color = 'var(--accent-green)';
+                step2El.style.color = '#ef4444';
+                step3El.style.color = 'var(--dim)';
+                step4El.style.color = 'var(--dim)';
+                regMsgEl.innerHTML = `<span style="color:#ef4444;">● Step 2: Connected to wrong network (${walletState.chainId}).</span> Switch to Base Sepolia (84532) to continue.`;
+                if (regActionsEl) {
+                    regActionsEl.style.display = 'block';
+                    regActionsEl.innerHTML = '<button class="btn-primary" id="btn-reg-switch" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;font-weight:700;">🔄 Switch to Base Sepolia</button>';
+                    document.getElementById('btn-reg-switch')?.addEventListener('click', () => {
+                        document.getElementById('btn-switch-network-action')?.click();
+                    });
+                }
+            } else if (prdState === 'ZERO_BALANCE') {
+                step1El.style.color = 'var(--accent-green)';
+                step2El.style.color = 'var(--accent-green)';
+                step3El.style.color = '#fbbf24';
+                step4El.style.color = 'var(--dim)';
+                regMsgEl.innerHTML = '<span style="color:#fbbf24;">● Step 3: Zero USDC Balance (Fresh Wallet).</span> Claim real testnet tokens from official faucets to activate identity & stake.';
+                if (regActionsEl) {
+                    regActionsEl.style.display = 'block';
+                    regActionsEl.innerHTML = `
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <button class="btn-primary" id="btn-reg-recheck" style="font-size:11px;padding:6px 12px;background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">🔄 Check Balance Again</button>
+                            <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="font-size:10px;padding:4px 8px;">Base ETH ↗</a>
+                            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="font-size:10px;padding:4px 8px;">Circle USDC ↗</a>
+                        </div>
+                    `;
+                    document.getElementById('btn-reg-recheck')?.addEventListener('click', () => {
+                        document.getElementById('btn-recheck-balance')?.click();
+                    });
+                }
+            } else { // FUNDED
+                step1El.style.color = 'var(--accent-green)';
+                step2El.style.color = 'var(--accent-green)';
+                step3El.style.color = 'var(--accent-green)';
+                step4El.style.color = 'var(--accent-green)';
+                regMsgEl.innerHTML = `<span style="color:var(--accent-green);">● Step 4 Ready:</span> Wallet verified (${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}) with ${walletState.balanceUSDC.toFixed(2)} USDC. Ready to save profile & stake.`;
+                if (regActionsEl) {
+                    regActionsEl.style.display = 'none';
+                    regActionsEl.innerHTML = '';
+                }
+            }
+        }
     }
 
     // Window Navigation Controllers
@@ -562,17 +634,17 @@
                             <span class="zero-balance-badge">BALANCE: 0.00 USDC</span>
                         </div>
                         <p class="zero-balance-desc">
-                            Welcome judge / new player! Since your fresh Base Sepolia wallet has 0.00 USDC, claim testnet tokens below to enter matches without leaving the app, or use official ecosystem faucets.
+                            Welcome judge / new player! Since your fresh Base Sepolia wallet has 0.00 USDC, claim real testnet tokens from the official faucets below, then click "Check Balance Again" to verify on-chain.
                         </p>
                         <div class="zero-balance-actions">
-                            <button class="btn-hero-primary" id="btn-claim-zero-faucet" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
-                                💧 Claim 100 Mock USDC (In-App)
+                            <button class="btn-hero-primary" id="btn-recheck-balance" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
+                                🔄 Check Balance Again
                             </button>
                             <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
-                                ↗ Base Sepolia Faucet
+                                ↗ Base Sepolia ETH Faucet (Gas)
                             </a>
                             <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
-                                ↗ Circle USDC Faucet
+                                ↗ Circle Testnet USDC Faucet
                             </a>
                         </div>
                     </div>
@@ -738,6 +810,20 @@
                             <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
                                 Configure your player profile. Your gamer tag, avatar, and rating will be registered with your connected Base Sepolia address.
                             </p>
+
+                            <!-- PRD §21 Onboarding Step Tracker Banner -->
+                            <div id="reg-onboarding-banner" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:14px;">
+                                <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;">
+                                    <span id="reg-step-1">1. CONNECT</span>
+                                    <span id="reg-step-2">2. NETWORK</span>
+                                    <span id="reg-step-3">3. FAUCET</span>
+                                    <span id="reg-step-4">4. IDENTITY</span>
+                                </div>
+                                <div id="reg-onboarding-msg" style="font-size:11px;color:var(--dim);">
+                                    ● Checking wallet state...
+                                </div>
+                                <div id="reg-onboarding-actions" style="margin-top:8px;display:none;"></div>
+                            </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="reg-gamer-tag">GAMER TAG / CHESS ALIAS</label>
@@ -918,12 +1004,16 @@
 
                             <div style="background:rgba(112,214,255,0.06);border:1px solid rgba(112,214,255,0.25);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
                                 <div>
-                                    <div style="font-weight:600;font-size:13px;color:#ffffff;">Base Sepolia USDC Faucet</div>
-                                    <div style="font-size:11px;color:var(--dim);margin-top:2px;">Claim 100 Mock USDC test tokens for instant arena staking</div>
+                                    <div style="font-weight:600;font-size:13px;color:#ffffff;">Official Testnet Faucets</div>
+                                    <div style="font-size:11px;color:var(--dim);margin-top:2px;">Get real Base Sepolia ETH for gas & USDC for staking</div>
                                 </div>
-                                <button class="btn-hero-primary" id="setting-faucet-btn" style="padding:8px 16px;font-size:12px;">
-                                    💧 Claim 100 USDC
-                                </button>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="padding:6px 10px;font-size:11px;">Base ETH ↗</a>
+                                    <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="padding:6px 10px;font-size:11px;">Circle USDC ↗</a>
+                                    <button class="btn-hero-primary" id="setting-recheck-btn" style="padding:6px 12px;font-size:11px;">
+                                        🔄 Recheck Balance
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2266,14 +2356,43 @@
         document.getElementById('btn-switch-network-action')?.addEventListener('click', handleSwitchToBaseNetwork);
         document.getElementById('hero-switch-network')?.addEventListener('click', handleSwitchToBaseNetwork);
 
-        // Faucet In-App Claim on Zero Balance Card
-        document.getElementById('btn-claim-zero-faucet')?.addEventListener('click', () => {
-            walletState.balanceUSDC += 100.0;
-            state.playerA.balanceUSDC = walletState.balanceUSDC;
-            showToast('💧 Claimed +100.00 Mock USDC! Ready to stake in Arena.');
-            playSound('settle');
+        // Re-check On-Chain Balance Handler (Real Base Sepolia RPC read)
+        async function handleRecheckBalance() {
+            showToast('🔄 Querying Base Sepolia for on-chain USDC balance...');
+            if (!walletState.address || !walletState.connected) {
+                showToast('🔑 Please connect wallet first.');
+                return;
+            }
+            try {
+                const ethersLib = window.ethers || (typeof ethers !== 'undefined' ? ethers : null);
+                if (ethersLib) {
+                    const provider = new ethersLib.JsonRpcProvider('https://sepolia.base.org');
+                    const usdcAbi = ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'];
+                    const usdcContract = new ethersLib.Contract(LOCKED.USDC_ADDRESS, usdcAbi, provider);
+                    const [rawBal, decimals] = await Promise.all([
+                        usdcContract.balanceOf(walletState.address).catch(() => 0n),
+                        usdcContract.decimals().catch(() => 6)
+                    ]);
+                    const bal = parseFloat(ethersLib.formatUnits(rawBal, decimals));
+                    walletState.balanceUSDC = bal;
+                    state.playerA.balanceUSDC = bal;
+                    syncLandingPageUI();
+                    if (bal > 0) {
+                        showToast(`✅ Confirmed on-chain balance: ${bal.toFixed(2)} USDC`);
+                        playSound('settle');
+                    } else {
+                        showToast('💧 On-chain balance is 0.00 USDC. Claim testnet tokens from Circle faucet.');
+                    }
+                    return;
+                }
+            } catch (err) {
+                console.error('Balance recheck error:', err);
+            }
             syncLandingPageUI();
-        });
+            showToast(`Current On-Chain Balance: ${walletState.balanceUSDC.toFixed(2)} USDC`);
+        }
+
+        document.getElementById('btn-recheck-balance')?.addEventListener('click', handleRecheckBalance);
 
         // Connect Wallet Modal Triggers & Options
         function openConnectModal() {
@@ -2435,14 +2554,8 @@
             showToast(`Stockfish Engine Depth Set to ${e.target.value} Plies`);
         });
 
-        // Settings: Faucet Claim
-        document.getElementById('setting-faucet-btn')?.addEventListener('click', () => {
-            walletState.balanceUSDC += 100.0;
-            state.playerA.balanceUSDC = walletState.balanceUSDC;
-            showToast('💧 Claimed +100.00 Mock USDC from Base Sepolia Faucet!');
-            playSound('settle');
-            syncLandingPageUI();
-        });
+        // Settings: Recheck On-Chain Balance
+        document.getElementById('setting-recheck-btn')?.addEventListener('click', handleRecheckBalance);
 
         // Lobby Challenge Buttons: Join Match
         document.querySelectorAll('.btn-join-match').forEach(btn => {

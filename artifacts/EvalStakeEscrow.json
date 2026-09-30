@@ -1,0 +1,498 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_usdcToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_trustedOracle",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "GameAlreadySettled",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidMatchStatus",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidOracleSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidPayoutSum",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidStake",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "JoinTimeoutExpired",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "JoinTimeoutNotExpired",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "MatchAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "MatchNotFound",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OnlyCreatorCanCancel",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OnlyParticipants",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TransferFailed",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "playerA",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "refundedStake",
+          "type": "uint256"
+        }
+      ],
+      "name": "MatchCancelled",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "playerA",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint8",
+          "name": "timeControl",
+          "type": "uint8"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "deadline",
+          "type": "uint256"
+        }
+      ],
+      "name": "MatchCreated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "playerB",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "matchingStake",
+          "type": "uint256"
+        }
+      ],
+      "name": "MatchJoined",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "playerA",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "playerB",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "payoutA",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "payoutB",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "endReason",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "int32",
+          "name": "stockfishEval",
+          "type": "int32"
+        }
+      ],
+      "name": "MatchSettled",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "BPS_TOTAL",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "JOIN_TIMEOUT",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PLATFORM_FEE_BPS",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "cancelUnjoinedMatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "timeControl",
+          "type": "uint8"
+        }
+      ],
+      "name": "createMatch",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "isGameSettled",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "joinMatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "matches",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "address",
+          "name": "playerA",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "playerB",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalPot",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "timeControl",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint256",
+          "name": "createdAt",
+          "type": "uint256"
+        },
+        {
+          "internalType": "enum EvalStakeEscrow.GameStatus",
+          "name": "status",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "gameId",
+          "type": "bytes32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "bytes32",
+              "name": "gameId",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "address",
+              "name": "playerA",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "playerB",
+              "type": "address"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "finalStateHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "string",
+              "name": "finalFEN",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "endReason",
+              "type": "string"
+            },
+            {
+              "internalType": "int32",
+              "name": "stockfishEval",
+              "type": "int32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "payoutBpsToA",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "payoutBpsToB",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "timestamp",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct EvalStakeEscrow.SettlementData",
+          "name": "data",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "oracleSignature",
+          "type": "bytes"
+        }
+      ],
+      "name": "settle",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "trustedOracle",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "usdcToken",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "60c03461013757601f61120738819003918201601f19168301916001600160401b0383118484101761013b57808492604094855283398101031261013757610052602061004b8361014f565b920161014f565b906001600160a01b03908116908115610103578216156100cd5760805260a0525f80546001600160a01b031916331790556040516110a39081610164823960805181818160e9015281816101d9015281816105780152818161078e01528181610e740152610efe015260a0518181816108680152610d250152f35b60405162461bcd60e51b815260206004820152600e60248201526d496e76616c6964204f7261636c6560901b6044820152606490fd5b60405162461bcd60e51b815260206004820152600c60248201526b496e76616c6964205553444360a01b6044820152606490fd5b5f80fd5b634e487b7160e01b5f52604160045260245ffd5b51906001600160a01b03821682036101375756fe60806040526004361015610011575f80fd5b5f3560e01c806311eac855146100d45780632bbc59db146100cf578063539aa77f146100ca57806362f88bda146100c5578063640d0339146100c057806380541be0146100bb5780638da5cb5b146100b65780639fe9ada3146100b15780639ff69442146100ac578063d6766eef146100a7578063dd2ba9f7146100a25763e20485031461009d575f80fd5b610853565b6106b4565b610685565b6104be565b610456565b6103c4565b61034d565b610331565b610152565b610138565b61011c565b34610118575f366003190112610118576040517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b5f80fd5b34610118575f3660031901126101185760206040516127108152f35b34610118575f3660031901126101185760206040515f8152f35b346101185760603660031901126101185760443560043560243560ff8316830361011857801561031f5761019b6007610193845f52600160205260405f2090565b015460ff1690565b6101a4816103eb565b61030d576040516323b872dd60e01b8152336004820152306024820152604481018290526020816064815f6001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000165af1908115610308575f916102da575b50156102c857817feacc77c3e03f02ff32c63f5b6a0780242ef7d154fed054495765819cb36567a56102c49461028f6102406108f5565b8481523360208201525f604082015285606082015285608082015261026b8360a083019060ff169052565b4260c0820152600160e082015261028a855f52600160205260405f2090565b61092e565b610298426109dc565b6040805195865260ff929092166020860152908401523392606090a36040519081529081906020820190565b0390f35b6040516312171d8360e31b8152600490fd5b6102fb915060203d8111610301575b6102f381836108ab565b8101906108d2565b5f610209565b503d6102e9565b6108ea565b60405163fc2bc70d60e01b8152600490fd5b604051634eba4d4960e11b8152600490fd5b34610118575f3660031901126101185760206040516102588152f35b3461011857600319606036820112610118576024359067ffffffffffffffff9081831161011857610140908336030112610118576044359181831161011857366023840112156101185782600401359182116101185736602483850101116101185760246103c2930190600401600435610b0c565b005b34610118575f366003190112610118575f546040516001600160a01b039091168152602090f35b600511156103f557565b634e487b7160e01b5f52602160045260245ffd5b95929160ff9491999897959261010088019a885260018060a01b038092166020890152166040870152606086015260808501521660a083015260c082015260058210156103f55760e00152565b34610118576020366003190112610118576004355f52600160205260405f2080546102c460018060a01b03928360018201541693600282015416906003810154600482015460ff6005840154169160ff60076006860154950154169460405198899889610409565b3461011857602036600319011261011857600480356104e5815f52600160205260405f2090565b6007810160016104f6825460ff1690565b6104ff816103eb565b036106745761051160068301546109dc565b4211610663576001820154610536906001600160a01b03165b6001600160a01b031690565b331461065257600382018054604080516323b872dd60e01b8152338882019081523060208281019190915292810193909352929492918290819060600103815f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03165af1908115610308575f91610634575b5015610623576002810180546001600160a01b03191633179055929391926105ec926105dc85546109fd565b910155805460ff19166002179055565b546040519081523391907f50aa85d7d926e054efaf46bd98a48a8e0774c90e0a281c491c020a55a086a9e59080602081015b0390a3005b6040516312171d8360e31b81528590fd5b61064c915060203d8111610301576102f381836108ab565b5f6105b0565b60405163deafa4c160e01b81528490fd5b60405163efbd0a2760e01b81528490fd5b604051636bc0f2cb60e11b81528490fd5b34610118576020366003190112610118576004355f526002602052602060ff60405f2054166040519015158152f35b3461011857602036600319011261011857600480356106db815f52600160205260405f2090565b6007810160016106ec825460ff1690565b6106f5816103eb565b0361067457600182018054909190610715906001600160a01b031661052a565b33036108425761072860068401546109dc565b42111561083157805460ff19166004179055835f60038401549586940155610756825460018060a01b031690565b6040805163a9059cbb60e01b81526001600160a01b03928316848201908152602080820197909752929590929091839182900301815f7f000000000000000000000000000000000000000000000000000000000000000089165af1908115610308575f91610813575b5015610804575054604051938452166001600160a01b0316917f6ebcca71a32b4306d0f89e440d0539ef862403fb4233173ac207c9eb286e6ed390806020810161061e565b6040516312171d8360e31b8152fd5b61082b915060203d8111610301576102f381836108ab565b5f6107bf565b60405163404389d960e11b81528590fd5b604051630c06b96b60e31b81528590fd5b34610118575f366003190112610118576040517f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03168152602090f35b634e487b7160e01b5f52604160045260245ffd5b90601f8019910116810190811067ffffffffffffffff8211176108cd57604052565b610897565b90816020910312610118575180151581036101185790565b6040513d5f823e3d90fd5b60405190610100820182811067ffffffffffffffff8211176108cd57604052565b9060058110156103f55760ff80198354169116179055565b8151815560208201516001820180546001600160a01b039283166001600160a01b0319918216179091556040840151600284018054919093169116179055606082015160038201556080820151600482015560a08201516109c69260079160e091906109aa9060ff16600586019060ff1660ff19825416179055565b60c081015160068501550151916109c0836103eb565b01610916565b565b634e487b7160e01b5f52601160045260245ffd5b9061025882018092116109eb57565b6109c8565b919082018092116109eb57565b908160011b91808304600214901517156109eb57565b818102929181159184041417156109eb57565b356001600160a01b03811681036101185790565b903590601e1981360301821215610118570180359067ffffffffffffffff82116101185760200191813603831361011857565b92919267ffffffffffffffff82116108cd5760405191610a97601f8201601f1916602001846108ab565b829481845281830111610118578281602093845f960137010152565b358060030b81036101185790565b919082039182116109eb57565b9360609360a09382939897988752602087015260806040870152816080870152838601375f828286010152601f80199101168301019360030b910152565b909291610b21825f52600160205260405f2090565b9360078501936002610b34865460ff1690565b610b3d816103eb565b03610fe957610b5e610b57855f52600260205260405f2090565b5460ff1690565b610fd75783823503610fc55760209081830193610b7a85610a26565b600189018054919691610b95906001600160a01b031661052a565b6001600160a01b0397881614801590610f96575b610f845760e08601359861010087013594612710610bc7878d6109f0565b03610f72578694610bd88c95610a26565b96896040998a998a8301610beb90610a26565b610bf86080850185610a3a565b3690610c0392610a6d565b8381519101209460a085019a610c198c87610a3a565b3690610c2492610a6d565b8581519101209d60c087019e8f610c3a90610ab3565b915188359781019788526001600160a01b03968716602089015295909416604087015260608088013590870152608086019790975260a085019290925260039590950b60c084015260e083015261010082019390935261012091820135918101919091528161014082010391601f19928381018252610cb990826108ab565b519020908951908189810193610cf99085603c917f19457468657265756d205369676e6564204d6573736167653a0a3332000000008252601c8201520190565b039081018252610d0990826108ab565b519020913690610d1892610a6d565b610d2191610ffb565b88807f000000000000000000000000000000000000000000000000000000000000000016911603610f6157805460ff19166003179055610d79610d6c895f52600260205260405f2090565b805460ff19166001179055565b60048a01925f610da0610d99610d9187549d8e610a13565b612710900490565b809c610ac1565b945589610ee0575b8a84610e28575b505092869594927ff38ccd5360c0359b4448e09a057e2982616811d6115929210a6da7ce584796d097610e0c610e1494610e066002610df7610e239a5460018060a01b031690565b9f01546001600160a01b031690565b98610a3a565b949093610ab3565b9451978897169b169986610ace565b0390a4565b60020154610e6e90829086906001600160a01b03165b895163a9059cbb60e01b81526001600160a01b039091166004820152602481019190915291829081906044820190565b03815f8d7f0000000000000000000000000000000000000000000000000000000000000000165af1918215610308575f92610ec3575b505015610eb2575f8a610daf565b84516312171d8360e31b8152600490fd5b610ed99250803d10610301576102f381836108ab565b5f80610ea4565b8154610ef89082908c906001600160a01b0316610e3e565b03815f8d7f0000000000000000000000000000000000000000000000000000000000000000165af1908115610308575f91610f44575b50610da85785516312171d8360e31b8152600490fd5b610f5b9150823d8411610301576102f381836108ab565b5f610f2e565b8551632f58c7cd60e01b8152600490fd5b6040516373db508b60e01b8152600490fd5b60405163deafa4c160e01b8152600490fd5b508987610fbc61052a6002610fad60408c01610a26565b9401546001600160a01b031690565b91161415610ba9565b604051631632113760e31b8152600490fd5b604051636e2ab89360e11b8152600490fd5b604051636bc0f2cb60e11b8152600490fd5b604182510361106757602082015160408301516060909301515f1a601b8110611050575b9160209360809260ff5f9560405194855216868401526040830152606082015282805260015afa15610308575f5190565b601b90929192019060ff82116109eb57919061101f565b50505f9056fea2646970667358221220f3e3f567c0828ee854d5631ce86d9c323899989cdddbb417e8a4a99fd1e86c8264736f6c63430008140033"
+}
