@@ -200,14 +200,9 @@
         if (loader && !document.getElementById('loader-skip-btn')) {
             const skipBtn = document.createElement('button');
             skipBtn.id = 'loader-skip-btn';
-            skipBtn.innerHTML = '<span>ENTER ARENA / SKIP</span> <span>➔</span>';
+            skipBtn.innerHTML = '<span>EXPLORE 3D STARTER</span> <span>➔</span>';
             skipBtn.onclick = () => {
                 loader.classList.add('done');
-                if (window.transitionToLandingPage) {
-                    window.transitionToLandingPage();
-                } else if (window.showLandingPage) {
-                    window.showLandingPage();
-                }
             };
             loader.appendChild(skipBtn);
         }

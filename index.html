@@ -985,7 +985,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         } else boot();
 
         /* ======================================================================
-           8. FAST & RELIABLE LOADER ORCHESTRATION (AUTO-LOADS LANDING PAGE)
+           8. FAST & RELIABLE LOADER ORCHESTRATION (STARTER PAGE PERSISTENT)
            ====================================================================== */
         const loaderStartTime = performance.now();
         const LOADER_DURATION = 1800; // Crisp 1.8s loader
@@ -1000,24 +1000,17 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             { at: 0.50, text: "SYNCHRONIZING ON-CHAIN ARENAS..." },
             { at: 0.75, text: "FETCHING HOLOGRAPHIC CERTIFICATE..." },
             { at: 0.90, text: "CALIBRATING QUANTUM OPTICS..." },
-            { at: 1.0, text: "ARENA READY // LOADING CENTIPAWN..." }
+            { at: 1.0, text: "ARENA CERTIFICATE READY // DRAG TO ROTATE" }
         ];
 
-        let loaderTransitionTriggered = false;
-        function finishLoaderAndEnterLanding() {
-            if (loaderTransitionTriggered) return;
-            loaderTransitionTriggered = true;
+        function dismissLoader() {
             if (loaderEl) loaderEl.classList.add('done');
             loaderDone = true;
-            if (window.transitionToLandingPage) {
-                window.transitionToLandingPage();
-            } else if (window.showLandingPage) {
-                window.showLandingPage();
-            }
+            if (hintEl && !hintUsed) hintEl.style.opacity = '1';
         }
 
-        // Safety fallback timer: guarantee landing page loads within 2.2 seconds even if backgrounded
-        setTimeout(finishLoaderAndEnterLanding, 2200);
+        // Safety fallback timer: guarantee loader overlay dismisses within 2.5s even if tab backgrounded
+        setTimeout(dismissLoader, 2500);
 
         function runLoaderTick(now) {
             const elapsed = now - loaderStartTime;
@@ -1039,7 +1032,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             if (progress < 1) {
                 requestAnimationFrame(runLoaderTick);
             } else {
-                setTimeout(finishLoaderAndEnterLanding, 180);
+                setTimeout(dismissLoader, 180);
             }
         }
         requestAnimationFrame(runLoaderTick);
