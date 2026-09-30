@@ -30,7 +30,7 @@ try {
 
 const PORT = process.env.PORT || 3000;
 const BASE_CHAIN_ID = 84532; // Base Sepolia Testnet
-const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT || '0x389a9B48f07662f3a4B3E03410a831f24dE3c2A1';
+const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT || '0xBe5cD1b1c18e1aAb2360C9333eE9b941A2EA7eAc';
 
 // Circle Official Base Sepolia Testnet USDC Contract Address (Exact 42 hex chars checksummed)
 const OFFICIAL_BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
@@ -57,7 +57,10 @@ const LOCKED_PARAMS = {
 if (!process.env.ORACLE_KEY) {
     throw new Error('[Security] Missing ORACLE_KEY in environment. Set ORACLE_KEY in local .env per PRD §22.');
 }
-const oracleWallet = new ethers.Wallet(process.env.ORACLE_KEY);
+let oracleKey = process.env.ORACLE_KEY.trim();
+if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
+const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
+const oracleWallet = new ethers.Wallet(oracleKey, provider);
 console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
 
 // In-Memory Matches Database
@@ -254,8 +257,57 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
 
     const oracleSignature = await oracleWallet.signMessage(ethers.getBytes(payloadHash));
 
-    // Simulated Base Sepolia On-Chain Settlement Tx Hash
-    const txHash = ethers.keccak256(ethers.toUtf8Bytes(`BASE_SETTLE:${match.gameId}:${timestamp}:${oracleSignature}`));
+    let txHash = null;
+    let onChainMined = false;
+
+    try {
+        if (ethers.isAddress(ESCROW_CONTRACT_ADDRESS)) {
+            const escrow = new ethers.Contract(
+                ESCROW_CONTRACT_ADDRESS,
+                [
+                    'function matches(bytes32) view returns (bytes32,address,address,uint256,uint256,uint8,uint256,uint8)',
+                    'function isGameSettled(bytes32) view returns (bool)',
+                    'function settle(bytes32 gameId, tuple(bytes32 gameId, address playerA, address playerB, bytes32 finalStateHash, string finalFEN, string endReason, int32 stockfishEval, uint256 payoutBpsToA, uint256 payoutBpsToB, uint256 timestamp) data, bytes oracleSignature) external'
+                ],
+                oracleWallet
+            );
+
+            let mState = null;
+            for (let attempt = 0; attempt < 5; attempt++) {
+                mState = await escrow.matches(match.gameId);
+                if (mState && mState[7] === 2n) break;
+                await new Promise(r => setTimeout(r, 1200));
+            }
+            // status === 2n means GameStatus.Active
+            if (mState && mState[7] === 2n) {
+                console.log(`[Oracle] Broadcasting on-chain settlement for game ${match.gameId}...`);
+                const settlementData = {
+                    gameId: match.gameId,
+                    playerA: playerAAddr,
+                    playerB: playerBAddr,
+                    finalStateHash,
+                    finalFEN,
+                    endReason,
+                    stockfishEval,
+                    payoutBpsToA: calc.payoutBpsToA,
+                    payoutBpsToB: calc.payoutBpsToB,
+                    timestamp
+                };
+                const tx = await escrow.settle(match.gameId, settlementData, oracleSignature, { gasLimit: 500000 });
+                console.log(`[Oracle] Tx broadcasted: ${tx.hash}`);
+                const receipt = await tx.wait(1);
+                txHash = receipt.hash;
+                onChainMined = true;
+                console.log(`[Oracle] On-chain settlement mined in block ${receipt.blockNumber}: ${txHash}`);
+            }
+        }
+    } catch (onChainErr) {
+        console.warn(`[Oracle] Note on chain broadcast:`, onChainErr.message);
+    }
+
+    if (!txHash) {
+        txHash = ethers.keccak256(ethers.toUtf8Bytes(`BASE_SETTLE:${match.gameId}:${timestamp}:${oracleSignature}`));
+    }
 
     const totalPot = match.stakeAmount * 2;
     const payoutUSDC_A = Number(((totalPot * calc.payoutBpsToA) / 10000).toFixed(2));
@@ -375,7 +427,7 @@ const server = http.createServer(async (req, res) => {
         const stakeAmount = Number(body.stakeAmount) || 10;
         const timeControl = parseInt(body.timeControl, 10) || 1; // 0: 3+2, 1: 5+3, 2: 10+0
         const playerA = safeAddress(body.playerA, '0x892aF6E22C991316bDf255d648f57F43e4A142C1');
-        const gameId = ethers.id(`match_${Date.now()}_${Math.random()}`);
+        const gameId = body.gameId || ethers.id(`match_${Date.now()}_${Math.random()}`);
 
         const timeConfigs = [
             { time: 180, inc: 2, label: '3+2 Blitz' },

@@ -30,12 +30,13 @@ async function main() {
     console.log('=== Base Sepolia Escrow Deployment (PRD v2.1) ===');
     const provider = new ethers.JsonRpcProvider(RPC_URL);
 
-    const deployerKey = process.env.DEPLOYER_KEY;
+    let deployerKey = process.env.DEPLOYER_KEY?.trim();
     if (!deployerKey) {
         console.error('ERROR: DEPLOYER_KEY is not set in environment or .env.');
         console.log('Generate/fund a deployer wallet and set DEPLOYER_KEY in .env before running.');
         process.exit(1);
     }
+    if (!deployerKey.startsWith('0x')) deployerKey = '0x' + deployerKey;
 
     const deployer = new ethers.Wallet(deployerKey, provider);
     console.log('Deployer Address:', deployer.address);
@@ -52,9 +53,11 @@ async function main() {
     }
 
     // Determine Oracle Address (from ORACLE_KEY or ORACLE_ADDRESS)
-    let oracleAddress = process.env.ORACLE_ADDRESS;
+    let oracleAddress = process.env.ORACLE_ADDRESS?.trim();
     if (!oracleAddress && process.env.ORACLE_KEY) {
-        oracleAddress = new ethers.Wallet(process.env.ORACLE_KEY).address;
+        let oKey = process.env.ORACLE_KEY.trim();
+        if (!oKey.startsWith('0x')) oKey = '0x' + oKey;
+        oracleAddress = new ethers.Wallet(oKey).address;
     }
     if (!oracleAddress) {
         console.error('ERROR: ORACLE_KEY or ORACLE_ADDRESS must be set in .env.');
