@@ -22,6 +22,24 @@
     };
 
     // -------------------------------------------------------------
+    // PRD §21 WALLET ONBOARDING & NETWORK STATE
+    // -------------------------------------------------------------
+    const walletState = {
+        connected: true,
+        address: '0x892aF6E22C991316bDf255d648f57F43e4A142C1',
+        chainId: 84532, // 84532: Base Sepolia, 1: Ethereum Mainnet
+        balanceUSDC: 100.0,
+        providerType: 'Coinbase Smart Wallet (Passkey)'
+    };
+
+    function getPRDWalletState() {
+        if (!walletState.connected) return 'DISCONNECTED';
+        if (walletState.chainId !== LOCKED.CHAIN_ID) return 'WRONG_NETWORK';
+        if (walletState.balanceUSDC <= 0) return 'ZERO_BALANCE';
+        return 'FUNDED';
+    }
+
+    // -------------------------------------------------------------
     // APP STATE
     // -------------------------------------------------------------
     const state = {
@@ -190,6 +208,7 @@
         buildArenaDOM();
         startNewMatch(10.0, 1); // 10 USDC, 5+3 Rapid (Default)
         setupEventListeners();
+        syncLandingPageUI();
 
         // Reveal the application HUD when the starter 5s loader finishes
         waitForLoaderDone();
@@ -271,12 +290,128 @@
         const hudAvatarA = document.querySelector('#hud-player-a .white-avatar');
         if (hudAvatarA) hudAvatarA.textContent = profile.avatar || '♟';
 
-        // Balances
-        const balStr = `${state.playerA.balanceUSDC.toFixed(2)} USDC`;
+        // -------------------------------------------------------------
+        // PRD §21 ONBOARDING & NETWORK STATE SYNC
+        // -------------------------------------------------------------
+        const prdState = getPRDWalletState();
+
+        // 1. Update Judge Live Demo Bar chips
+        document.querySelectorAll('.demo-chip-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.demoState === prdState);
+        });
+
+        // 2. Navigation bar: Wallet & Network status
+        const navConnectBtn = document.getElementById('btn-connect-wallet-nav');
+        const navWalletBadge = document.getElementById('landing-wallet-badge');
+        const navNetBadge = document.getElementById('nav-network-badge');
+
+        if (prdState === 'DISCONNECTED') {
+            if (navConnectBtn) navConnectBtn.style.display = 'inline-flex';
+            if (navWalletBadge) navWalletBadge.style.display = 'none';
+            if (navNetBadge) {
+                navNetBadge.textContent = '○ NOT CONNECTED';
+                navNetBadge.style.color = 'var(--dim)';
+            }
+        } else {
+            if (navConnectBtn) navConnectBtn.style.display = 'none';
+            if (navWalletBadge) navWalletBadge.style.display = 'inline-flex';
+            if (navNetBadge) {
+                if (prdState === 'WRONG_NETWORK') {
+                    navNetBadge.textContent = `● WRONG NET (${walletState.chainId})`;
+                    navNetBadge.style.color = '#ef4444';
+                } else {
+                    navNetBadge.textContent = '● 84532 TESTNET';
+                    navNetBadge.style.color = 'var(--accent-green)';
+                }
+            }
+        }
+
+        // 3. Balance & Address Badges
+        const balStr = `${walletState.balanceUSDC.toFixed(2)} USDC`;
         const balEl = document.getElementById('landing-usdc-bal');
-        if (balEl) balEl.textContent = balStr;
+        if (balEl) {
+            balEl.textContent = balStr;
+            balEl.style.color = prdState === 'ZERO_BALANCE' ? '#fbbf24' : (prdState === 'WRONG_NETWORK' ? '#f87171' : '#ffffff');
+        }
         const headerBal = document.getElementById('header-usdc-bal');
         if (headerBal) headerBal.textContent = balStr;
+
+        const addrEl = document.getElementById('landing-addr');
+        if (addrEl && walletState.address) {
+            addrEl.textContent = `${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`;
+        }
+
+        // 4. Blocking Card & Zero-Balance Faucet Prompts
+        const blockingCard = document.getElementById('card-wrong-network');
+        if (blockingCard) {
+            blockingCard.style.display = prdState === 'WRONG_NETWORK' ? 'flex' : 'none';
+            const chainDisplay = document.getElementById('current-chain-display');
+            if (chainDisplay) chainDisplay.textContent = `Chain ID: ${walletState.chainId} (Ethereum Mainnet)`;
+        }
+
+        const faucetCard = document.getElementById('card-zero-balance');
+        if (faucetCard) {
+            faucetCard.style.display = prdState === 'ZERO_BALANCE' ? 'flex' : 'none';
+        }
+
+        // 5. Hero Dynamic Action Row
+        const heroConnect = document.getElementById('hero-connect-wallet');
+        const heroPlay = document.getElementById('hero-play-arena');
+        const heroQuick = document.getElementById('hero-quick-match');
+        const heroSwitch = document.getElementById('hero-switch-network');
+        const heroNote = document.getElementById('hero-onboarding-note');
+
+        if (prdState === 'DISCONNECTED') {
+            if (heroConnect) heroConnect.style.display = 'inline-flex';
+            if (heroPlay) heroPlay.style.display = 'none';
+            if (heroQuick) heroQuick.style.display = 'none';
+            if (heroSwitch) heroSwitch.style.display = 'none';
+            if (heroNote) heroNote.style.display = 'block';
+        } else if (prdState === 'WRONG_NETWORK') {
+            if (heroConnect) heroConnect.style.display = 'none';
+            if (heroPlay) heroPlay.style.display = 'none';
+            if (heroQuick) heroQuick.style.display = 'none';
+            if (heroSwitch) heroSwitch.style.display = 'inline-flex';
+            if (heroNote) heroNote.style.display = 'none';
+        } else if (prdState === 'ZERO_BALANCE') {
+            if (heroConnect) heroConnect.style.display = 'none';
+            if (heroPlay) heroPlay.style.display = 'inline-flex';
+            if (heroQuick) heroQuick.style.display = 'inline-flex';
+            if (heroSwitch) heroSwitch.style.display = 'none';
+            if (heroNote) heroNote.style.display = 'none';
+        } else { // FUNDED
+            if (heroConnect) heroConnect.style.display = 'none';
+            if (heroPlay) heroPlay.style.display = 'inline-flex';
+            if (heroQuick) heroQuick.style.display = 'inline-flex';
+            if (heroSwitch) heroSwitch.style.display = 'none';
+            if (heroNote) heroNote.style.display = 'none';
+        }
+
+        // 6. Lobby Challenge Table & Create Button Guard Labels
+        document.querySelectorAll('.btn-join-match').forEach(btn => {
+            if (prdState === 'DISCONNECTED') {
+                btn.textContent = '🔑 Connect Wallet';
+            } else if (prdState === 'WRONG_NETWORK') {
+                btn.textContent = '⚠️ Switch Network';
+            } else if (prdState === 'ZERO_BALANCE') {
+                btn.textContent = '💧 Claim USDC First';
+            } else {
+                btn.textContent = 'Join Match';
+            }
+        });
+
+        const createLobbyBtn = document.getElementById('btn-create-lobby-match');
+        if (createLobbyBtn) {
+            if (prdState === 'DISCONNECTED') {
+                createLobbyBtn.innerHTML = '🔑 Connect Wallet to Create Challenge';
+            } else if (prdState === 'WRONG_NETWORK') {
+                createLobbyBtn.innerHTML = '⚠️ Switch to Base to Create Challenge';
+            } else if (prdState === 'ZERO_BALANCE') {
+                createLobbyBtn.innerHTML = '💧 Claim Testnet USDC to Stake';
+            } else {
+                createLobbyBtn.innerHTML = '⚡ Create Custom Challenge';
+            }
+        }
     }
 
     // Window Navigation Controllers
@@ -347,7 +482,7 @@
                         <span class="brand-name">CENTIPAWN</span>
                     </div>
                     <span class="brand-badge mono">BASE PROTOCOL</span>
-                    <span class="mono" style="color:var(--accent-green);font-size:11px;">● 84532 TESTNET</span>
+                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:11px;">● 84532 TESTNET</span>
                 </div>
 
                 <nav class="landing-nav-links">
@@ -362,6 +497,9 @@
                     <button class="btn-primary" id="btn-view-3d-starter" style="padding:8px 14px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);">
                         📜 3D Starter
                     </button>
+                    <button class="btn-hero-primary" id="btn-connect-wallet-nav" style="display:none;padding:8px 16px;font-size:12px;">
+                        🔑 Connect Wallet
+                    </button>
                     <button class="btn-hero-primary" id="btn-nav-enter-arena" style="padding:8px 18px;font-size:13px;">
                         ⚔️ Play Arena
                     </button>
@@ -375,6 +513,71 @@
 
             <!-- Main Landing Content Scroll Area -->
             <div class="landing-content">
+                <!-- PRD §21 / §28 Live Demo State Bar for Judges & Evaluators -->
+                <div class="judge-demo-bar" id="judge-demo-bar">
+                    <span class="judge-badge-tag">§21 ONBOARDING DEMO</span>
+                    <button class="demo-chip-btn" data-demo-state="DISCONNECTED">
+                        <span>🔑</span>
+                        <span>1. Disconnected</span>
+                    </button>
+                    <button class="demo-chip-btn" data-demo-state="WRONG_NETWORK">
+                        <span>⚠️</span>
+                        <span>2. Wrong Network</span>
+                    </button>
+                    <button class="demo-chip-btn" data-demo-state="ZERO_BALANCE">
+                        <span>💧</span>
+                        <span>3. Zero USDC (Fresh)</span>
+                    </button>
+                    <button class="demo-chip-btn active" data-demo-state="FUNDED">
+                        <span>⚡</span>
+                        <span>4. Funded (Ready)</span>
+                    </button>
+                </div>
+
+                <!-- PRD §21: Wrong Network Blocking Card -->
+                <div class="network-blocking-card" id="card-wrong-network" style="display:none;">
+                    <div class="blocking-icon">⚠️</div>
+                    <div class="blocking-content">
+                        <div class="blocking-header">
+                            <h3 class="blocking-title">Wrong Network Detected</h3>
+                            <span class="blocking-badge" id="current-chain-display">Chain ID: 1 (Mainnet)</span>
+                        </div>
+                        <p class="blocking-desc">
+                            Centipawn's proportional escrow smart contracts and USDC liquidity are deployed exclusively on <strong>Base Sepolia (Chain ID: 84532)</strong>. Match creation and joining are blocked until you switch to Base.
+                        </p>
+                        <div class="blocking-actions">
+                            <button class="btn-hero-primary" id="btn-switch-network-action" style="background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
+                                🔄 Switch to Base Sepolia
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRD §21: Zero USDC Balance Faucet Prompt Card -->
+                <div class="zero-balance-faucet-card" id="card-zero-balance" style="display:none;">
+                    <div class="zero-balance-icon">💧</div>
+                    <div class="zero-balance-content">
+                        <div class="zero-balance-header">
+                            <h3 class="zero-balance-title">Fresh Wallet Detected — Testnet USDC Required</h3>
+                            <span class="zero-balance-badge">BALANCE: 0.00 USDC</span>
+                        </div>
+                        <p class="zero-balance-desc">
+                            Welcome judge / new player! Since your fresh Base Sepolia wallet has 0.00 USDC, claim testnet tokens below to enter matches without leaving the app, or use official ecosystem faucets.
+                        </p>
+                        <div class="zero-balance-actions">
+                            <button class="btn-hero-primary" id="btn-claim-zero-faucet" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
+                                💧 Claim 100 Mock USDC (In-App)
+                            </button>
+                            <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
+                                ↗ Base Sepolia Faucet
+                            </a>
+                            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
+                                ↗ Circle USDC Faucet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Hero Section -->
                 <section class="landing-hero" id="landing-hero">
                     <div class="hero-pill-badge mono">BASE SEPOLIA // ZERO-KNOWLEDGE CHESS PROTOCOL</div>
@@ -383,6 +586,12 @@
                         No more binary all-or-nothing forfeits. Resign at any moment past Ply 20 and salvage your centipawn equity on-chain with zero-knowledge cryptographic certainty.
                     </p>
                     <div class="hero-actions-row">
+                        <button class="btn-hero-primary" id="hero-connect-wallet" style="display:none;">
+                            🔑 CONNECT WALLET TO PLAY ➔
+                        </button>
+                        <button class="btn-hero-primary" id="hero-switch-network" style="display:none;background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
+                            ⚠️ SWITCH TO BASE SEPOLIA ➔
+                        </button>
                         <button class="btn-hero-primary" id="hero-play-arena">
                             ⚔️ ENTER LIVE CHESS ARENA ➔
                         </button>
@@ -392,6 +601,9 @@
                         <button class="btn-hero-secondary" id="hero-view-escrow">
                             📜 PROTOCOL ESCROW SPECS
                         </button>
+                    </div>
+                    <div id="hero-onboarding-note" class="mono" style="display:none;font-size:11px;color:var(--dim);margin-top:12px;text-align:center;">
+                        ⚡ Base-native smart onboarding powered by Coinbase Smart Wallet (Passkey / Google / Apple login — zero seed phrase needed).
                     </div>
                 </section>
 
@@ -1068,6 +1280,53 @@
                         <h3 class="modal-title">Pawn Promotion</h3>
                     </div>
                     <div class="promotion-picker" id="promotion-picker-options"></div>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- MODAL: CONNECT WALLET (PRD §6 & §21 BASE-NATIVE ONBOARDING)    -->
+            <!-- ============================================================== -->
+            <div class="modal-overlay" id="modal-connect-wallet">
+                <div class="modal-card" style="max-width:440px;">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title">Connect Base Wallet</h3>
+                            <span class="mono" style="font-size:10px;color:var(--dim);">PRD §6 LOCKED ONBOARDING (BASE SEPOLIA)</span>
+                        </div>
+                        <button class="modal-close-btn" id="modal-connect-close">✕</button>
+                    </div>
+
+                    <div class="wallet-opt-list">
+                        <!-- Coinbase Smart Wallet with Passkey -->
+                        <div class="wallet-opt-card" id="btn-wallet-smart">
+                            <span style="font-size:24px;">🔑</span>
+                            <div style="flex:1;">
+                                <div class="wallet-opt-title">Coinbase Smart Wallet</div>
+                                <div class="wallet-opt-desc">Passkey / FaceID / TouchID / Google / Apple login. No seed phrase required.</div>
+                            </div>
+                            <span class="wallet-opt-badge">RECOMMENDED</span>
+                        </div>
+
+                        <!-- Browser Injected (MetaMask, Rabby, etc.) -->
+                        <div class="wallet-opt-card" id="btn-wallet-injected">
+                            <span style="font-size:24px;">🦊</span>
+                            <div style="flex:1;">
+                                <div class="wallet-opt-title">Injected Web3 Extension</div>
+                                <div class="wallet-opt-desc">Connect MetaMask, Rabby, Coinbase Browser Extension, or EIP-1193.</div>
+                            </div>
+                            <span class="mono" style="font-size:10px;color:var(--dim);">EIP-1193</span>
+                        </div>
+
+                        <!-- Instant Sandbox Demo Wallet -->
+                        <div class="wallet-opt-card" id="btn-wallet-sandbox">
+                            <span style="font-size:24px;">⚡</span>
+                            <div style="flex:1;">
+                                <div class="wallet-opt-title">Instant Judge Sandbox Wallet</div>
+                                <div class="wallet-opt-desc">One-click evaluation session pre-loaded with Base Sepolia test credentials.</div>
+                            </div>
+                            <span class="mono" style="font-size:10px;color:var(--accent-cyan);">EVAL DEMO</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1898,8 +2157,16 @@
 
         // Create Match Submit
         document.getElementById('btn-create-match-submit')?.addEventListener('click', () => {
+            if (!canParticipateInMatch()) {
+                document.getElementById('modal-lobby')?.classList.remove('open');
+                return;
+            }
+            if (walletState.balanceUSDC < state.stakeAmount) {
+                showToast(`💧 Insufficient balance (${walletState.balanceUSDC.toFixed(2)} USDC). Stake requires ${state.stakeAmount.toFixed(2)} USDC.`);
+                return;
+            }
             startNewMatch(state.stakeAmount, state.timeControlIdx);
-            document.getElementById('modal-lobby').classList.remove('open');
+            document.getElementById('modal-lobby')?.classList.remove('open');
             window.showArenaView();
         });
 
@@ -1926,14 +2193,155 @@
             }
         });
 
-        // Enter Arena buttons
+        // -------------------------------------------------------------
+        // PRD §21 WALLET ONBOARDING, GUARDS & DEMO CONTROLLERS
+        // -------------------------------------------------------------
+        function canParticipateInMatch() {
+            const prdState = getPRDWalletState();
+            if (prdState === 'DISCONNECTED') {
+                document.getElementById('modal-connect-wallet')?.classList.add('open');
+                showToast('🔑 Please connect wallet before joining or creating matches.');
+                return false;
+            }
+            if (prdState === 'WRONG_NETWORK') {
+                showToast('⚠️ Blocked: Please switch to Base Sepolia (Chain ID 84532).');
+                document.getElementById('card-wrong-network')?.scrollIntoView({ behavior: 'smooth' });
+                return false;
+            }
+            if (prdState === 'ZERO_BALANCE') {
+                showToast('💧 Blocked: 0.00 USDC balance. Claim testnet USDC to stake.');
+                document.getElementById('card-zero-balance')?.scrollIntoView({ behavior: 'smooth' });
+                return false;
+            }
+            return true;
+        }
+
+        // PRD §21 / §28 Live Demo Switcher Chips for Judges
+        document.querySelectorAll('.demo-chip-btn').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const targetState = chip.dataset.demoState;
+                if (targetState === 'DISCONNECTED') {
+                    walletState.connected = false;
+                    showToast('🔍 Demo State: Disconnected (Fresh User / Connect CTA)');
+                } else if (targetState === 'WRONG_NETWORK') {
+                    walletState.connected = true;
+                    walletState.chainId = 1; // Ethereum Mainnet
+                    walletState.balanceUSDC = 100.0;
+                    showToast('🔍 Demo State: Wrong Network (Chain ID 1 - Blocked)');
+                } else if (targetState === 'ZERO_BALANCE') {
+                    walletState.connected = true;
+                    walletState.chainId = LOCKED.CHAIN_ID;
+                    walletState.balanceUSDC = 0.0;
+                    state.playerA.balanceUSDC = 0.0;
+                    showToast('🔍 Demo State: Zero USDC Balance (In-App Faucet Prompt)');
+                } else if (targetState === 'FUNDED') {
+                    walletState.connected = true;
+                    walletState.chainId = LOCKED.CHAIN_ID;
+                    walletState.balanceUSDC = 100.0;
+                    state.playerA.balanceUSDC = 100.0;
+                    showToast('🔍 Demo State: Funded Wallet (100 USDC Ready)');
+                }
+                syncLandingPageUI();
+            });
+        });
+
+        // Network Switching Handler
+        async function handleSwitchToBaseNetwork() {
+            if (window.ethereum) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: '0x14a34' }] // 84532 in hex
+                    });
+                } catch (e) {
+                    console.log('Injected switch notice:', e);
+                }
+            }
+            walletState.chainId = LOCKED.CHAIN_ID;
+            showToast('✅ Switched to Base Sepolia (Chain ID: 84532)');
+            playSound('move');
+            syncLandingPageUI();
+        }
+
+        document.getElementById('btn-switch-network-action')?.addEventListener('click', handleSwitchToBaseNetwork);
+        document.getElementById('hero-switch-network')?.addEventListener('click', handleSwitchToBaseNetwork);
+
+        // Faucet In-App Claim on Zero Balance Card
+        document.getElementById('btn-claim-zero-faucet')?.addEventListener('click', () => {
+            walletState.balanceUSDC += 100.0;
+            state.playerA.balanceUSDC = walletState.balanceUSDC;
+            showToast('💧 Claimed +100.00 Mock USDC! Ready to stake in Arena.');
+            playSound('settle');
+            syncLandingPageUI();
+        });
+
+        // Connect Wallet Modal Triggers & Options
+        function openConnectModal() {
+            document.getElementById('modal-connect-wallet')?.classList.add('open');
+        }
+
+        document.getElementById('btn-connect-wallet-nav')?.addEventListener('click', openConnectModal);
+        document.getElementById('hero-connect-wallet')?.addEventListener('click', openConnectModal);
+        document.getElementById('modal-connect-close')?.addEventListener('click', () => {
+            document.getElementById('modal-connect-wallet')?.classList.remove('open');
+        });
+
+        // Smart Wallet option (Passkey)
+        document.getElementById('btn-wallet-smart')?.addEventListener('click', () => {
+            walletState.connected = true;
+            walletState.chainId = LOCKED.CHAIN_ID;
+            walletState.providerType = 'Coinbase Smart Wallet (Passkey)';
+            document.getElementById('modal-connect-wallet')?.classList.remove('open');
+            showToast('🔑 Connected with Coinbase Smart Wallet (Passkey Onboarding)');
+            playSound('move');
+            syncLandingPageUI();
+        });
+
+        // Browser Extension Injected option
+        document.getElementById('btn-wallet-injected')?.addEventListener('click', async () => {
+            if (window.ethereum) {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    if (accounts && accounts[0]) {
+                        walletState.address = accounts[0];
+                    }
+                } catch (e) {
+                    console.log('Injected request cancelled:', e);
+                }
+            }
+            walletState.connected = true;
+            walletState.chainId = LOCKED.CHAIN_ID;
+            walletState.providerType = 'Injected Browser Wallet';
+            document.getElementById('modal-connect-wallet')?.classList.remove('open');
+            showToast('🦊 Connected with Injected Web3 Provider');
+            playSound('move');
+            syncLandingPageUI();
+        });
+
+        // Instant Sandbox Option
+        document.getElementById('btn-wallet-sandbox')?.addEventListener('click', () => {
+            walletState.connected = true;
+            walletState.chainId = LOCKED.CHAIN_ID;
+            walletState.balanceUSDC = 100.0;
+            state.playerA.balanceUSDC = 100.0;
+            walletState.providerType = 'Instant Judge Sandbox';
+            document.getElementById('modal-connect-wallet')?.classList.remove('open');
+            showToast('⚡ Connected with Instant Judge Sandbox (Base Sepolia)');
+            playSound('move');
+            syncLandingPageUI();
+        });
+
+        // Enter Arena buttons with PRD §21 Guard
         document.getElementById('btn-nav-enter-arena')?.addEventListener('click', () => {
+            if (!canParticipateInMatch()) return;
             window.showArenaView();
         });
         document.getElementById('hero-play-arena')?.addEventListener('click', () => {
+            if (!canParticipateInMatch()) return;
             window.showArenaView();
         });
         document.getElementById('hero-quick-match')?.addEventListener('click', () => {
+            if (!canParticipateInMatch()) return;
             startNewMatch(10.0, 1);
             window.showArenaView();
             showToast('⚡ Quick Match Initialized (10 USDC Pot on Base Sepolia)');
@@ -2029,19 +2437,17 @@
 
         // Settings: Faucet Claim
         document.getElementById('setting-faucet-btn')?.addEventListener('click', () => {
-            state.playerA.balanceUSDC += 100.0;
-            const balStr = `${state.playerA.balanceUSDC.toFixed(2)} USDC`;
-            const balEl = document.getElementById('landing-usdc-bal');
-            if (balEl) balEl.textContent = balStr;
-            const headerBal = document.getElementById('header-usdc-bal');
-            if (headerBal) headerBal.textContent = balStr;
+            walletState.balanceUSDC += 100.0;
+            state.playerA.balanceUSDC = walletState.balanceUSDC;
             showToast('💧 Claimed +100.00 Mock USDC from Base Sepolia Faucet!');
             playSound('settle');
+            syncLandingPageUI();
         });
 
         // Lobby Challenge Buttons: Join Match
         document.querySelectorAll('.btn-join-match').forEach(btn => {
             btn.addEventListener('click', () => {
+                if (!canParticipateInMatch()) return;
                 const stake = parseFloat(btn.dataset.stake || '10');
                 const tc = parseInt(btn.dataset.tc || '1', 10);
                 const opp = btn.dataset.opp || 'Opponent';
@@ -2057,6 +2463,7 @@
 
         // Create Challenge from Lobby Card
         document.getElementById('btn-create-lobby-match')?.addEventListener('click', () => {
+            if (!canParticipateInMatch()) return;
             modalLobby.classList.add('open');
         });
 

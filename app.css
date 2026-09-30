@@ -1622,3 +1622,242 @@ input:checked + .slider:before {
     background: rgba(112, 214, 255, 0.15);
     transform: scale(1.08);
 }
+
+/* ==========================================================================
+   PRD ADDENDUM §21: FRONTEND WALLET ONBOARDING & NETWORK STATES
+   ========================================================================== */
+
+/* 1. Judge Demo Bar (PRD §21 / §28 Non-Functional Live Demo Path) */
+.judge-demo-bar {
+    background: rgba(14, 15, 20, 0.95);
+    border: 1px solid rgba(112, 214, 255, 0.25);
+    border-radius: 12px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), inset 0 0 12px rgba(112, 214, 255, 0.05);
+}
+
+.judge-demo-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.judge-badge-tag {
+    font-size: 10px;
+    background: linear-gradient(135deg, rgba(112, 214, 255, 0.2), rgba(167, 139, 250, 0.2));
+    border: 1px solid rgba(112, 214, 255, 0.4);
+    color: var(--accent-cyan);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.judge-demo-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-pure);
+}
+
+.judge-demo-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.demo-chip-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: var(--dim-more);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.demo-chip-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.demo-chip-btn.active {
+    color: #08080a;
+    font-weight: 700;
+    background: linear-gradient(135deg, #70d6ff, #34d399);
+    border-color: transparent;
+    box-shadow: 0 0 14px rgba(112, 214, 255, 0.4);
+}
+
+/* 2. Wrong Network Blocking Prompt (State 2) */
+.network-blocking-card {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(245, 158, 11, 0.08));
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+    animation: pulseBlockingAlert 3s ease-in-out infinite;
+}
+
+@keyframes pulseBlockingAlert {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.45); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); }
+    50% { border-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 32px rgba(245, 158, 11, 0.3); }
+}
+
+.blocking-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.blocking-title {
+    font-family: var(--font-coppergold);
+    font-size: 17px;
+    font-weight: 700;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.blocking-desc {
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+}
+
+/* 3. Zero-Balance Faucet Prompt Card (State 3) */
+.zero-balance-faucet-card {
+    background: linear-gradient(135deg, rgba(112, 214, 255, 0.1), rgba(52, 211, 153, 0.08));
+    border: 1px solid rgba(112, 214, 255, 0.4);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 0 28px rgba(112, 214, 255, 0.18);
+}
+
+.zero-balance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.zero-balance-title {
+    font-family: var(--font-coppergold);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.zero-balance-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-primary-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--ink-pure);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-link:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* 4. Connect Wallet Modal Options */
+.wallet-opt-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.wallet-opt-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+    width: 100%;
+}
+
+.wallet-opt-card:hover {
+    background: rgba(112, 214, 255, 0.08);
+    border-color: var(--accent-cyan);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(112, 214, 255, 0.15);
+}
+
+.wallet-opt-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.wallet-opt-icon {
+    font-size: 26px;
+}
+
+.wallet-opt-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #ffffff;
+}
+
+.wallet-opt-desc {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 3px;
+}
+
+.wallet-opt-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--accent-green);
+    background: rgba(52, 211, 153, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
