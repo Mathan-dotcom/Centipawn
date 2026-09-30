@@ -30,7 +30,7 @@ try {
 
 const PORT = process.env.PORT || 3000;
 const BASE_CHAIN_ID = 84532; // Base Sepolia Testnet
-const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT || '0xBe5cD1b1c18e1aAb2360C9333eE9b941A2EA7eAc';
+const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT || '0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0';
 
 // Circle Official Base Sepolia Testnet USDC Contract Address (Exact 42 hex chars checksummed)
 const OFFICIAL_BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';

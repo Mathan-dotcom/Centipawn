@@ -10,9 +10,9 @@ Centipawn Chess replaces binary winner-take-all wagering with a continuous, eval
 
 | Component | Address / Identifier | BaseScan Link |
 | :--- | :--- | :--- |
-| **EvalStakeEscrow Contract** | `0xBe5cD1b1c18e1aAb2360C9333eE9b941A2EA7eAc` | [View on BaseScan](https://sepolia.basescan.org/address/0xBe5cD1b1c18e1aAb2360C9333eE9b941A2EA7eAc) |
+| **EvalStakeEscrow Contract** | `0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0` | [View on BaseScan](https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0) |
 | **Circle Testnet USDC** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [View on BaseScan](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
-| **Trusted Oracle Signer** | `0x0BB6F08D2bf966b87CFBdCBce81efBF1a3F661a6` | [View on BaseScan](https://sepolia.basescan.org/address/0x0BB6F08D2bf966b87CFBdCBce81efBF1a3F661a6) |
+| **Trusted Oracle Signer** | `0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9` | [View on BaseScan](https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9) |
 
 ---
 
@@ -21,14 +21,14 @@ Centipawn Chess replaces binary winner-take-all wagering with a continuous, eval
 The full on-chain wagering and settlement lifecycle has been executed and confirmed on Base Sepolia:
 
 1. **Escrow Contract Deployment**:  
-   [`0x6b44b75301ed2217c2d2c980a001aa59d68240512a8c38f3dd3706eeed78aa64`](https://sepolia.basescan.org/tx/0x6b44b75301ed2217c2d2c980a001aa59d68240512a8c38f3dd3706eeed78aa64)
+   [`0x8bd6d6e1fa32f7e80b131fd79730980725fad09e98e0b5d60c6d9f715494b4cf`](https://sepolia.basescan.org/tx/0x8bd6d6e1fa32f7e80b131fd79730980725fad09e98e0b5d60c6d9f715494b4cf)
 2. **Player A Match Creation & USDC Stake Deposit (`createMatch`)**:  
-   [`0x482e677c3220a103306c3963bc60e6b670ac234eb4ef3b059a618b1317a0b49b`](https://sepolia.basescan.org/tx/0x482e677c3220a103306c3963bc60e6b670ac234eb4ef3b059a618b1317a0b49b)
+   [`0xe739785725e8a87f06a5d839503d43ccd4c31f5654f576a2149091b8e1f598b8`](https://sepolia.basescan.org/tx/0xe739785725e8a87f06a5d839503d43ccd4c31f5654f576a2149091b8e1f598b8)
 3. **Player B Matching Stake Deposit (`joinMatch`)**:  
-   [`0x2ccacd59d745fc2e154f97bd61524c225e6e100ebbf9cf482f2fa45e43acb79e`](https://sepolia.basescan.org/tx/0x2ccacd59d745fc2e154f97bd61524c225e6e100ebbf9cf482f2fa45e43acb79e)
+   [`0xc232f0ea87ae41eb1539e770f84701157e57e0e24db04d67d10d3b628e45b66f`](https://sepolia.basescan.org/tx/0xc232f0ea87ae41eb1539e770f84701157e57e0e24db04d67d10d3b628e45b66f)
 4. **Oracle Live Settlement & USDC Payout Disbursement (`settle`)**:  
-   [`0xaaa92064aa5e611b663d50cffd0a7c51ab0a6f450cadcc766ac7dade0931073f`](https://sepolia.basescan.org/tx/0xaaa92064aa5e611b663d50cffd0a7c51ab0a6f450cadcc766ac7dade0931073f)  
-   - Status: **1 (SUCCESS)** (Block `47496161`)  
+   [`0x1963398edfef7f103efa80c8cd3f8922d550f26b6c88a287e34712464c1cb605`](https://sepolia.basescan.org/tx/0x1963398edfef7f103efa80c8cd3f8922d550f26b6c88a287e34712464c1cb605)  
+   - Status: **1 (SUCCESS)** (Block `47496728`)  
    - Disbursed exact payouts on-chain: `0.07178 USDC` to Player A and `0.12822 USDC` to Player B (Sum = `0.20000 USDC`, 0 dust).
 
 ---
