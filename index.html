@@ -40,8 +40,6 @@
         height: 100%;
         background: var(--bg);
         overflow: hidden;
-        touch-action: none;
-        overscroll-behavior: none;
         color: var(--ink);
         font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
         -webkit-font-smoothing: antialiased;
@@ -741,7 +739,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         let pDownX = 0, pDownY = 0, pDownTime = 0;
 
         window.addEventListener('pointermove', e => {
-            if (!loaderDone || isZooming) return;
+            if (!is3DActive || !loaderDone || isZooming) return;
             mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
             mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
             if (dragging) {
@@ -757,7 +755,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         }, { passive: true });
 
         window.addEventListener('pointerdown', e => {
-            if (!loaderDone || isZooming) return;
+            if (!is3DActive || !loaderDone || isZooming) return;
             if (e.target && e.target.closest("#app-container, #landing-page, #arena-container, .modal-overlay, button, input, select, textarea")) return;
             if (inQuad(e.clientX, e.clientY)) {
                 dragging = true; moved = 0; lastPX = e.clientX; lastPY = e.clientY;
@@ -767,7 +765,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         });
 
         window.addEventListener('pointerup', e => {
-            if (!loaderDone || isZooming) return;
+            if (!is3DActive || !loaderDone || isZooming) return;
             if (dragging) {
                 dragging = false; release = 0.6;
                 const dist = Math.hypot(e.clientX - pDownX, e.clientY - pDownY);
@@ -828,6 +826,16 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
 
         window.togglePaperZoom = togglePaperZoom;
         window.transitionToLandingPage = function() {
+            is3DActive = false;
+            if (animFrameId) {
+                cancelAnimationFrame(animFrameId);
+                animFrameId = null;
+            }
+            cursorNow = '';
+            document.body.style.cursor = '';
+            hoverTarget = 0;
+            hover = 0;
+
             const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn'];
             starterIds.forEach(id => {
                 const el = document.getElementById(id);
@@ -863,6 +871,11 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             if (window.hideLandingPage) {
                 window.hideLandingPage();
             }
+            if (!is3DActive) {
+                is3DActive = true;
+                clock.start();
+                animFrameId = requestAnimationFrame(frame);
+            }
             if (isZoomed) {
                 togglePaperZoom();
             }
@@ -891,9 +904,15 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         const lightPos = new T.Vector3();
         let intro = 0;
         let quadTick = 0;
+        let is3DActive = true;
+        let animFrameId = null;
 
         function frame() {
-            requestAnimationFrame(frame);
+            if (!is3DActive) {
+                if (cursorNow) { cursorNow = ''; document.body.style.cursor = ''; }
+                return;
+            }
+            animFrameId = requestAnimationFrame(frame);
 
             // Tab hidden: skip all computation
             if (document.hidden) return;
@@ -1046,6 +1065,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         };
     })();
 </script>
+<script src="lib/ethers.js"></script>
 <script src="lib/chess.js"></script>
 <script src="app.js"></script>
 </body>

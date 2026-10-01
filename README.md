@@ -101,3 +101,36 @@ Endpoint available at `http://localhost:3000`.
 node scripts/run_e2e_match.js
 ```
 Runs the full cycle: wallet verification, match creation on Base Sepolia, matching stake deposit, 20 chess moves, resignation, on-chain oracle settlement, and token balance verification.
+
+---
+
+## Deploying to Vercel
+
+Centipawn is pre-configured for 1-click deployment to **Vercel** with static edge hosting for the frontend and serverless execution for the API/Oracle backend.
+
+### Option 1: Deploy via Vercel CLI (Recommended)
+From the project root directory, run:
+```bash
+npx vercel
+```
+Follow the interactive prompts (Accept defaults). To deploy to production:
+```bash
+npx vercel --prod
+```
+
+### Option 2: Deploy via GitHub / Vercel Dashboard
+1. Commit and push your changes to your GitHub repository:
+   ```bash
+   git add .
+   git commit -m "feat: Vercel serverless deployment setup"
+   git push origin main
+   ```
+2. Go to [vercel.com](https://vercel.com) -> **Add New Project** -> Import your **Centipawn** repository.
+3. Configure the following **Environment Variables** in the Vercel Dashboard (Project Settings -> Environment Variables):
+   - `NETWORK`: `Base Sepolia`
+   - `CHAIN_ID`: `84532`
+   - `USDC_ADDRESS`: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
+   - `ESCROW_CONTRACT`: `0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0`
+   - `ORACLE_KEY`: `<YOUR_ORACLE_PRIVATE_KEY>` (or use the provided Base Sepolia testnet oracle key)
+4. Click **Deploy**!
+

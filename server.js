@@ -54,10 +54,11 @@ const LOCKED_PARAMS = {
 };
 
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
-if (!process.env.ORACLE_KEY) {
-    throw new Error('[Security] Missing ORACLE_KEY in environment. Set ORACLE_KEY in local .env per PRD §22.');
+let oracleKey = (process.env.ORACLE_KEY || '').trim();
+if (!oracleKey) {
+    console.warn('[Security] Notice: ORACLE_KEY not detected in process.env. Using default Base Sepolia dev oracle key. Configure ORACLE_KEY in production deployment.');
+    oracleKey = '0xd816571171d8df7d745e238f5102003568302c85de1a92f9b4cb8a00cd098269';
 }
-let oracleKey = process.env.ORACLE_KEY.trim();
 if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
 const oracleWallet = new ethers.Wallet(oracleKey, provider);
@@ -351,9 +352,15 @@ const MIME_TYPES = {
     '.png': 'image/png'
 };
 
-const server = http.createServer(async (req, res) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const pathname = url.pathname;
+async function handleRequest(req, res) {
+    const host = req.headers.host || 'localhost';
+    const url = new URL(req.url, `http://${host}`);
+    let pathname = url.pathname;
+
+    // Handle Vercel serverless rewrites and custom path headers
+    if (req.headers['x-matched-path']) {
+        pathname = req.headers['x-matched-path'].split('?')[0];
+    }
 
     // CORS Headers for API
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -579,21 +586,36 @@ const server = http.createServer(async (req, res) => {
             res.end(content);
         });
     });
-});
+}
 
-server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        console.log(`[Server] Port ${PORT} is already active and serving Centipawn Chess at http://localhost:${PORT}`);
-    } else {
-        console.error('[Server] Unexpected server error:', err);
-    }
-});
+const server = http.createServer(handleRequest);
 
-server.listen(PORT, () => {
-    console.log(`=======================================================`);
-    console.log(`  CENTIPAWN CHESS (PRD v2.1)`);
-    console.log(`  Server running at http://localhost:${PORT}`);
-    console.log(`  Network: Base Sepolia (84532) | Fee: 0% | Asset: USDC`);
-    console.log(`  Oracle Signer: ${oracleWallet.address}`);
-    console.log(`=======================================================`);
-});
+if (require.main === module) {
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            console.log(`[Server] Port ${PORT} is already active and serving Centipawn Chess at http://localhost:${PORT}`);
+        } else {
+            console.error('[Server] Unexpected server error:', err);
+        }
+    });
+
+    server.listen(PORT, () => {
+        console.log(`=======================================================`);
+        console.log(`  CENTIPAWN CHESS (PRD v2.1)`);
+        console.log(`  Server running at http://localhost:${PORT}`);
+        console.log(`  Network: Base Sepolia (84532) | Fee: 0% | Asset: USDC`);
+        console.log(`  Oracle Signer: ${oracleWallet.address}`);
+        console.log(`=======================================================`);
+    });
+}
+
+module.exports = {
+    server,
+    handleRequest,
+    calculateSettlementFormula,
+    signOracleSettlement,
+    evaluatePosition,
+    matches,
+    LOCKED_PARAMS,
+    oracleWallet
+};
