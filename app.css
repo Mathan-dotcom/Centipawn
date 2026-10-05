@@ -106,12 +106,15 @@ h1, h2, h3, h4, h5, h6,
 
 #landing-cursor-glow {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 420px;
     height: 420px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 1;
-    transform: translate(-50%, -50%);
+    transform: translate3d(-9999px, -9999px, 0);
+    will-change: transform, opacity;
     background: radial-gradient(circle, rgba(112, 214, 255, 0.16) 0%, rgba(167, 139, 250, 0.08) 35%, rgba(8, 8, 10, 0) 70%);
     opacity: 0;
     transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
@@ -205,6 +208,8 @@ h1, h2, h3, h4, h5, h6,
     text-align: center;
     gap: 20px;
     padding: 24px 0 10px;
+    opacity: 1 !important;
+    transform: none !important;
 }
 
 .hero-pill-badge {
@@ -395,6 +400,200 @@ h1, h2, h3, h4, h5, h6,
     margin: 0 auto 22px auto;
     line-height: 1.6;
 }
+
+/* ==========================================================================
+   MINIMALIST PRODUCT LANDING PAGE (PRD v2.1)
+   ========================================================================== */
+.landing-pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+}
+
+@media (max-width: 860px) {
+    .landing-pillars {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pillar-card {
+    background: rgba(14, 15, 20, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 26px 22px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pillar-card:hover {
+    border-color: rgba(112, 214, 255, 0.35);
+    background: rgba(18, 22, 32, 0.82);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.pillar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pillar-index {
+    font-size: 11px;
+    color: var(--accent-cyan);
+    letter-spacing: 0.15em;
+    font-weight: 700;
+}
+
+.pillar-icon {
+    font-size: 20px;
+}
+
+.pillar-title {
+    font-family: var(--font-coppergold);
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pillar-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--dim-more);
+}
+
+/* Minimalist On-Chain Verification Capsule */
+.landing-contract-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(14, 15, 20, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    padding: 16px 24px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    width: 100%;
+}
+
+.contract-pill-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.contract-pill-label {
+    font-size: 9px;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+.contract-pill-val {
+    font-size: 11px;
+    color: var(--accent-cyan);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.contract-pill-val:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.contract-pill-val.fee-free {
+    color: var(--accent-green);
+    font-weight: 600;
+}
+
+.contract-strip-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.contract-strip-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Footer */
+.landing-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 0 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.footer-social-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.footer-social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 13px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.footer-social-link svg {
+    flex-shrink: 0;
+    transition: transform 0.22s ease;
+}
+
+.footer-social-link:hover {
+    transform: translateY(-1.5px);
+}
+
+.footer-social-link:hover svg {
+    transform: scale(1.12);
+}
+
+.footer-social-link.github:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.32);
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.08);
+}
+
+.footer-social-link.linkedin:hover {
+    color: #70d6ff;
+    background: rgba(10, 102, 194, 0.12);
+    border-color: rgba(112, 214, 255, 0.45);
+    box-shadow: 0 4px 16px rgba(10, 102, 194, 0.22);
+}
+
 
 /* Minimalist Arena Hub (Segmented Tabs + Focused Panel) */
 .landing-hub-container {
