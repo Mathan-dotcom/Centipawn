@@ -240,7 +240,7 @@
         initScrollReveal();
         syncLandingPageUI();
 
-        // Reveal the application HUD when the starter 5s loader finishes
+        // 3D Starter Page is displayed first. Landing page opens when user clicks "ENTER CENTIPAWN CHESS" or zooms.
         waitForLoaderDone();
     }
 
@@ -251,7 +251,11 @@
             skipBtn.id = 'loader-skip-btn';
             skipBtn.innerHTML = '<span>EXPLORE 3D STARTER</span> <span>➔</span>';
             skipBtn.onclick = () => {
-                loader.classList.add('done');
+                if (window.dismissLoader) {
+                    window.dismissLoader();
+                } else {
+                    loader.classList.add('done');
+                }
             };
             loader.appendChild(skipBtn);
         }
@@ -325,12 +329,7 @@
         // -------------------------------------------------------------
         const prdState = getPRDWalletState();
 
-        // 1. Update Judge Live Demo Bar chips
-        document.querySelectorAll('.demo-chip-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.demoState === prdState);
-        });
-
-        // 2. Navigation bar: Wallet & Network status
+        // 1. Navigation bar: Wallet & Network status
         const navConnectBtn = document.getElementById('btn-connect-wallet-nav');
         const navWalletBadge = document.getElementById('landing-wallet-badge');
         const navNetBadge = document.getElementById('nav-network-badge');
@@ -356,45 +355,7 @@
             }
         }
 
-        // 2b. Overview Only vs. Full Features Toggle
-        // When not logged in: show only Overview (hero + locked teaser)
-        // Once logged in: reveal full interactive features (Lobby, Profile, Telemetry, Settings)
-        const isUserLoggedIn = walletState.connected;
-        const featuresContainer = document.getElementById('landing-features-container');
-        const lockedCard = document.getElementById('landing-features-locked-card');
-        const navFeatureLinks = document.querySelectorAll('.landing-nav-btn[data-nav-tab]');
-        const navEnterArenaBtn = document.getElementById('btn-nav-enter-arena');
-
-        navFeatureLinks.forEach(link => {
-            link.style.display = isUserLoggedIn ? 'inline-flex' : 'none';
-        });
-
-        if (navEnterArenaBtn) {
-            navEnterArenaBtn.style.display = isUserLoggedIn ? 'inline-flex' : 'none';
-        }
-
-        if (isUserLoggedIn) {
-            if (featuresContainer) {
-                featuresContainer.style.display = 'block';
-                setTimeout(() => {
-                    featuresContainer.classList.add('unlocked');
-                    if (window.refreshScrollReveal) window.refreshScrollReveal();
-                }, 20);
-            }
-            if (lockedCard) {
-                lockedCard.style.display = 'none';
-            }
-        } else {
-            if (featuresContainer) {
-                featuresContainer.classList.remove('unlocked');
-                featuresContainer.style.display = 'none';
-            }
-            if (lockedCard) {
-                lockedCard.style.display = 'block';
-            }
-        }
-
-        // 3. Balance & Address Badges
+        // 2. Balance & Address Badges
         const balStr = `${walletState.balanceUSDC.toFixed(2)} USDC`;
         const balEl = document.getElementById('landing-usdc-bal');
         if (balEl) {
@@ -413,148 +374,25 @@
             headerAddr.textContent = `${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`;
         }
 
-        // 4. Blocking Card & Zero-Balance Faucet Prompts
-        const blockingCard = document.getElementById('card-wrong-network');
-        if (blockingCard) {
-            blockingCard.style.display = prdState === 'WRONG_NETWORK' ? 'flex' : 'none';
-            const chainDisplay = document.getElementById('current-chain-display');
-            if (chainDisplay) chainDisplay.textContent = `Chain ID: ${walletState.chainId} (Ethereum Mainnet)`;
-        }
+        // 3. Public landing page maintains minimal privacy (no balance cards or sensitive data displayed on landing)
 
-        const faucetCard = document.getElementById('card-zero-balance');
-        if (faucetCard) {
-            faucetCard.style.display = prdState === 'ZERO_BALANCE' ? 'flex' : 'none';
-        }
-
-        // 5. Hero Dynamic Action Row
+        // 4. Hero Dynamic Action Row
         const heroConnect = document.getElementById('hero-connect-wallet');
-        const heroPlay = document.getElementById('hero-play-arena');
-        const heroQuick = document.getElementById('hero-quick-match');
         const heroSwitch = document.getElementById('hero-switch-network');
         const heroNote = document.getElementById('hero-onboarding-note');
 
         if (prdState === 'DISCONNECTED') {
             if (heroConnect) heroConnect.style.display = 'inline-flex';
-            if (heroPlay) heroPlay.style.display = 'none';
-            if (heroQuick) heroQuick.style.display = 'none';
             if (heroSwitch) heroSwitch.style.display = 'none';
             if (heroNote) heroNote.style.display = 'block';
         } else if (prdState === 'WRONG_NETWORK') {
             if (heroConnect) heroConnect.style.display = 'none';
-            if (heroPlay) heroPlay.style.display = 'none';
-            if (heroQuick) heroQuick.style.display = 'none';
             if (heroSwitch) heroSwitch.style.display = 'inline-flex';
             if (heroNote) heroNote.style.display = 'none';
-        } else if (prdState === 'ZERO_BALANCE') {
+        } else {
             if (heroConnect) heroConnect.style.display = 'none';
-            if (heroPlay) heroPlay.style.display = 'inline-flex';
-            if (heroQuick) heroQuick.style.display = 'inline-flex';
             if (heroSwitch) heroSwitch.style.display = 'none';
             if (heroNote) heroNote.style.display = 'none';
-        } else { // FUNDED
-            if (heroConnect) heroConnect.style.display = 'none';
-            if (heroPlay) heroPlay.style.display = 'inline-flex';
-            if (heroQuick) heroQuick.style.display = 'inline-flex';
-            if (heroSwitch) heroSwitch.style.display = 'none';
-            if (heroNote) heroNote.style.display = 'none';
-        }
-
-        // 6. Lobby Challenge Table & Create Button Guard Labels
-        document.querySelectorAll('.btn-join-match').forEach(btn => {
-            if (prdState === 'DISCONNECTED') {
-                btn.textContent = '🔑 Connect Wallet';
-            } else if (prdState === 'WRONG_NETWORK') {
-                btn.textContent = '⚠️ Switch Network';
-            } else if (prdState === 'ZERO_BALANCE') {
-                btn.textContent = '💧 Claim USDC First';
-            } else {
-                btn.textContent = 'Join Match';
-            }
-        });
-
-        const createLobbyBtn = document.getElementById('btn-create-lobby-match');
-        if (createLobbyBtn) {
-            if (prdState === 'DISCONNECTED') {
-                createLobbyBtn.innerHTML = '🔑 Connect Wallet to Create Challenge';
-            } else if (prdState === 'WRONG_NETWORK') {
-                createLobbyBtn.innerHTML = '⚠️ Switch to Base to Create Challenge';
-            } else if (prdState === 'ZERO_BALANCE') {
-                createLobbyBtn.innerHTML = '💧 Claim Testnet USDC to Stake';
-            } else {
-                createLobbyBtn.innerHTML = '⚡ Create Custom Challenge';
-            }
-        }
-
-        // 7. Player Registration Onboarding Step Sync (§21)
-        const regAddrInput = document.getElementById('reg-wallet-addr');
-        if (regAddrInput) {
-            regAddrInput.value = walletState.connected ? walletState.address : 'Wallet Not Connected';
-        }
-
-        const step1El = document.getElementById('reg-step-1');
-        const step2El = document.getElementById('reg-step-2');
-        const step3El = document.getElementById('reg-step-3');
-        const step4El = document.getElementById('reg-step-4');
-        const regMsgEl = document.getElementById('reg-onboarding-msg');
-        const regActionsEl = document.getElementById('reg-onboarding-actions');
-
-        if (step1El && step2El && step3El && step4El && regMsgEl) {
-            if (prdState === 'DISCONNECTED') {
-                step1El.style.color = '#fbbf24';
-                step2El.style.color = 'var(--dim)';
-                step3El.style.color = 'var(--dim)';
-                step4El.style.color = 'var(--dim)';
-                regMsgEl.innerHTML = '<span style="color:#fbbf24;">● Step 1: Wallet not connected.</span> Connect Coinbase Smart Wallet or Injected Web3 to register.';
-                if (regActionsEl) {
-                    regActionsEl.style.display = 'block';
-                    regActionsEl.innerHTML = '<button class="btn-primary" id="btn-reg-connect" style="font-size:11px;padding:6px 12px;background:linear-gradient(135deg,#70d6ff,#a78bfa);color:#08080a;font-weight:700;">🔑 Connect Wallet</button>';
-                    document.getElementById('btn-reg-connect')?.addEventListener('click', () => {
-                        document.getElementById('modal-connect-wallet')?.classList.add('open');
-                    });
-                }
-            } else if (prdState === 'WRONG_NETWORK') {
-                step1El.style.color = 'var(--accent-green)';
-                step2El.style.color = '#ef4444';
-                step3El.style.color = 'var(--dim)';
-                step4El.style.color = 'var(--dim)';
-                regMsgEl.innerHTML = `<span style="color:#ef4444;">● Step 2: Connected to wrong network (${walletState.chainId}).</span> Switch to Base Sepolia (84532) to continue.`;
-                if (regActionsEl) {
-                    regActionsEl.style.display = 'block';
-                    regActionsEl.innerHTML = '<button class="btn-primary" id="btn-reg-switch" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;font-weight:700;">🔄 Switch to Base Sepolia</button>';
-                    document.getElementById('btn-reg-switch')?.addEventListener('click', () => {
-                        document.getElementById('btn-switch-network-action')?.click();
-                    });
-                }
-            } else if (prdState === 'ZERO_BALANCE') {
-                step1El.style.color = 'var(--accent-green)';
-                step2El.style.color = 'var(--accent-green)';
-                step3El.style.color = '#fbbf24';
-                step4El.style.color = 'var(--dim)';
-                regMsgEl.innerHTML = '<span style="color:#fbbf24;">● Step 3: Zero USDC Balance (Fresh Wallet).</span> Claim real testnet tokens from official faucets to activate identity & stake.';
-                if (regActionsEl) {
-                    regActionsEl.style.display = 'block';
-                    regActionsEl.innerHTML = `
-                        <div style="display:flex;gap:8px;align-items:center;">
-                            <button class="btn-primary" id="btn-reg-recheck" style="font-size:11px;padding:6px 12px;background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">🔄 Check Balance Again</button>
-                            <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="font-size:10px;padding:4px 8px;">Base ETH ↗</a>
-                            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="font-size:10px;padding:4px 8px;">Circle USDC ↗</a>
-                        </div>
-                    `;
-                    document.getElementById('btn-reg-recheck')?.addEventListener('click', () => {
-                        document.getElementById('btn-recheck-balance')?.click();
-                    });
-                }
-            } else { // FUNDED
-                step1El.style.color = 'var(--accent-green)';
-                step2El.style.color = 'var(--accent-green)';
-                step3El.style.color = 'var(--accent-green)';
-                step4El.style.color = 'var(--accent-green)';
-                regMsgEl.innerHTML = `<span style="color:var(--accent-green);">● Step 4 Ready:</span> Wallet verified (${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}) with ${walletState.balanceUSDC.toFixed(2)} USDC. Ready to save profile & stake.`;
-                if (regActionsEl) {
-                    regActionsEl.style.display = 'none';
-                    regActionsEl.innerHTML = '';
-                }
-            }
         }
     }
 
@@ -570,8 +408,12 @@
             landing.style.display = 'flex';
             void landing.offsetWidth;
             landing.classList.add('active');
+            landing.querySelectorAll('.scroll-reveal').forEach(el => el.classList.add('revealed'));
         }
         syncLandingPageUI();
+        if (window.refreshScrollReveal) {
+            setTimeout(window.refreshScrollReveal, 100);
+        }
         if (window.startLandingWallpaper) {
             window.startLandingWallpaper();
         }
@@ -627,39 +469,27 @@
         const landing = document.createElement('div');
         landing.id = 'landing-page';
         landing.innerHTML = `
-            <!-- Sticky Landing Navigation -->
+            <!-- Sticky Minimalist Navigation -->
             <header class="landing-nav">
-                <div class="brand-section">
-                    <div class="brand-logo" id="landing-brand-logo">
-                        <div class="brand-glyph">♟</div>
-                        <span class="brand-name">CENTIPAWN</span>
-                    </div>
-                    <span class="brand-badge mono">BASE PROTOCOL</span>
-                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:11px;">● 84532 TESTNET</span>
+                <div class="brand-section" id="landing-brand-logo" style="cursor:pointer;">
+                    <div class="brand-glyph">♟</div>
+                    <span class="brand-name">CENTIPAWN</span>
+                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:10px;margin-left:6px;">● 84532 TESTNET</span>
                 </div>
 
-                <nav class="landing-nav-links">
-                    <a href="#landing-hero" class="landing-nav-btn active">Overview</a>
-                    <a href="#tab-lobby" class="landing-nav-btn" data-nav-tab="tab-lobby">Lobby</a>
-                    <a href="#tab-profile" class="landing-nav-btn" data-nav-tab="tab-profile">Profile</a>
-                    <a href="#tab-stats" class="landing-nav-btn" data-nav-tab="tab-stats">Telemetry</a>
-                    <a href="#tab-settings" class="landing-nav-btn" data-nav-tab="tab-settings">Settings</a>
-                </nav>
-
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <button class="btn-primary" id="btn-view-3d-starter" style="padding:8px 14px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);">
-                        📜 3D Starter
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <button class="btn-primary" id="btn-view-3d-starter" style="padding:7px 13px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);">
+                        📜 3D Certificate
                     </button>
-                    <button class="btn-hero-primary" id="btn-connect-wallet-nav" style="display:none;padding:8px 16px;font-size:12px;">
+                    <button class="btn-hero-primary" id="btn-connect-wallet-nav" style="padding:7px 15px;font-size:12px;">
                         🔑 Connect Wallet
                     </button>
-                    <button class="btn-hero-primary" id="btn-nav-enter-arena" style="padding:8px 18px;font-size:13px;">
-                        ⚔️ Play Arena
+                    <button class="btn-hero-primary" id="btn-nav-enter-arena" style="padding:7px 16px;font-size:12px;">
+                        ⚔️ Enter Arena
                     </button>
-                    <div class="wallet-badge-btn" id="landing-wallet-badge">
+                    <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
                         <div class="wallet-status-dot"></div>
-                        <span class="wallet-balance" id="landing-usdc-bal">100.00 USDC</span>
-                        <span class="wallet-address" id="landing-addr">0x892a...42c1</span>
+                        <span class="wallet-address" id="landing-addr">0x0000...0000</span>
                     </div>
                 </div>
             </header>
@@ -670,77 +500,12 @@
 
             <!-- Main Landing Content Scroll Area -->
             <div class="landing-content">
-                <!-- PRD §21 / §28 Live Demo State Bar for Judges & Evaluators -->
-                <div class="judge-demo-bar scroll-reveal" id="judge-demo-bar">
-                    <span class="judge-badge-tag">§21 ONBOARDING DEMO</span>
-                    <button class="demo-chip-btn" data-demo-state="DISCONNECTED">
-                        <span>🔑</span>
-                        <span>1. Disconnected</span>
-                    </button>
-                    <button class="demo-chip-btn" data-demo-state="WRONG_NETWORK">
-                        <span>⚠️</span>
-                        <span>2. Wrong Network</span>
-                    </button>
-                    <button class="demo-chip-btn" data-demo-state="ZERO_BALANCE">
-                        <span>💧</span>
-                        <span>3. Zero USDC (Fresh)</span>
-                    </button>
-                    <button class="demo-chip-btn active" data-demo-state="FUNDED">
-                        <span>⚡</span>
-                        <span>4. Funded (Ready)</span>
-                    </button>
-                </div>
-
-                <!-- PRD §21: Wrong Network Blocking Card -->
-                <div class="network-blocking-card scroll-reveal" id="card-wrong-network" style="display:none;">
-                    <div class="blocking-icon">⚠️</div>
-                    <div class="blocking-content">
-                        <div class="blocking-header">
-                            <h3 class="blocking-title">Wrong Network Detected</h3>
-                            <span class="blocking-badge" id="current-chain-display">Chain ID: 1 (Mainnet)</span>
-                        </div>
-                        <p class="blocking-desc">
-                            Centipawn's proportional escrow smart contracts and USDC liquidity are deployed exclusively on <strong>Base Sepolia (Chain ID: 84532)</strong>. Match creation and joining are blocked until you switch to Base.
-                        </p>
-                        <div class="blocking-actions">
-                            <button class="btn-hero-primary" id="btn-switch-network-action" style="background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
-                                🔄 Switch to Base Sepolia
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PRD §21: Zero USDC Balance Faucet Prompt Card -->
-                <div class="zero-balance-faucet-card scroll-reveal" id="card-zero-balance" style="display:none;">
-                    <div class="zero-balance-icon">💧</div>
-                    <div class="zero-balance-content">
-                        <div class="zero-balance-header">
-                            <h3 class="zero-balance-title">Fresh Wallet Detected — Testnet USDC Required</h3>
-                            <span class="zero-balance-badge">BALANCE: 0.00 USDC</span>
-                        </div>
-                        <p class="zero-balance-desc">
-                            Welcome judge / new player! Since your fresh Base Sepolia wallet has 0.00 USDC, claim real testnet tokens from the official faucets below, then click "Check Balance Again" to verify on-chain.
-                        </p>
-                        <div class="zero-balance-actions">
-                            <button class="btn-hero-primary" id="btn-recheck-balance" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
-                                🔄 Check Balance Again
-                            </button>
-                            <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
-                                ↗ Base Sepolia ETH Faucet (Gas)
-                            </a>
-                            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link">
-                                ↗ Circle Testnet USDC Faucet
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hero Section -->
+                <!-- Minimalist Hero Section -->
                 <section class="landing-hero scroll-reveal" id="landing-hero">
-                    <div class="hero-pill-badge mono">BASE SEPOLIA // ZERO-KNOWLEDGE CHESS PROTOCOL</div>
-                    <h1 class="hero-title">The Proportional-Payout Web3 Chess Arena</h1>
+                    <div class="hero-pill-badge mono">BASE SEPOLIA // PROPORTIONAL ESCROW</div>
+                    <h1 class="hero-title">Continuous Chess Escrow</h1>
                     <p class="hero-subtitle">
-                        No more binary all-or-nothing forfeits. Resign at any moment past Ply 20 and salvage your centipawn equity on-chain with zero-knowledge cryptographic certainty.
+                        Position determines payout. Resign past Move 10 and salvage your live Stockfish position equity on Base Sepolia with zero house rake.
                     </p>
                     <div class="hero-actions-row">
                         <button class="btn-hero-primary" id="hero-connect-wallet" style="display:none;">
@@ -750,376 +515,108 @@
                             ⚠️ SWITCH TO BASE SEPOLIA ➔
                         </button>
                         <button class="btn-hero-primary" id="hero-play-arena">
-                            ⚔️ ENTER LIVE CHESS ARENA ➔
+                            ⚔️ ENTER LIVE ARENA ➔
                         </button>
-                        <button class="btn-hero-secondary" id="hero-quick-match">
-                            ⚡ QUICK MATCH (10 USDC)
+                        <button class="btn-hero-secondary" id="hero-create-match">
+                            ⚡ CREATE MATCH
+                        </button>
+                        <button class="btn-hero-secondary" id="hero-join-match">
+                            🤝 JOIN MATCH
                         </button>
                         <button class="btn-hero-secondary" id="hero-view-escrow">
-                            📜 PROTOCOL ESCROW SPECS
+                            📜 RULES
                         </button>
                     </div>
-                    <div id="hero-onboarding-note" class="mono" style="display:none;font-size:11px;color:var(--dim);margin-top:12px;text-align:center;">
-                        ⚡ Base-native smart onboarding powered by Coinbase Smart Wallet (Passkey / Google / Apple login — zero seed phrase needed).
+                    <div id="hero-onboarding-note" class="mono" style="font-size:10px;color:var(--dim);margin-top:4px;text-align:center;">
+                        Coinbase Smart Wallet · MetaMask · Rabby · Injected Web3
                     </div>
                 </section>
 
-                <!-- Locked Features Teaser (Displayed only when NOT logged in) -->
-                <div class="features-locked-card scroll-reveal" id="landing-features-locked-card" style="display:none;">
-                    <div class="locked-icon-badge">🔒</div>
-                    <h3 class="locked-title">Protocol Features & Match Arena</h3>
-                    <p class="locked-desc">
-                        Connect your Web3 wallet (Coinbase Smart Wallet, MetaMask, Rabby, or Instant Sandbox) to unlock the live Match Lobby, Player Identity registration, real-time Telemetry, and Arena Settings.
-                    </p>
-                    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-                        <button class="btn-hero-primary" id="btn-unlock-features">
-                            🔑 CONNECT WALLET TO UNLOCK FEATURES ➔
-                        </button>
+                <!-- Minimalist 3-Pillars Grid -->
+                <section class="landing-pillars scroll-reveal">
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">01</span>
+                            <span class="pillar-icon">⚖️</span>
+                        </div>
+                        <h3 class="pillar-title">Proportional Payouts</h3>
+                        <p class="pillar-desc">
+                            Resign past Move 10 to salvage 5%–95% of the pot based on real-time Stockfish win probability. Never forfeit everything on a close endgame.
+                        </p>
                     </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">02</span>
+                            <span class="pillar-icon">🛡️</span>
+                        </div>
+                        <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
+                        <p class="pillar-desc">
+                            Resigning before Move 10 (20 plies) strictly forfeits 100% to opponent, preventing early rage-quits and preserving match integrity.
+                        </p>
+                    </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">03</span>
+                            <span class="pillar-icon">⚡</span>
+                        </div>
+                        <h3 class="pillar-title">0% Platform Fee</h3>
+                        <p class="pillar-desc">
+                            Zero house take. 100% of deposited USDC disburse directly to competitors via verified Base Sepolia smart contracts.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Sleek Minimalist Contract Verification Strip -->
+                <div class="landing-contract-strip scroll-reveal">
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">ESCROW</span>
+                        <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x0451...a5C0 ↗
+                        </a>
+                    </div>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">USDC</span>
+                        <a href="https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x036C...CF7e ↗
+                        </a>
+                    </div>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">ORACLE</span>
+                        <a href="https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x410F...A3a9 ↗
+                        </a>
+                    </div>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">FEE</span>
+                        <span class="contract-pill-val fee-free mono">0% (Zero Take)</span>
+                    </div>
+                    <button class="contract-strip-btn mono" id="btn-view-specs-bottom">
+                        READ SPEC ➔
+                    </button>
                 </div>
 
-                <!-- Features Container (Visible only once logged in) -->
-                <div id="landing-features-container" style="display:none;">
-                    <!-- Minimalist 3-Pill Feature Strip -->
-                    <div class="landing-pills-row scroll-reveal">
-                    <div class="landing-pill">
-                        <span class="pill-icon">💎</span>
-                        <div class="pill-text">
-                            <span class="pill-title">Proportional Resignation Equity</span>
-                            <span class="pill-sub">Stockfish centipawn curve past Ply 20</span>
-                        </div>
+                <!-- Minimalist Footer with LinkedIn & GitHub Links -->
+                <footer class="landing-footer">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:14px;">♟</span>
+                        <span class="mono" style="color:#ffffff;font-size:10px;letter-spacing:0.12em;">CENTIPAWN // BASE L2</span>
                     </div>
-                    <div class="landing-pill">
-                        <span class="pill-icon">⏱️</span>
-                        <div class="pill-text">
-                            <span class="pill-title">10-Min Timeout Protection</span>
-                            <span class="pill-sub">600s automatic refund for stalled games</span>
-                        </div>
+                    <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:0.1em;">EVALSTAKE CHESS PRD V2.1 · 0% PLATFORM FEE · STOCKFISH 10</span>
+                    <div class="footer-social-links">
+                        <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                            <span>GitHub</span>
+                            <span style="font-size:9px;opacity:0.6;">↗</span>
+                        </a>
+                        <a href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer" class="footer-social-link linkedin" id="footer-link-linkedin" title="LinkedIn Profile">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            <span>LinkedIn</span>
+                            <span style="font-size:9px;opacity:0.6;">↗</span>
+                        </a>
                     </div>
-                    <div class="landing-pill">
-                        <span class="pill-icon">⚡</span>
-                        <div class="pill-text">
-                            <span class="pill-title">0% Protocol Fee On-Chain</span>
-                            <span class="pill-sub">EIP-712 cryptographic oracle attestation</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Segmented Control Hub: Match Lobby, Profile, Telemetry, Settings -->
-                <div class="landing-hub-container scroll-reveal" id="landing-hub">
-                    <div class="landing-hub-tabs">
-                        <button class="hub-tab-btn active" data-tab="tab-lobby">
-                            <span class="hub-tab-icon">🏛️</span>
-                            <span>Active Match Lobby</span>
-                        </button>
-                        <button class="hub-tab-btn" data-tab="tab-profile">
-                            <span class="hub-tab-icon">👤</span>
-                            <span>Player Identity</span>
-                        </button>
-                        <button class="hub-tab-btn" data-tab="tab-stats">
-                            <span class="hub-tab-icon">📊</span>
-                            <span>Protocol Telemetry</span>
-                        </button>
-                        <button class="hub-tab-btn" data-tab="tab-settings">
-                            <span class="hub-tab-icon">⚙️</span>
-                            <span>Arena Settings</span>
-                        </button>
-                    </div>
-
-                    <!-- Tab Panel 1: Active Match Lobby (Default Active) -->
-                    <div class="hub-tab-panel active" id="tab-lobby">
-                        <div class="section-card" id="section-lobby">
-                            <div class="section-card-title">
-                                <span>🏛️</span>
-                                <span>Open Arena Challenges & Liquidity</span>
-                            </div>
-                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                                Open challenges waiting on Base Sepolia. Matches not accepted within 10 minutes auto-refund the creator.
-                            </p>
-
-                            <div style="overflow-x:auto;">
-                                <table class="challenges-table">
-                                    <thead>
-                                        <tr>
-                                            <th>CREATOR</th>
-                                            <th>RATING</th>
-                                            <th>STAKE</th>
-                                            <th>TIME</th>
-                                            <th>EXPIRY</th>
-                                            <th>ACTION</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="challenges-table-body">
-                                        <tr>
-                                            <td>
-                                                <div class="challenge-player-cell">
-                                                    <div class="challenge-avatar-mini">♚</div>
-                                                    <span>GM_Hikaru</span>
-                                                </div>
-                                            </td>
-                                            <td><span class="mono" style="color:var(--accent-cyan);">2240</span></td>
-                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">25.00 USDC</span></td>
-                                            <td><span class="mono" style="color:var(--dim);">5+3 Rapid</span></td>
-                                            <td><span class="mono" style="color:#fbbf24;">08:42</span></td>
-                                            <td><button class="btn-join-match" data-stake="25" data-tc="1" data-opp="GM_Hikaru">Join Match</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="challenge-player-cell">
-                                                    <div class="challenge-avatar-mini">♟</div>
-                                                    <span>BasePawn</span>
-                                                </div>
-                                            </td>
-                                            <td><span class="mono" style="color:var(--accent-cyan);">1720</span></td>
-                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">10.00 USDC</span></td>
-                                            <td><span class="mono" style="color:var(--dim);">3+2 Blitz</span></td>
-                                            <td><span class="mono" style="color:#fbbf24;">06:15</span></td>
-                                            <td><button class="btn-join-match" data-stake="10" data-tc="0" data-opp="BasePawn">Join Match</button></td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <div class="challenge-player-cell">
-                                                    <div class="challenge-avatar-mini">♛</div>
-                                                    <span>ZeroKnight</span>
-                                                </div>
-                                            </td>
-                                            <td><span class="mono" style="color:var(--accent-cyan);">1980</span></td>
-                                            <td><span class="mono" style="color:#ffffff;font-weight:600;">50.00 USDC</span></td>
-                                            <td><span class="mono" style="color:var(--dim);">10+0 Classical</span></td>
-                                            <td><span class="mono" style="color:#fbbf24;">09:30</span></td>
-                                            <td><button class="btn-join-match" data-stake="50" data-tc="2" data-opp="ZeroKnight">Join Match</button></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div style="display:flex;gap:12px;margin-top:auto;">
-                                <button class="btn-hero-primary" id="btn-create-lobby-match" style="flex:1;justify-content:center;">
-                                    ⚡ Create Custom Challenge
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab Panel 2: Player Registration & Identity -->
-                    <div class="hub-tab-panel" id="tab-profile">
-                        <div class="section-card" id="section-reg">
-                            <div class="section-card-title">
-                                <span>👤</span>
-                                <span>Player Registration & Identity</span>
-                            </div>
-                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                                Configure your player profile. Your gamer tag, avatar, and rating will be registered with your connected Base Sepolia address.
-                            </p>
-
-                            <!-- PRD §21 Onboarding Step Tracker Banner -->
-                            <div id="reg-onboarding-banner" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px;margin-bottom:14px;">
-                                <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;margin-bottom:8px;">
-                                    <span id="reg-step-1">1. CONNECT</span>
-                                    <span id="reg-step-2">2. NETWORK</span>
-                                    <span id="reg-step-3">3. FAUCET</span>
-                                    <span id="reg-step-4">4. IDENTITY</span>
-                                </div>
-                                <div id="reg-onboarding-msg" style="font-size:11px;color:var(--dim);">
-                                    ● Checking wallet state...
-                                </div>
-                                <div id="reg-onboarding-actions" style="margin-top:8px;display:none;"></div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="reg-gamer-tag">GAMER TAG / CHESS ALIAS</label>
-                                <input type="text" class="form-input" id="reg-gamer-tag" value="GrandmasterZero" placeholder="Enter gamer tag">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">AVATAR BADGE</label>
-                                <div class="avatar-selector" id="reg-avatar-list">
-                                    <div class="avatar-opt active" data-avatar="♟" title="Cyber Knight">♟</div>
-                                    <div class="avatar-opt" data-avatar="♚" title="Quantum King">♚</div>
-                                    <div class="avatar-opt" data-avatar="♛" title="Neural Queen">♛</div>
-                                    <div class="avatar-opt" data-avatar="♜" title="Base Rook">♜</div>
-                                    <div class="avatar-opt" data-avatar="♝" title="Crypto Bishop">♝</div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="reg-wallet-addr">CONNECTED WALLET (BASE SEPOLIA)</label>
-                                <div style="display:flex;gap:8px;">
-                                    <input type="text" class="form-input" id="reg-wallet-addr" readonly value="0x892aF6E22C991316bDf255d648f57F43e4A142C1" style="font-family:'JetBrains Mono',monospace;color:var(--accent-cyan);flex:1;">
-                                    <button class="btn-primary" id="btn-copy-wallet" style="font-size:11px;padding:8px 12px;">Copy</button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="reg-elo">CHESS TITLE / RATING</label>
-                                <input type="text" class="form-input" id="reg-elo" value="1850 Arena Elo" placeholder="e.g. 1850 FIDE">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">PREFERRED TIME CONTROL</label>
-                                <div style="display:flex;gap:8px;">
-                                    <button class="btn-primary reg-tc-btn" data-tc="0">3+2 Blitz</button>
-                                    <button class="btn-primary reg-tc-btn active" data-tc="1">5+3 Rapid</button>
-                                    <button class="btn-primary reg-tc-btn" data-tc="2">10+0 Classical</button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">DEFAULT STAKE AMOUNT</label>
-                                <div style="display:flex;gap:8px;">
-                                    <button class="btn-primary reg-stake-btn" data-stake="5">5 USDC</button>
-                                    <button class="btn-primary reg-stake-btn active" data-stake="10">10 USDC</button>
-                                    <button class="btn-primary reg-stake-btn" data-stake="25">25 USDC</button>
-                                    <button class="btn-primary reg-stake-btn" data-stake="50">50 USDC</button>
-                                </div>
-                            </div>
-
-                            <div style="margin-top:10px;">
-                                <button class="btn-hero-primary" id="btn-save-profile" style="width:100%;justify-content:center;">
-                                    💾 Save & Register Profile
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab Panel 3: Stats & Protocol Telemetry -->
-                    <div class="hub-tab-panel" id="tab-stats">
-                        <div class="section-card" id="section-stats">
-                            <div class="section-card-title">
-                                <span>📊</span>
-                                <span>Performance Stats & Telemetry</span>
-                            </div>
-                            <p style="font-size:12px;color:var(--dim-more);line-height:1.5;">
-                                Lifetime player telemetry across Base Sepolia smart escrow matches. Proportional equity records total capital saved from binary 0-value resignations.
-                            </p>
-
-                            <!-- 4 Metrics Grid -->
-                            <div class="stats-metric-grid">
-                                <div class="stat-metric-box">
-                                    <span class="stat-metric-lbl">TOTAL MATCHES</span>
-                                    <span class="stat-metric-val" id="stat-matches-count">38</span>
-                                    <span style="font-size:10px;color:var(--dim);">26W · 8L (Resign) · 4D</span>
-                                </div>
-                                <div class="stat-metric-box">
-                                    <span class="stat-metric-lbl">WIN RATE</span>
-                                    <span class="stat-metric-val" style="color:var(--accent-green);" id="stat-win-rate">68.4%</span>
-                                    <span style="font-size:10px;color:var(--accent-green);">Top 5% on Arena</span>
-                                </div>
-                                <div class="stat-metric-box">
-                                    <span class="stat-metric-lbl">NET USDC EARNED</span>
-                                    <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-net-usdc">+342.50</span>
-                                    <span style="font-size:10px;color:var(--dim);">USDC on Base</span>
-                                </div>
-                                <div class="stat-metric-box" style="border-color:rgba(112,214,255,0.35);background:rgba(112,214,255,0.06);">
-                                    <span class="stat-metric-lbl" style="color:var(--accent-cyan);">EQUITY SALVAGED</span>
-                                    <span class="stat-metric-val" style="color:var(--accent-cyan);" id="stat-equity-saved">+84.20</span>
-                                    <span style="font-size:10px;color:var(--dim);">Saved via Resignation Eval</span>
-                                </div>
-                            </div>
-
-                            <!-- Protocol Security Box -->
-                            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
-                                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ffffff;display:flex;justify-content:space-between;">
-                                    <span>ESCROW PROTOCOL HEALTH:</span>
-                                    <span style="color:var(--accent-green);">● ONLINE</span>
-                                </div>
-                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                    <span>Smart Contract:</span>
-                                    <span class="mono" style="color:var(--ink-pure);">0x389a...c2A1 (Base)</span>
-                                </div>
-                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                    <span>Settlement Oracle:</span>
-                                    <span class="mono" style="color:var(--ink-pure);">EIP-712 ECDSA Verified</span>
-                                </div>
-                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                    <span>Safety Timeout:</span>
-                                    <span class="mono" style="color:var(--accent-green);">10 Min Auto-Refund</span>
-                                </div>
-                                <div style="font-size:11px;display:flex;justify-content:space-between;color:var(--dim);">
-                                    <span>Protocol Fee:</span>
-                                    <span class="mono" style="color:var(--accent-green);">0% (Hackathon Free)</span>
-                                </div>
-                            </div>
-
-                            <div style="margin-top:auto;">
-                                <button class="btn-primary" id="btn-view-specs" style="width:100%;padding:10px;font-size:12px;background:rgba(255,255,255,0.06);">
-                                    📜 Read PRD Mathematical Payout Spec (v2.1)
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tab Panel 4: Arena Settings -->
-                    <div class="hub-tab-panel" id="tab-settings">
-                        <div class="section-card" id="section-settings">
-                            <div class="section-card-title">
-                                <span>⚙️</span>
-                                <span>Game & Arena Settings</span>
-                            </div>
-
-                            <div class="setting-row">
-                                <div>
-                                    <div class="setting-title">Sound Effects (Web Audio API)</div>
-                                    <div class="setting-desc">Synthesized audio for moves, captures, checks, and settlement chords</div>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="setting-sound-toggle" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div class="setting-row">
-                                <div>
-                                    <div class="setting-title">Board Visual Theme</div>
-                                    <div class="setting-desc">Visual styling of the 8x8 squares and glowing borders</div>
-                                </div>
-                                <select class="form-input" id="setting-board-theme" style="width:160px;">
-                                    <option value="obsidian" selected>Obsidian Glass</option>
-                                    <option value="cyber">Neon Cyber</option>
-                                    <option value="walnut">Warm Walnut</option>
-                                </select>
-                            </div>
-
-                            <div class="setting-row">
-                                <div>
-                                    <div class="setting-title">Stockfish Engine Difficulty</div>
-                                    <div class="setting-desc">Depth and calculation plies for auto-play evaluation</div>
-                                </div>
-                                <select class="form-input" id="setting-engine-depth" style="width:160px;">
-                                    <option value="10">Fast (10-Ply)</option>
-                                    <option value="18" selected>Deep (18-Ply)</option>
-                                    <option value="24">Master (24-Ply)</option>
-                                </select>
-                            </div>
-
-                            <div class="setting-row">
-                                <div>
-                                    <div class="setting-title">Auto-Queen Promotion</div>
-                                    <div class="setting-desc">Automatically promote pawns to Queens on the 8th rank</div>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="setting-auto-queen" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-
-                            <div style="background:rgba(112,214,255,0.06);border:1px solid rgba(112,214,255,0.25);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-                                <div>
-                                    <div style="font-weight:600;font-size:13px;color:#ffffff;">Official Testnet Faucets</div>
-                                    <div style="font-size:11px;color:var(--dim);margin-top:2px;">Get real Base Sepolia ETH for gas & USDC for staking</div>
-                                </div>
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <a href="https://faucets.chain.link/base-sepolia" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="padding:6px 10px;font-size:11px;">Base ETH ↗</a>
-                                    <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" class="btn-primary-link" style="padding:6px 10px;font-size:11px;">Circle USDC ↗</a>
-                                    <button class="btn-hero-primary" id="setting-recheck-btn" style="padding:6px 12px;font-size:11px;">
-                                        🔄 Recheck Balance
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                </div> <!-- End #landing-features-container -->
+                </footer>
             </div>
         `;
 
@@ -2279,7 +1776,7 @@
         const cursorGlow = document.getElementById('landing-cursor-glow');
         if (!canvas || !container) return;
 
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
         if (!ctx) return;
 
         let width = canvas.width = window.innerWidth;
@@ -2289,26 +1786,26 @@
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
         };
-        window.addEventListener('resize', handleResize);
+        window.addEventListener('resize', handleResize, { passive: true });
 
         // Ambient Harmonic Nebula Orbs matching landing_bg.jpg
         const orbs = [
-            { x: width * 0.22, y: height * 0.35, vx: 0.16, vy: 0.12, r: 320, color: 'rgba(112, 214, 255, 0.05)' }, // Cyan
-            { x: width * 0.78, y: height * 0.50, vx: -0.14, vy: 0.15, r: 360, color: 'rgba(167, 139, 250, 0.045)' }, // Purple
-            { x: width * 0.50, y: height * 0.75, vx: 0.11, vy: -0.14, r: 340, color: 'rgba(59, 130, 246, 0.04)' }   // Royal Blue
+            { x: width * 0.22, y: height * 0.35, vx: 0.16, vy: 0.12, r: 300, color: 'rgba(112, 214, 255, 0.05)' }, // Cyan
+            { x: width * 0.78, y: height * 0.50, vx: -0.14, vy: 0.15, r: 340, color: 'rgba(167, 139, 250, 0.045)' }, // Purple
+            { x: width * 0.50, y: height * 0.75, vx: 0.11, vy: -0.14, r: 320, color: 'rgba(59, 130, 246, 0.04)' }   // Royal Blue
         ];
 
-        // Celestial Chess & Base Constellation Nodes
+        // Celestial Chess & Base Constellation Nodes (Optimized count for 120 FPS)
         const glyphs = ['♟', '♞', '♜', '◆', '●', '✦'];
-        const numNodes = Math.min(50, Math.max(24, Math.floor(window.innerWidth / 28)));
+        const numNodes = Math.min(32, Math.max(18, Math.floor(window.innerWidth / 40)));
         const nodes = [];
 
         for (let i = 0; i < numNodes; i++) {
             nodes.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 0.32,
-                vy: (Math.random() - 0.5) * 0.32,
+                vx: (Math.random() - 0.5) * 0.30,
+                vy: (Math.random() - 0.5) * 0.30,
                 radius: Math.random() * 2 + 1.2,
                 depth: Math.random() * 0.6 + 0.4,
                 alpha: Math.random() * 0.35 + 0.2,
@@ -2317,43 +1814,46 @@
             });
         }
 
-        // Mouse & Cursor Scroll Tracking
+        // Mouse & Cursor Scroll Tracking (RAF Ticked for Zero-Lag 120Hz Hardware Acceleration)
         let mouseX = width / 2;
         let mouseY = height / 2;
         let targetMouseX = width / 2;
         let targetMouseY = height / 2;
         let cursorFadeTimer = null;
         let scrollY = 0;
+        let glowRafPending = false;
 
-        const activateCursor = (x, y) => {
-            if (cursorGlow) {
-                if (typeof x === 'number' && typeof y === 'number') {
-                    cursorGlow.style.left = `${x}px`;
-                    cursorGlow.style.top = `${y}px`;
+        const requestGlowUpdate = () => {
+            if (glowRafPending) return;
+            glowRafPending = true;
+            requestAnimationFrame(() => {
+                glowRafPending = false;
+                if (cursorGlow) {
+                    cursorGlow.style.transform = `translate3d(${targetMouseX - 210}px, ${targetMouseY - 210}px, 0)`;
+                    cursorGlow.classList.add('active');
+                    clearTimeout(cursorFadeTimer);
+                    cursorFadeTimer = setTimeout(() => {
+                        cursorGlow.classList.remove('active');
+                    }, 1000);
                 }
-                cursorGlow.classList.add('active');
-                clearTimeout(cursorFadeTimer);
-                cursorFadeTimer = setTimeout(() => {
-                    cursorGlow.classList.remove('active');
-                }, 1000);
-            }
+            });
         };
 
         window.addEventListener('pointermove', (e) => {
             if (!container.classList.contains('active')) return;
             targetMouseX = e.clientX;
             targetMouseY = e.clientY;
-            activateCursor(e.clientX, e.clientY);
+            requestGlowUpdate();
         }, { passive: true });
 
         container.addEventListener('scroll', () => {
             scrollY = container.scrollTop;
-            activateCursor(targetMouseX, targetMouseY);
+            requestGlowUpdate();
         }, { passive: true });
 
         window.addEventListener('wheel', () => {
             if (!container.classList.contains('active')) return;
-            activateCursor(targetMouseX, targetMouseY);
+            requestGlowUpdate();
         }, { passive: true });
 
         document.addEventListener('mouseleave', () => {
@@ -2361,10 +1861,13 @@
         });
 
         function renderFrame() {
-            if (!wallpaperActive) return;
+            if (!wallpaperActive || !container.classList.contains('active')) return;
             wallpaperAnimId = requestAnimationFrame(renderFrame);
 
-            // Interpolate mouse smoothly
+            // Tab hidden: skip all canvas calculations to conserve GPU/CPU
+            if (document.hidden) return;
+
+            // Smooth mouse interpolation
             mouseX += (targetMouseX - mouseX) * 0.05;
             mouseY += (targetMouseY - mouseY) * 0.05;
 
@@ -2389,25 +1892,23 @@
                 ctx.fill();
             }
 
-            // 2. Connect Nearby Nodes with Faint L2 Neural Circuit Lines
+            // 2. Connect Nearby Nodes with Faint L2 Neural Circuit Lines (Single Batched Draw Call for Max FPS)
             ctx.lineWidth = 0.75;
+            ctx.strokeStyle = 'rgba(196, 210, 232, 0.12)';
+            ctx.beginPath();
             for (let i = 0; i < nodes.length; i++) {
                 const a = nodes[i];
                 for (let j = i + 1; j < nodes.length; j++) {
                     const b = nodes[j];
                     const dx = a.x - b.x;
                     const dy = a.y - b.y;
-                    const distSq = dx * dx + dy * dy;
-                    if (distSq < 15500) { // ~124px
-                        const lineAlpha = (1 - distSq / 15500) * 0.18 * a.depth;
-                        ctx.strokeStyle = `rgba(196, 210, 232, ${lineAlpha})`;
-                        ctx.beginPath();
+                    if (dx * dx + dy * dy < 14400) { // ~120px threshold
                         ctx.moveTo(a.x, a.y);
                         ctx.lineTo(b.x, b.y);
-                        ctx.stroke();
                     }
                 }
             }
+            ctx.stroke();
 
             // 3. Draw Nodes and Chess Glyphs with Parallax Drift
             const scrollParallax = scrollY * 0.22;
@@ -2422,11 +1923,12 @@
                 if (node.y < 0) node.y = height;
                 if (node.y > height) node.y = 0;
 
-                // Mouse interaction repulsion
+                // Fast squared-distance mouse repulsion
                 const mdx = node.x - mouseX;
                 const mdy = node.y - mouseY;
-                const mDist = Math.hypot(mdx, mdy);
-                if (mDist < 140 && mDist > 0) {
+                const mDistSq = mdx * mdx + mdy * mdy;
+                if (mDistSq < 19600 && mDistSq > 0) { // 140px threshold
+                    const mDist = Math.sqrt(mDistSq);
                     const force = (1 - mDist / 140) * 1.5;
                     node.x += (mdx / mDist) * force;
                     node.y += (mdy / mDist) * force;
@@ -2466,11 +1968,12 @@
             }
         };
 
-        window.startLandingWallpaper();
+        // Note: Do not auto-run on initial boot to prevent fighting the 3D starter page for GPU/CPU.
+        // It begins automatically when showLandingPage() is triggered.
     }
 
     // -------------------------------------------------------------
-    // SCROLL REVEAL DYNAMIC FADE IN & FADE OUT
+    // SCROLL REVEAL (Off-Thread Native IntersectionObserver for 120 FPS Scrolling)
     // -------------------------------------------------------------
     function initScrollReveal() {
         const container = document.getElementById('landing-page');
@@ -2479,30 +1982,26 @@
         const elements = container.querySelectorAll('.scroll-reveal');
         if (elements.length === 0) return;
 
-        // Initial check for elements in viewport
-        const checkVisibility = () => {
-            const viewportH = window.innerHeight;
-            elements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const inView = rect.top < viewportH - 40 && rect.bottom > 40;
-                el.classList.toggle('revealed', inView);
+        if (typeof IntersectionObserver !== 'undefined') {
+            const observer = new IntersectionObserver((entries) => {
+                for (let i = 0; i < entries.length; i++) {
+                    const entry = entries[i];
+                    entry.target.classList.toggle('revealed', entry.isIntersecting);
+                }
+            }, {
+                root: container,
+                threshold: 0.08,
+                rootMargin: '30px 0px'
             });
-        };
 
-        // Scroll listener for smooth fade in & fade out as cursor scrolls
-        window.refreshScrollReveal = () => {
-            const viewportH = window.innerHeight;
-            const currentElements = container.querySelectorAll('.scroll-reveal');
-            currentElements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                const inView = rect.top < viewportH - 40 && rect.bottom > 40;
-                el.classList.toggle('revealed', inView);
-            });
-        };
+            elements.forEach(el => observer.observe(el));
 
-        container.addEventListener('scroll', checkVisibility, { passive: true });
-        window.addEventListener('resize', checkVisibility, { passive: true });
-        setTimeout(checkVisibility, 100);
+            window.refreshScrollReveal = () => {
+                container.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+            };
+        } else {
+            elements.forEach(el => el.classList.add('revealed'));
+        }
     }
 
     // -------------------------------------------------------------
@@ -2680,12 +2179,12 @@
             }
             if (prdState === 'WRONG_NETWORK') {
                 showToast('⚠️ Blocked: Please switch to Base Sepolia (Chain ID 84532).');
-                document.getElementById('card-wrong-network')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('modal-connect-wallet')?.classList.add('open');
                 return false;
             }
             if (prdState === 'ZERO_BALANCE') {
                 showToast('💧 Blocked: 0.00 USDC balance. Claim testnet USDC to stake.');
-                document.getElementById('card-zero-balance')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('modal-connect-wallet')?.classList.add('open');
                 return false;
             }
             return true;
@@ -3153,180 +2652,53 @@
             }).catch(() => {});
         }
 
-        // Enter Arena buttons with PRD §21 Guard
+        // Enter Arena buttons
         document.getElementById('btn-nav-enter-arena')?.addEventListener('click', () => {
-            if (!canParticipateInMatch()) return;
             window.showArenaView();
         });
         document.getElementById('hero-play-arena')?.addEventListener('click', () => {
-            if (!canParticipateInMatch()) return;
             window.showArenaView();
         });
-        document.getElementById('hero-quick-match')?.addEventListener('click', () => {
-            if (!canParticipateInMatch()) return;
-            startNewMatch(10.0, 1);
+        document.getElementById('cta-play-arena')?.addEventListener('click', () => {
             window.showArenaView();
-            showToast('⚡ Quick Match Initialized (10 USDC Pot on Base Sepolia)');
+        });
+
+        // Create & Join Match triggers (Opens PRD Section 7/8 Modal)
+        document.getElementById('hero-create-match')?.addEventListener('click', () => {
+            modalLobby?.classList.add('open');
+        });
+        document.getElementById('cta-create-match')?.addEventListener('click', () => {
+            modalLobby?.classList.add('open');
+        });
+        document.getElementById('hero-join-match')?.addEventListener('click', () => {
+            modalLobby?.classList.add('open');
         });
 
         // Escrow specs buttons
         document.getElementById('hero-view-escrow')?.addEventListener('click', () => {
-            modalRules.classList.add('open');
+            modalRules?.classList.add('open');
         });
         document.getElementById('btn-view-specs')?.addEventListener('click', () => {
-            modalRules.classList.add('open');
+            modalRules?.classList.add('open');
+        });
+        document.getElementById('btn-view-specs-bottom')?.addEventListener('click', () => {
+            modalRules?.classList.add('open');
         });
 
-        // Copy Wallet Button
-        document.getElementById('btn-copy-wallet')?.addEventListener('click', () => {
-            const addr = '0x892aF6E22C991316bDf255d648f57F43e4A142C1';
-            navigator.clipboard.writeText(addr).then(() => {
-                showToast('📋 Base Sepolia Wallet Address Copied!');
-            });
-        });
-
-        // Avatar selector in registration form
-        document.querySelectorAll('#reg-avatar-list .avatar-opt').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('#reg-avatar-list .avatar-opt').forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-            });
-        });
-
-        // Registration Time Control buttons
-        document.querySelectorAll('.reg-tc-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.reg-tc-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
-
-        // Registration Stake buttons
-        document.querySelectorAll('.reg-stake-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.reg-stake-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
-
-        // Save Profile Button
-        document.getElementById('btn-save-profile')?.addEventListener('click', () => {
-            const gamerTag = document.getElementById('reg-gamer-tag')?.value.trim() || 'GrandmasterZero';
-            const elo = document.getElementById('reg-elo')?.value.trim() || '1850 Arena Elo';
-            const activeAvatarEl = document.querySelector('#reg-avatar-list .avatar-opt.active');
-            const avatar = activeAvatarEl ? activeAvatarEl.dataset.avatar : '♟';
-            const activeTcEl = document.querySelector('.reg-tc-btn.active');
-            const tc = activeTcEl ? parseInt(activeTcEl.dataset.tc, 10) : 1;
-            const activeStakeEl = document.querySelector('.reg-stake-btn.active');
-            const stake = activeStakeEl ? parseFloat(activeStakeEl.dataset.stake) : 10;
-
-            const profile = { gamerTag, elo, avatar, tc, stake };
-            localStorage.setItem('centipawn_profile', JSON.stringify(profile));
-
-            // Sync with Player A HUD
-            const nameEl = document.getElementById('name-player-a');
-            if (nameEl) nameEl.textContent = `${gamerTag} (White)`;
-            const avatarEl = document.querySelector('#hud-player-a .white-avatar');
-            if (avatarEl) avatarEl.textContent = avatar;
-
-            showToast(`Profile Registered: ${gamerTag} [${elo}]`);
-        });
-
-        // Settings: Audio FX Toggle
-        document.getElementById('setting-sound-toggle')?.addEventListener('change', (e) => {
-            state.soundEnabled = e.target.checked;
-            const soundIcon = document.getElementById('sound-icon');
-            if (soundIcon) soundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
-            showToast(state.soundEnabled ? '🔊 Audio FX Enabled' : '🔇 Audio FX Muted');
-        });
-
-        // Settings: Board Theme
-        document.getElementById('setting-board-theme')?.addEventListener('change', (e) => {
-            const theme = e.target.value;
-            const board = document.getElementById('chessboard');
-            if (board) {
-                board.classList.remove('theme-cyber', 'theme-walnut');
-                if (theme === 'cyber') board.classList.add('theme-cyber');
-                if (theme === 'walnut') board.classList.add('theme-walnut');
-            }
-            showToast(`Board Theme Updated: ${theme.toUpperCase()}`);
-        });
-
-        // Settings: Engine Depth
-        document.getElementById('setting-engine-depth')?.addEventListener('change', (e) => {
-            showToast(`Stockfish Engine Depth Set to ${e.target.value} Plies`);
-        });
-
-        // Settings: Recheck On-Chain Balance
-        document.getElementById('setting-recheck-btn')?.addEventListener('click', handleRecheckBalance);
-
-        // Lobby Challenge Buttons: Join Match
-        document.querySelectorAll('.btn-join-match').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!canParticipateInMatch()) return;
-                const stake = parseFloat(btn.dataset.stake || '10');
-                const tc = parseInt(btn.dataset.tc || '1', 10);
-                const opp = btn.dataset.opp || 'Opponent';
-
-                startNewMatch(stake, tc);
-                const oppName = document.getElementById('name-player-b');
-                if (oppName) oppName.textContent = `${opp} (Black)`;
-
-                window.showArenaView();
-                showToast(`⚔️ Entered Match vs ${opp} for ${stake.toFixed(2)} USDC`);
-            });
-        });
-
-        // Create Challenge from Lobby Card
-        document.getElementById('btn-create-lobby-match')?.addEventListener('click', () => {
-            if (!canParticipateInMatch()) return;
-            modalLobby.classList.add('open');
-        });
-
-        // Landing Minimalist Hub Tab Switching Logic
-        function activateLandingTab(tabId) {
-            const tabPanels = document.querySelectorAll('.hub-tab-panel');
-            const tabBtns = document.querySelectorAll('.hub-tab-btn');
-            const navLinks = document.querySelectorAll('.landing-nav-btn[data-nav-tab]');
-
-            tabPanels.forEach(p => {
-                p.classList.toggle('active', p.id === tabId);
-            });
-
-            tabBtns.forEach(b => {
-                b.classList.toggle('active', b.dataset.tab === tabId);
-            });
-
-            navLinks.forEach(l => {
-                l.classList.toggle('active', l.dataset.navTab === tabId);
-            });
-        }
-
-        document.querySelectorAll('.hub-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetTab = btn.dataset.tab;
-                if (targetTab) activateLandingTab(targetTab);
-            });
-        });
-
-        document.querySelectorAll('.landing-nav-btn[data-nav-tab]').forEach(link => {
+        // Smooth Scroll Navigation for Landing Page Links
+        document.querySelectorAll('.landing-nav-btn').forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetTab = link.dataset.navTab;
-                if (targetTab) {
-                    activateLandingTab(targetTab);
-                    document.getElementById('landing-hub')?.scrollIntoView({ behavior: 'smooth' });
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    document.querySelectorAll('.landing-nav-btn').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    const targetEl = document.querySelector(href);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                    }
                 }
             });
-        });
-
-        // Overview nav button scrolls to top
-        const overviewNavBtn = document.querySelector('.landing-nav-btn[href="#landing-hero"]');
-        overviewNavBtn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.landing-nav-btn').forEach(l => l.classList.remove('active'));
-            overviewNavBtn.classList.add('active');
-            document.getElementById('landing-hero')?.scrollIntoView({ behavior: 'smooth' });
         });
     }
 
