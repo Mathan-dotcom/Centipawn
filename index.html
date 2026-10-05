@@ -283,11 +283,11 @@
         pointer-events: none;
         background-repeat: repeat;
         background-size: 160px 160px;
-        opacity: .038;
+        opacity: .038 !important;
     }
 
     #grain2 {
-        display: none;
+        display: none !important;
     }
 
     #vig {
@@ -497,7 +497,7 @@
             const x = c.getContext('2d'), d = x.createImageData(n, n);
             for (let i = 0; i < n * n; i++) {
                 const v = 128 + (Math.random() - 0.5) * 168;
-                d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 255;
+                d.data[i * 4] = d.data[i * 4 + 1] = d.data[i * 4 + 2] = v; d.data[i * 4 + 3] = 20;
             }
             x.putImageData(d, 0, 0);
             const url = 'url(' + c.toDataURL() + ')';
@@ -551,9 +551,9 @@
         const touchLight = new T.PointLight(0xdfe8ff, 0, 7.5, 1.35);
         touchLight.position.set(0, 0, 1.7); scene.add(touchLight);
 
-        /* ---- geometry + the bend (optimized 48x64 grid for high-FPS performance) ---- */
+        /* ---- geometry + the bend (optimized 36x48 grid for high-FPS performance) ---- */
         const SW = 2.30, SH = 2.72;
-        const geo = new T.PlaneGeometry(SW, SH, 48, 64);
+        const geo = new T.PlaneGeometry(SW, SH, 36, 48);
 
         const uni = {
             uTime: { value: 0 }, uAmp: { value: 1.18 }, uFreq: { value: 4.70 }, uTwist: { value: 1.30 },
@@ -602,7 +602,7 @@ float sYdV(float u, float v){
 void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
   float u = q.x, v = q.y;
   float x=0.0, z=0.0, xe=0.0, ze=0.0, dxv=0.0, dzv=0.0, dxe=0.0, dze=0.0;
-  const int NS = 20;
+  const int NS = 14;
   float h = 1.0/float(NS);
   for(int i=0;i<NS;i++){
     float uu = (float(i)+0.5)*h;
@@ -698,7 +698,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             const u = qx, v = qy;
             const theta = (uu) => A * (0.10 + Math.pow(uu, 1.35)) * (0.50 + 0.64 * v)
                 * Math.sin(F * uu + TWs * v + t * 0.40 + ph);
-            let x = 0, z = 0, xe = 0, ze = 0; const N = 20, h = 1 / N;
+            let x = 0, z = 0, xe = 0, ze = 0; const N = 12, h = 1 / N;
             for (let i = 0; i < N; i++) {
                 const uu = (i + 0.5) * h, w = clamp((u - (uu - 0.5 * h)) / h, 0, 1);
                 const th = theta(uu), c = Math.cos(th), s = Math.sin(th);
@@ -800,6 +800,17 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             const startPitch = dragPitch;
             const targetPitch = isZoomed ? 0 : dragPitch;
             const duration = 650;
+            let timer = setTimeout(() => {
+                if (isZoomed && isZooming) {
+                    isZooming = false;
+                    camera.position.z = targetCamZ;
+                    dragYaw = targetYaw;
+                    dragPitch = targetPitch;
+                    if (window.transitionToLandingPage) {
+                        window.transitionToLandingPage();
+                    }
+                }
+            }, duration + 60);
             const startTime = performance.now();
 
             function animateZoom(now) {
@@ -815,6 +826,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 if (p < 1) {
                     requestAnimationFrame(animateZoom);
                 } else {
+                    clearTimeout(timer);
                     isZooming = false;
                     if (isZoomed && window.transitionToLandingPage) {
                         window.transitionToLandingPage();
@@ -825,7 +837,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         }
 
         window.togglePaperZoom = togglePaperZoom;
-        window.transitionToLandingPage = function() {
+        window.transitionToLandingPage = function(immediate = false) {
             is3DActive = false;
             if (animFrameId) {
                 cancelAnimationFrame(animFrameId);
@@ -837,15 +849,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             hover = 0;
 
             const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn'];
-            starterIds.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.transition = 'opacity 0.6s ease';
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                }
-            });
-            setTimeout(() => {
+            if (immediate) {
                 starterIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.style.display = 'none';
@@ -853,7 +857,25 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 if (window.showLandingPage) {
                     window.showLandingPage();
                 }
-            }, 600);
+            } else {
+                starterIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.transition = 'opacity 0.4s ease';
+                        el.style.opacity = '0';
+                        el.style.pointerEvents = 'none';
+                    }
+                });
+                setTimeout(() => {
+                    starterIds.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    if (window.showLandingPage) {
+                        window.showLandingPage();
+                    }
+                }, 400);
+            }
         };
 
         window.returnToStarter = function() {
@@ -863,11 +885,12 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 if (el) {
                     el.style.display = '';
                     setTimeout(() => {
-                        el.style.opacity = '1';
+                        el.style.opacity = '';
                         el.style.pointerEvents = '';
                     }, 50);
                 }
             });
+            if (hintEl) hintEl.style.opacity = '1';
             if (window.hideLandingPage) {
                 window.hideLandingPage();
             }
@@ -887,7 +910,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         let vw = 0, vh = 0;
         function resize() {
             vw = window.innerWidth; vh = window.innerHeight;
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
             renderer.setSize(vw, vh, false);
             camera.aspect = vw / vh; camera.updateProjectionMatrix();
             const visH = 2 * 8.2 * Math.tan(T.MathUtils.degToRad(camera.fov) / 2);
@@ -970,8 +993,8 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                     .addScaledVector(lightPos, (1.75 - camera.position.z) / lightPos.z);
             }
 
-            // Throttle hit-testing quad computation to every 2nd frame or when dragging
-            if (++quadTick % 2 === 0 || dragging) {
+            // Throttle hit-testing quad computation to every 5th frame during idle, or immediately when dragging/zooming
+            if (dragging || isZooming || ++quadTick % 5 === 0) {
                 buildQuad();
             }
 
@@ -1007,7 +1030,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
            8. FAST & RELIABLE LOADER ORCHESTRATION (STARTER PAGE PERSISTENT)
            ====================================================================== */
         const loaderStartTime = performance.now();
-        const LOADER_DURATION = 1800; // Crisp 1.8s loader
+        const LOADER_DURATION = 1200; // Crisp 1.2s boot loader
         const loaderEl = document.getElementById('loader');
         const loaderFill = document.getElementById('loader-fill');
         const loaderPct = document.getElementById('loader-pct');
@@ -1016,20 +1039,24 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         const statusMilestones = [
             { at: 0.0, text: "INITIALIZING CRYPTOGRAPHIC RUNTIME..." },
             { at: 0.25, text: "COMPILING ZERO-KNOWLEDGE CIRCUITS..." },
-            { at: 0.50, text: "SYNCHRONIZING ON-CHAIN ARENAS..." },
+            { at: 0.50, text: "SYNCHRONIZING BASE ESCROW..." },
             { at: 0.75, text: "FETCHING HOLOGRAPHIC CERTIFICATE..." },
             { at: 0.90, text: "CALIBRATING QUANTUM OPTICS..." },
             { at: 1.0, text: "ARENA CERTIFICATE READY // DRAG TO ROTATE" }
         ];
 
         function dismissLoader() {
-            if (loaderEl) loaderEl.classList.add('done');
+            if (loaderEl) {
+                loaderEl.classList.add('done');
+                setTimeout(() => { loaderEl.style.display = 'none'; }, 850);
+            }
             loaderDone = true;
             if (hintEl && !hintUsed) hintEl.style.opacity = '1';
         }
+        window.dismissLoader = dismissLoader;
 
-        // Safety fallback timer: guarantee loader overlay dismisses within 2.5s even if tab backgrounded
-        setTimeout(dismissLoader, 2500);
+        // Safety fallback timer: guarantee loader overlay dismisses within 1.6s even if tab backgrounded
+        setTimeout(dismissLoader, 1600);
 
         function runLoaderTick(now) {
             const elapsed = now - loaderStartTime;
