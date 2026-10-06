@@ -1,0 +1,23 @@
+{
+  "0x0ddc1137ae15f16329ad37507b64f30ae0f18dee": {
+    "address": "0x0ddc1137ae15f16329ad37507b64f30ae0f18dee",
+    "username": "SovereignPawn",
+    "avatarId": "knight-neon",
+    "createdAt": 1791266034917,
+    "updatedAt": 1791266034917
+  },
+  "0xbd487b03d98fbb2cfaef8baa38f3884ea2cf4b3c": {
+    "address": "0xbd487b03d98fbb2cfaef8baa38f3884ea2cf4b3c",
+    "username": "GrandmasterB",
+    "avatarId": "bishop-cyber",
+    "createdAt": 1791266120438,
+    "updatedAt": 1791266120438
+  },
+  "0x1111222233334444555566667777888899990000": {
+    "address": "0x1111222233334444555566667777888899990000",
+    "username": "Kasparov_Updated",
+    "avatarId": "centipawn-phoenix",
+    "createdAt": 1791275090515,
+    "updatedAt": 1791275090530
+  }
+}

@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { ethers } = require('ethers');
 const { Chess } = require('chess.js');
+const profiles = require('./profiles.js');
 
 // Lightweight zero-dependency .env parser
 try {
@@ -408,6 +409,54 @@ async function handleRequest(req, res) {
             escrowContract: ESCROW_CONTRACT_ADDRESS,
             activeMatchesCount: matches.size
         });
+    }
+
+    // ---------------------------------------------------------
+    // PROFILE ROUTES (Part A: Player Profiles)
+    // ---------------------------------------------------------
+    // GET /api/profile/presets: Return avatar preset catalog
+    if (pathname === '/api/profile/presets' && req.method === 'GET') {
+        return sendJSON(200, {
+            success: true,
+            presets: profiles.PRESET_AVATARS
+        });
+    }
+
+    // GET /api/profile/:address: Return profile for wallet address (Never 404s)
+    if (pathname.startsWith('/api/profile/') && req.method === 'GET') {
+        const rawAddr = pathname.replace('/api/profile/', '').trim();
+        const profile = profiles.getProfile(rawAddr);
+        return sendJSON(200, {
+            success: true,
+            profile
+        });
+    }
+
+    // GET /api/profile: Return list of active profiles & presets
+    if (pathname === '/api/profile' && req.method === 'GET') {
+        return sendJSON(200, {
+            success: true,
+            profiles: profiles.getAllProfiles(),
+            presets: profiles.PRESET_AVATARS
+        });
+    }
+
+    // POST /api/profile: Upsert player username & avatar
+    if (pathname === '/api/profile' && req.method === 'POST') {
+        const body = await readBody();
+        const { address, username, avatarId } = body;
+        if (!address) {
+            return sendJSON(400, { error: 'Wallet address is required' });
+        }
+        try {
+            const profile = profiles.upsertProfile(address, username, avatarId);
+            return sendJSON(200, {
+                success: true,
+                profile
+            });
+        } catch (err) {
+            return sendJSON(400, { error: err.message || 'Failed to save profile' });
+        }
     }
 
     // POST /api/eval: Stockfish Evaluation endpoint

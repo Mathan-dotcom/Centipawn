@@ -31,8 +31,25 @@
         chainId: 84532, // 84532: Base Sepolia, 1: Ethereum Mainnet
         balanceUSDC: 0.0,
         providerType: null,
-        isSandbox: false
+        isSandbox: false,
+        profile: null
     };
+
+    // Preset Avatars Catalog
+    const PRESET_AVATARS = [
+        { id: 'knight-neon', label: 'Neon Knight', icon: '♞', color: '#70d6ff' },
+        { id: 'bishop-cyber', label: 'Cyber Bishop', icon: '♝', color: '#a78bfa' },
+        { id: 'queen-gold', label: 'Golden Queen', icon: '♛', color: '#f59e0b' },
+        { id: 'king-crown', label: 'Sovereign King', icon: '♚', color: '#ef4444' },
+        { id: 'rook-vault', label: 'Iron Fortress', icon: '♜', color: '#10b981' },
+        { id: 'pawn-matrix', label: 'Matrix Pawn', icon: '♟', color: '#06b6d4' },
+        { id: 'centipawn-phoenix', label: 'Phoenix GM', icon: '🔥', color: '#f97316' },
+        { id: 'base-builder', label: 'Base Builder', icon: '⚡', color: '#3b82f6' },
+        { id: 'grandmaster-bot', label: 'Synth Master', icon: '🤖', color: '#ec4899' },
+        { id: 'dragon-hyper', label: 'Hyper Dragon', icon: '🐉', color: '#8b5cf6' },
+        { id: 'vortex-sol', label: 'Quantum Vortex', icon: '🌀', color: '#14b8a6' },
+        { id: 'shield-warden', label: 'Vault Warden', icon: '🛡️', color: '#64748b' }
+    ];
 
     function getPRDWalletState() {
         if (!walletState.connected) return 'DISCONNECTED';
@@ -52,6 +69,8 @@
         boardOrientation: 'w', // 'w' or 'b'
         gameId: null,
         status: 'READY', // 'READY', 'ACTIVE', 'SETTLED', 'CANCELLED'
+        isSpectator: false,
+        playerBProfile: null,
         stakeAmount: 0.1,
         totalPot: 0.2,
         timeControlIdx: 1, // 0: 3+2, 1: 5+3, 2: 10+0
@@ -653,6 +672,10 @@
                 </div>
 
                 <div class="header-actions">
+                    <div id="user-profile-badge" class="user-profile-pill" style="display:none;" title="Click to view/edit your profile">
+                        <div class="profile-pill-avatar" id="header-avatar-icon">♞</div>
+                        <span class="profile-pill-name" id="header-username">Player</span>
+                    </div>
                     <button class="btn-icon-subtle" id="btn-toggle-sound" title="Toggle Sound">
                         <span id="sound-icon">🔊</span>
                     </button>
@@ -668,10 +691,25 @@
             <main class="arena-workspace">
                 <!-- Left: Board + Evaluation Bar Column -->
                 <div class="board-column">
+                    <!-- Spectator Banner (Visible in Spectator Mode) -->
+                    <div class="spectator-banner" id="spectator-mode-banner" style="display:none;">
+                        <span>👁️ SPECTATOR VIEW — LIVE ESCROW MATCH</span>
+                        <span class="mono" style="font-size:10px;color:rgba(255,255,255,0.7);">WATCH ONLY</span>
+                    </div>
+
+                    <!-- Prominent Active Turn Banner -->
+                    <div class="turn-banner my-turn" id="arena-turn-banner">
+                        <div class="turn-banner-status">
+                            <div class="turn-banner-dot" id="turn-banner-dot"></div>
+                            <span id="turn-banner-text">⚔️ MATCH ACTIVE — WHITE'S TURN TO MOVE</span>
+                        </div>
+                        <div class="turn-banner-meta" id="turn-banner-meta">5+3 RAPID</div>
+                    </div>
+
                     <!-- Opponent HUD (Player B) -->
                     <div class="player-hud" id="hud-player-b">
                         <div class="player-identity">
-                            <div class="player-avatar black-avatar">B</div>
+                            <div class="player-avatar black-avatar" id="avatar-player-b">B</div>
                             <div class="player-details">
                                 <div class="player-name-row">
                                     <span class="player-name" id="name-player-b">Player B (Black)</span>
@@ -701,7 +739,7 @@
                     <!-- User HUD (Player A) -->
                     <div class="player-hud" id="hud-player-a">
                         <div class="player-identity">
-                            <div class="player-avatar white-avatar">A</div>
+                            <div class="player-avatar white-avatar" id="avatar-player-a">A</div>
                             <div class="player-details">
                                 <div class="player-name-row">
                                     <span class="player-name" id="name-player-a">GrandmasterZero (White)</span>
@@ -782,13 +820,42 @@
                         </button>
                     </div>
 
-                    <div style="display:flex;gap:10px;">
+                    <!-- Persistent Post-Game Summary Card (PRD Part B) -->
+                    <div class="match-summary-card" id="persistent-match-summary" style="display:none;">
+                        <div class="summary-headline">
+                            <span class="summary-title" id="summary-headline-text">🏆 MATCH SETTLED</span>
+                            <span class="pot-fee-badge mono" id="summary-end-reason">RESIGNATION_PROPORTIONAL</span>
+                        </div>
+                        <div class="summary-split-grid">
+                            <div class="summary-player-box">
+                                <span class="p-label" id="summary-label-a">PLAYER A (WHITE)</span>
+                                <span class="p-name" id="summary-name-a">Player A</span>
+                                <span class="p-payout" id="summary-payout-a">0.051 USDC (25.7%)</span>
+                            </div>
+                            <div class="summary-player-box">
+                                <span class="p-label" id="summary-label-b">PLAYER B (BLACK)</span>
+                                <span class="p-name" id="summary-name-b">Player B</span>
+                                <span class="p-payout" id="summary-payout-b">0.149 USDC (74.3%)</span>
+                            </div>
+                        </div>
+                        <div class="summary-link-row">
+                            <span style="color:var(--dim);">Base Sepolia Settlement:</span>
+                            <a href="#" target="_blank" class="summary-tx-link" id="summary-basescan-link">0x0000...0000 ↗</a>
+                        </div>
+                        <button class="btn-primary" id="btn-summary-new-match" style="width:100%;padding:10px;background:linear-gradient(135deg,#70d6ff,#a78bfa);color:#08080a;font-weight:700;font-size:12px;margin-top:6px;cursor:pointer;">
+                            ⚔️ Create / Join New Match
+                        </button>
+                    </div>
+
+                    <div style="display:flex;gap:10px;margin-top:4px;">
                         <button class="btn-primary" id="btn-ai-move" style="font-size:11px;padding:8px 12px;background:rgba(255,255,255,0.05);">
                             🤖 Auto-Play Opponent Move
                         </button>
                         <button class="btn-primary" id="btn-simulate-win" style="font-size:11px;padding:8px 12px;background:rgba(255,255,255,0.05);">
                             ⚡ Load ≥20 Ply Winning Game
                         </button>
+                    </div>
+                </aside>
             </main>
         `;
 
@@ -1058,6 +1125,48 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ============================================================== -->
+            <!-- MODAL: PLAYER PROFILE SETUP (Part A)                           -->
+            <!-- ============================================================== -->
+            <div class="modal-overlay" id="modal-profile-setup">
+                <div class="modal-card" style="max-width:480px;">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title">Player Profile Setup</h3>
+                            <span class="mono" style="font-size:10px;color:var(--accent-cyan);">BASE-NATIVE IDENTITY & AVATAR</span>
+                        </div>
+                        <button class="modal-close-btn" id="modal-profile-close">✕</button>
+                    </div>
+
+                    <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">
+                        Choose your chess alias and avatar badge. Your opponent will see this in the Arena instead of a raw wallet address.
+                    </div>
+
+                    <div style="margin-bottom:14px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                            <label class="mono" style="font-size:10px;color:var(--dim-more);">USERNAME (3-20 CHARS, ALPHANUMERIC + _)</label>
+                            <span class="mono" id="profile-char-count" style="font-size:10px;color:var(--dim);">0/20</span>
+                        </div>
+                        <input type="text" id="input-profile-username" placeholder="e.g. Satoshi_Kasparov" maxlength="20"
+                               style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#fff;font-size:14px;">
+                        <div id="profile-validation-msg" style="color:#ef4444;font-size:11px;margin-top:4px;display:none;"></div>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
+                        <label class="mono" style="font-size:10px;color:var(--dim-more);display:block;margin-bottom:8px;">CHOOSE AVATAR PRESET</label>
+                        <div class="avatar-preset-grid" id="profile-avatar-presets">
+                            <!-- Populated dynamically from PRESET_AVATARS -->
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn-primary" id="btn-save-profile" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
+                            💾 Save Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
 
         document.body.appendChild(landing);
@@ -1135,9 +1244,59 @@
                         const pEl = document.createElement('div');
                         pEl.className = 'chess-piece';
                         pEl.innerHTML = PIECE_SVGS[pKey];
+
+                        // HTML5 Drag-and-Drop capability
+                        const canMove = !state.isSpectator && state.status !== 'SETTLED' && state.status !== 'CANCELLED' && piece.color === state.chess.turn();
+                        if (canMove) {
+                            pEl.setAttribute('draggable', 'true');
+                            pEl.addEventListener('dragstart', (e) => {
+                                e.dataTransfer.setData('text/plain', squareName);
+                                e.dataTransfer.effectAllowed = 'move';
+                                state.selectedSquare = squareName;
+                                state.legalMovesForSelected = state.chess.moves({ square: squareName, verbose: true });
+                            });
+                            pEl.addEventListener('dragend', () => {
+                                document.querySelectorAll('.square.drag-over').forEach(s => s.classList.remove('drag-over'));
+                            });
+                        }
+
                         sqEl.appendChild(pEl);
                     }
                 }
+
+                // Square Drag & Drop Listeners
+                sqEl.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    sqEl.classList.add('drag-over');
+                });
+                sqEl.addEventListener('dragleave', () => {
+                    sqEl.classList.remove('drag-over');
+                });
+                sqEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    sqEl.classList.remove('drag-over');
+                    const fromSq = e.dataTransfer.getData('text/plain');
+                    if (fromSq && fromSq !== squareName) {
+                        handleAttemptMove(fromSq, squareName);
+                    }
+                });
+
+                // Pointer / Touch handling for mobile drag-and-drop & tap
+                sqEl.addEventListener('pointerdown', () => {
+                    if (piece && piece.color === state.chess.turn()) {
+                        state.pointerDragOrigin = squareName;
+                    }
+                });
+                sqEl.addEventListener('pointerup', (e) => {
+                    if (state.pointerDragOrigin && state.pointerDragOrigin !== squareName) {
+                        handleAttemptMove(state.pointerDragOrigin, squareName);
+                        state.pointerDragOrigin = null;
+                        e.stopPropagation();
+                        return;
+                    }
+                    state.pointerDragOrigin = null;
+                });
 
                 sqEl.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -1152,24 +1311,74 @@
     }
 
     // -------------------------------------------------------------
-    // SQUARE CLICK & MOVE HANDLING
+    // SQUARE CLICK, DRAG-AND-DROP & MOVE HANDLING
     // -------------------------------------------------------------
+    function handleAttemptMove(from, to) {
+        if (state.status === 'SETTLED' || state.status === 'CANCELLED' || state.isSpectator) return;
+        if (!from || !to || from === to) return;
+
+        const moves = state.chess.moves({ square: from, verbose: true });
+        const moveCandidate = moves.find(m => m.to === to);
+        if (moveCandidate) {
+            if (moveCandidate.flags && moveCandidate.flags.includes('p')) {
+                promptPromotion(from, to);
+                return;
+            }
+            executeMove(from, to);
+        } else {
+            // Illegal move visual rejection: shake board, flash square red, play sound
+            triggerIllegalMoveFeedback(to);
+        }
+    }
+
+    function triggerIllegalMoveFeedback(targetSquare) {
+        const boardEl = document.getElementById('chessboard');
+        if (boardEl) {
+            boardEl.classList.remove('shake-illegal');
+            void boardEl.offsetWidth; // trigger reflow
+            boardEl.classList.add('shake-illegal');
+            setTimeout(() => boardEl?.classList.remove('shake-illegal'), 400);
+        }
+        if (targetSquare) {
+            const sqEl = document.querySelector(`.square[data-square="${targetSquare}"]`);
+            if (sqEl) {
+                sqEl.classList.add('illegal-target');
+                setTimeout(() => sqEl?.classList.remove('illegal-target'), 400);
+            }
+        }
+        playSound('check');
+        showToast('⚠️ Illegal move rejected');
+        state.selectedSquare = null;
+        state.legalMovesForSelected = [];
+        renderBoard();
+    }
+
     function handleSquareClick(square) {
-        if (state.status === 'SETTLED' || state.status === 'CANCELLED') return;
+        if (state.status === 'SETTLED' || state.status === 'CANCELLED' || state.isSpectator) return;
 
         const pieceAtSquare = state.chess.get(square);
         const turn = state.chess.turn();
 
         // 1. If currently a piece is selected and user clicked a target square
         if (state.selectedSquare) {
+            if (state.selectedSquare === square) {
+                state.selectedSquare = null;
+                state.legalMovesForSelected = [];
+                renderBoard();
+                return;
+            }
+
             const moveCandidate = state.legalMovesForSelected.find(m => m.to === square);
             if (moveCandidate) {
-                // Check if promotion is needed
                 if (moveCandidate.flags && moveCandidate.flags.includes('p')) {
                     promptPromotion(state.selectedSquare, square);
                     return;
                 }
                 executeMove(state.selectedSquare, square);
+                return;
+            } else if (!pieceAtSquare || pieceAtSquare.color !== turn) {
+                // Clicked an illegal target square
+                triggerIllegalMoveFeedback(square);
                 return;
             }
         }
@@ -1234,6 +1443,7 @@
         state.clocks[movedColor] += inc;
 
         renderBoard();
+        updateHUDs();
         appendMoveNotation(move);
         updateLiveStockfishEval();
 
@@ -1343,11 +1553,54 @@
         const plies = state.chess ? state.chess.history().length : 0;
         const turn = state.chess ? state.chess.turn() : 'w';
 
+        // Turn Banner Updater (PRD Part B)
+        const turnBanner = document.getElementById('arena-turn-banner');
+        const turnBannerText = document.getElementById('turn-banner-text');
+        if (turnBanner && turnBannerText) {
+            if (state.status === 'SETTLED') {
+                turnBanner.className = 'turn-banner settling';
+                turnBannerText.textContent = '✓ MATCH SETTLED ON-CHAIN — PROPORTIONAL DISBURSEMENT COMPLETE';
+            } else if (state.isSpectator) {
+                turnBanner.className = 'turn-banner opp-turn';
+                turnBannerText.textContent = `👁️ SPECTATOR VIEW — ${turn === 'w' ? 'WHITE' : 'BLACK'}'S TURN TO MOVE`;
+            } else if (turn === state.playerA.color) {
+                turnBanner.className = 'turn-banner my-turn';
+                turnBannerText.textContent = `⚡ YOUR TURN (${turn === 'w' ? 'WHITE' : 'BLACK'}) — SELECT PIECE TO MOVE`;
+            } else {
+                turnBanner.className = 'turn-banner opp-turn';
+                turnBannerText.textContent = `⏳ OPPONENT'S TURN (${turn === 'w' ? 'WHITE' : 'BLACK'}) — AWAITING MOVE`;
+            }
+        }
+
         // Turn glows
         const hudA = document.getElementById('hud-player-a');
         const hudB = document.getElementById('hud-player-b');
         if (hudA) hudA.classList.toggle('active-turn', turn === state.playerA.color);
         if (hudB) hudB.classList.toggle('active-turn', turn === state.playerB.color);
+
+        // Update Player Names & Avatars in HUD
+        const nameA = document.getElementById('name-player-a');
+        const avatarA = document.getElementById('avatar-player-a');
+        if (nameA) {
+            nameA.textContent = walletState.profile?.username ? `${walletState.profile.username} (White)` : 'Player A (White)';
+        }
+        if (avatarA && walletState.profile?.avatar) {
+            avatarA.textContent = walletState.profile.avatar.icon;
+        }
+
+        const nameB = document.getElementById('name-player-b');
+        const avatarB = document.getElementById('avatar-player-b');
+        if (nameB) {
+            nameB.textContent = state.playerBProfile?.username ? `${state.playerBProfile.username} (Black)` : 'Player B (Black)';
+        }
+        if (avatarB && state.playerBProfile?.avatar) {
+            avatarB.textContent = state.playerBProfile.avatar.icon;
+        }
+
+        // Auto-fetch opponent profile if address known and not yet fetched
+        if (state.playerB?.address && state.playerB.address !== state.lastFetchedPlayerBAddr) {
+            fetchOpponentProfile(state.playerB.address);
+        }
 
         // Ply Counter & Threshold badge (PRD Section 5.2)
         const plyBadge = document.getElementById('ply-threshold-badge');
@@ -1427,24 +1680,32 @@
 
         const clkA = document.getElementById('clock-player-a');
         const clkB = document.getElementById('clock-player-b');
+        const turn = state.chess ? state.chess.turn() : 'w';
+        const isGameRunning = state.status === 'ACTIVE';
 
         if (clkA) {
             clkA.textContent = fmt(state.clocks[state.playerA.color]);
             clkA.classList.toggle('low-time', state.clocks[state.playerA.color] <= 30);
+            clkA.classList.toggle('running-clock', isGameRunning && turn === state.playerA.color);
         }
         if (clkB) {
             clkB.textContent = fmt(state.clocks[state.playerB.color]);
             clkB.classList.toggle('low-time', state.clocks[state.playerB.color] <= 30);
+            clkB.classList.toggle('running-clock', isGameRunning && turn === state.playerB.color);
         }
     }
 
     // -------------------------------------------------------------
-    // MOVE NOTATION TABLE
+    // MOVE NOTATION TABLE (PRD Part B)
     // -------------------------------------------------------------
     function appendMoveNotation(move) {
         const scroll = document.getElementById('move-list-scroll');
+        if (!scroll) return;
         const emptyHint = document.getElementById('empty-move-hint');
         if (emptyHint) emptyHint.remove();
+
+        // Clear previous .last-ply highlights across table
+        scroll.querySelectorAll('.last-ply').forEach(el => el.classList.remove('last-ply'));
 
         const history = state.chess.history();
         const moveNumber = Math.ceil(history.length / 2);
@@ -1463,8 +1724,10 @@
 
         if (move.color === 'w') {
             whiteSpan.textContent = move.san;
+            whiteSpan.classList.add('last-ply');
         } else {
             blackSpan.textContent = move.san;
+            blackSpan.classList.add('last-ply');
         }
 
         scroll.scrollTop = scroll.scrollHeight;
@@ -1517,8 +1780,10 @@
     // PRD SECTION 20: SETTLEMENT & GAME RECEIPT MODAL
     // -------------------------------------------------------------
     async function settleGame(endReason, resignerColor = null) {
-        state.status = 'SETTLED';
+        state.status = 'SETTLING';
         if (state.clockTimer) clearInterval(state.clockTimer);
+        updateHUDs();
+        showToast('⏳ Submitting game to oracle & settling on Base Sepolia...');
         playSound('settle');
 
         const plies = state.chess.history().length;
@@ -1591,6 +1856,8 @@
             };
         }
 
+        state.status = 'SETTLED';
+        updateHUDs();
         state.lastSettlementReceipt = receipt;
         showSettlementReceiptModal(receipt);
     }
@@ -1652,6 +1919,32 @@
         `;
 
         modal.classList.add('open');
+
+        // Populate Persistent Post-Game Summary Card (PRD Part B)
+        const persistentSummary = document.getElementById('persistent-match-summary');
+        if (persistentSummary) {
+            persistentSummary.style.display = 'block';
+            const endReasonEl = document.getElementById('summary-end-reason');
+            if (endReasonEl) endReasonEl.textContent = r.endReason || 'SETTLED';
+
+            const nameA = walletState.profile?.username ? `${walletState.profile.username} (White)` : 'Player A (White)';
+            const nameB = state.playerBProfile?.username ? `${state.playerBProfile.username} (Black)` : 'Player B (Black)';
+            const nameAEl = document.getElementById('summary-name-a');
+            const nameBEl = document.getElementById('summary-name-b');
+            if (nameAEl) nameAEl.textContent = nameA;
+            if (nameBEl) nameBEl.textContent = nameB;
+
+            const payoutAEl = document.getElementById('summary-payout-a');
+            const payoutBEl = document.getElementById('summary-payout-b');
+            if (payoutAEl) payoutAEl.textContent = `${r.payoutUSDC_A.toFixed(3)} USDC (${(r.payoutBpsToA / 100).toFixed(1)}%)`;
+            if (payoutBEl) payoutBEl.textContent = `${r.payoutUSDC_B.toFixed(3)} USDC (${(r.payoutBpsToB / 100).toFixed(1)}%)`;
+
+            const linkEl = document.getElementById('summary-basescan-link');
+            if (linkEl) {
+                linkEl.href = r.baseScanUrl || `https://sepolia.basescan.org/tx/${r.txHash}`;
+                linkEl.textContent = `${r.txHash.slice(0, 10)}...${r.txHash.slice(-6)} ↗`;
+            }
+        }
     }
 
     // -------------------------------------------------------------
@@ -1678,6 +1971,11 @@
     // MATCH CREATION & LOBBY CONTROLLER
     // -------------------------------------------------------------
     async function startNewMatch(stakeAmount = 10.0, timeControlIdx = 1, autoStartClock = true) {
+        const persistentSummary = document.getElementById('persistent-match-summary');
+        if (persistentSummary) {
+            persistentSummary.style.display = 'none';
+        }
+
         state.stakeAmount = stakeAmount;
         state.totalPot = stakeAmount * 2;
         state.timeControlIdx = timeControlIdx;
@@ -2022,6 +2320,162 @@
     }
 
     // -------------------------------------------------------------
+    // PLAYER PROFILE MANAGEMENT (PRD Part A)
+    // -------------------------------------------------------------
+    let selectedAvatarId = 'knight-neon';
+
+    function renderProfileModalPresets() {
+        const container = document.getElementById('profile-avatar-presets');
+        if (!container) return;
+        container.innerHTML = PRESET_AVATARS.map(a => `
+            <div class="avatar-preset-item ${a.id === selectedAvatarId ? 'selected' : ''}" data-avatar-id="${a.id}" title="${a.label}">
+                <div class="avatar-icon">${a.icon}</div>
+                <div class="avatar-label">${a.label}</div>
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.avatar-preset-item').forEach(item => {
+            item.addEventListener('click', () => {
+                container.querySelectorAll('.avatar-preset-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                selectedAvatarId = item.dataset.avatarId;
+            });
+        });
+    }
+
+    function openProfileModal(address = null) {
+        const modal = document.getElementById('modal-profile-setup');
+        if (!modal) return;
+        const usernameInput = document.getElementById('input-profile-username');
+        const charCount = document.getElementById('profile-char-count');
+        const validationMsg = document.getElementById('profile-validation-msg');
+
+        if (usernameInput) {
+            usernameInput.value = (walletState.profile && walletState.profile.username) || '';
+            if (charCount) charCount.textContent = `${usernameInput.value.length}/20`;
+        }
+        if (validationMsg) validationMsg.style.display = 'none';
+
+        if (walletState.profile && walletState.profile.avatarId) {
+            selectedAvatarId = walletState.profile.avatarId;
+        } else {
+            selectedAvatarId = 'knight-neon';
+        }
+
+        renderProfileModalPresets();
+        modal.classList.add('open');
+    }
+
+    function closeProfileModal() {
+        const modal = document.getElementById('modal-profile-setup');
+        if (modal) modal.classList.remove('open');
+    }
+
+    async function fetchAndApplyUserProfile(address) {
+        if (!address || address === '0x0000000000000000000000000000000000000000') return null;
+        try {
+            const res = await fetch(`/api/profile/${address}`);
+            if (res.ok) {
+                const data = await res.json();
+                const profile = data.profile || data;
+                walletState.profile = profile;
+                updateUserProfileUI(profile);
+                return profile;
+            }
+        } catch (err) {
+            console.warn('Profile fetch notice:', err);
+        }
+        return null;
+    }
+
+    function updateUserProfileUI(profile) {
+        const badge = document.getElementById('user-profile-badge');
+        const iconEl = document.getElementById('profile-badge-icon');
+        const nameEl = document.getElementById('profile-badge-name');
+        if (badge && iconEl && nameEl) {
+            badge.style.display = 'inline-flex';
+            if (profile && profile.username) {
+                nameEl.textContent = profile.username;
+                iconEl.textContent = profile.avatar?.icon || '♟';
+            } else {
+                nameEl.textContent = 'Set Profile';
+                iconEl.textContent = '👤';
+            }
+        }
+        updateHUDs();
+    }
+
+    async function fetchOpponentProfile(address) {
+        if (!address || address === state.lastFetchedPlayerBAddr) return;
+        state.lastFetchedPlayerBAddr = address;
+        try {
+            const res = await fetch(`/api/profile/${address}`);
+            if (res.ok) {
+                const data = await res.json();
+                state.playerBProfile = data.profile || data;
+                updateHUDs();
+            }
+        } catch (err) {
+            console.warn('Opponent profile fetch error:', err);
+        }
+    }
+
+    async function handleProfileSave() {
+        const usernameInput = document.getElementById('input-profile-username');
+        const validationMsg = document.getElementById('profile-validation-msg');
+        const saveBtn = document.getElementById('btn-save-profile');
+        if (!usernameInput || !validationMsg) return;
+
+        const username = usernameInput.value.trim();
+        const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+
+        if (!usernameRegex.test(username)) {
+            validationMsg.textContent = 'Username must be 3-20 characters long and contain only letters, numbers, and underscores.';
+            validationMsg.style.display = 'block';
+            return;
+        }
+        validationMsg.style.display = 'none';
+
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+        }
+
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    address: walletState.address,
+                    username,
+                    avatarId: selectedAvatarId
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                walletState.profile = data.profile;
+                updateUserProfileUI(data.profile);
+                closeProfileModal();
+                showToast(`✅ Profile saved: ${data.profile.username} ${data.profile.avatar.icon}`);
+                playSound('settle');
+            } else {
+                validationMsg.textContent = data.error || 'Failed to save profile.';
+                validationMsg.style.display = 'block';
+            }
+        } catch (err) {
+            console.error('Save profile error:', err);
+            validationMsg.textContent = 'Network error saving profile.';
+            validationMsg.style.display = 'block';
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.textContent = '💾 Save Profile';
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
     // EVENT LISTENERS & USER CONTROLS
     // -------------------------------------------------------------
     function setupEventListeners() {
@@ -2064,6 +2518,38 @@
         document.getElementById('btn-rules-close-done')?.addEventListener('click', () => {
             modalRules.classList.remove('open');
         });
+
+        // Profile Modal Listeners (PRD Part A)
+        document.getElementById('modal-profile-close')?.addEventListener('click', closeProfileModal);
+        document.getElementById('btn-save-profile')?.addEventListener('click', handleProfileSave);
+        document.getElementById('user-profile-badge')?.addEventListener('click', () => openProfileModal());
+
+        document.getElementById('input-profile-username')?.addEventListener('input', (e) => {
+            const countEl = document.getElementById('profile-char-count');
+            if (countEl) countEl.textContent = `${e.target.value.length}/20`;
+            const msgEl = document.getElementById('profile-validation-msg');
+            if (msgEl) msgEl.style.display = 'none';
+        });
+
+        // Persistent Summary Card New Match Action (PRD Part B)
+        document.getElementById('btn-summary-new-match')?.addEventListener('click', () => {
+            const persistentSummary = document.getElementById('persistent-match-summary');
+            if (persistentSummary) persistentSummary.style.display = 'none';
+            if (canParticipateInMatch()) {
+                modalLobby?.classList.add('open');
+            } else {
+                startNewMatch(state.stakeAmount, state.timeControlIdx);
+            }
+        });
+
+        // Spectator Mode URL Check (PRD Part B)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('spectator') === 'true' || urlParams.get('spectate') === 'true' || urlParams.get('mode') === 'spectator') {
+            state.isSpectator = true;
+            const banner = document.getElementById('spectator-mode-banner');
+            if (banner) banner.style.display = 'flex';
+            window.showArenaView();
+        }
 
         // Resign Button -> Opens PRD Section 13 Modal
         document.getElementById('btn-resign-action')?.addEventListener('click', () => {
@@ -2542,6 +3028,12 @@
                 // 4. Query real on-chain balance
                 await handleRecheckBalance();
 
+                // 5. Query or setup player profile (PRD Part A)
+                const userProf = await fetchAndApplyUserProfile(walletState.address);
+                if (!userProf || !userProf.username) {
+                    openProfileModal(walletState.address);
+                }
+
                 document.getElementById('modal-connect-wallet')?.classList.remove('open');
                 showToast(`🦊 Connected: ${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)} (${pName})`);
                 playSound('settle');
@@ -2719,6 +3211,7 @@
                     walletState.connected = true;
                     showToast(`🔄 Account switched: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
                     handleRecheckBalance();
+                    fetchAndApplyUserProfile(accounts[0]).catch(() => {});
                 }
                 syncLandingPageUI();
                 syncConnectModalState();
@@ -2746,6 +3239,7 @@
                     walletState.providerType = window.ethereum.isMetaMask ? 'MetaMask' :
                                               (window.ethereum.isCoinbaseWallet ? 'Coinbase Extension' :
                                               (window.ethereum.isRabby ? 'Rabby' : 'Injected Web3 Wallet'));
+                    fetchAndApplyUserProfile(accounts[0]).catch(() => {});
                     window.ethereum.request({ method: 'eth_chainId' }).then(chainIdHex => {
                         walletState.chainId = parseInt(chainIdHex, 16);
                         syncLandingPageUI();
