@@ -55,7 +55,7 @@ These values are authoritative for V2.1. The implementation must not silently su
 |---|---|---|
 | **EvalStakeEscrow Contract** | `0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0` | [BaseScan Contract](https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0) |
 | **Trusted Oracle Signer** | `0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9` | [BaseScan Account](https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9) |
-| **Testnet USDC (Base Sepolia)** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [BaseScan Token](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
+| **Testnet USDC (Circle, official Base Sepolia deployment)** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [BaseScan Token](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
 
 ### Important implementation rule
 
