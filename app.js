@@ -2806,6 +2806,7 @@
         // Expose state for telemetry and verification
         window.state = state;
         window.walletState = walletState;
+        window.showSettlementReceiptModal = showSettlementReceiptModal;
     }
 
     // Start initialization when document is ready
