@@ -52,8 +52,8 @@
         boardOrientation: 'w', // 'w' or 'b'
         gameId: null,
         status: 'READY', // 'READY', 'ACTIVE', 'SETTLED', 'CANCELLED'
-        stakeAmount: 10.0,
-        totalPot: 20.0,
+        stakeAmount: 0.1,
+        totalPot: 0.2,
         timeControlIdx: 1, // 0: 3+2, 1: 5+3, 2: 10+0
         timeControlConfigs: [
             { initial: 180, inc: 2, label: '3+2 Blitz' },
@@ -885,10 +885,10 @@
                         <div>
                             <label class="mono" style="font-size:10px;display:block;margin-bottom:6px;">STAKE AMOUNT PER PLAYER (USDC)</label>
                             <div style="display:flex;gap:8px;">
-                                <button class="btn-primary stake-opt-btn" data-stake="5">5 USDC</button>
-                                <button class="btn-primary stake-opt-btn active" data-stake="10">10 USDC</button>
-                                <button class="btn-primary stake-opt-btn" data-stake="25">25 USDC</button>
-                                <button class="btn-primary stake-opt-btn" data-stake="50">50 USDC</button>
+                                <button class="btn-primary stake-opt-btn active" data-stake="0.1">0.10 USDC</button>
+                                <button class="btn-primary stake-opt-btn" data-stake="1">1.00 USDC</button>
+                                <button class="btn-primary stake-opt-btn" data-stake="5">5.00 USDC</button>
+                                <button class="btn-primary stake-opt-btn" data-stake="10">10.00 USDC</button>
                             </div>
                         </div>
 
@@ -904,7 +904,7 @@
                         <div class="escrow-pot-display">
                             <div>
                                 <span class="mono" style="font-size:10px;color:var(--dim);">PROJECTED TOTAL ESCROW POT</span>
-                                <div style="font-size:22px;font-weight:700;color:#ffffff;" id="lobby-projected-pot">20.00 USDC</div>
+                                <div style="font-size:22px;font-weight:700;color:#ffffff;" id="lobby-projected-pot">0.20 USDC</div>
                             </div>
                             <span class="mono" style="font-size:10px;color:var(--accent-green);">0% PLATFORM FEE</span>
                         </div>
@@ -924,7 +924,7 @@
 
                         <div class="modal-actions" id="lobby-create-actions">
                             <button class="btn-primary" id="btn-create-match-submit" style="background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;">
-                                Deposit 10.00 USDC & Create Match
+                                Deposit 0.10 USDC & Create Match
                             </button>
                         </div>
                     </div>
@@ -2138,7 +2138,7 @@
         });
 
         // Create Match Submit
-        document.getElementById('btn-create-match-submit')?.addEventListener('click', () => {
+        document.getElementById('btn-create-match-submit')?.addEventListener('click', async () => {
             if (!canParticipateInMatch()) {
                 document.getElementById('modal-lobby')?.classList.remove('open');
                 return;
@@ -2147,10 +2147,76 @@
                 showToast(`💧 Insufficient balance (${walletState.balanceUSDC.toFixed(2)} USDC). Stake requires ${state.stakeAmount.toFixed(2)} USDC.`);
                 return;
             }
-            startNewMatch(state.stakeAmount, state.timeControlIdx);
+
+            // Real on-chain createMatch if realSigner exists and not in sandbox
+            if (realSigner && !walletState.isSandbox) {
+                try {
+                    showToast('⛓️ Approving USDC & Calling escrow.createMatch on Base Sepolia...');
+                    const ethersLib = window.ethers || (typeof ethers !== 'undefined' ? ethers : null);
+                    if (ethersLib) {
+                        const usdcContract = new ethersLib.Contract(
+                            LOCKED.USDC_ADDRESS,
+                            ['function approve(address spender, uint256 amount) returns (bool)'],
+                            realSigner
+                        );
+                        const escrowContract = new ethersLib.Contract(
+                            LOCKED.ESCROW_CONTRACT,
+                            ['function createMatch(bytes32 gameId, uint256 stakeAmount, uint8 timeControl) returns (bytes32)'],
+                            realSigner
+                        );
+                        const gameIdBytes32 = ethersLib.id(`match_ui_${Date.now()}_${Math.random()}`);
+                        const rawStake = ethersLib.parseUnits(state.stakeAmount.toString(), 6);
+
+                        const appTx = await usdcContract.approve(LOCKED.ESCROW_CONTRACT, rawStake);
+                        await appTx.wait(1);
+
+                        const cTx = await escrowContract.createMatch(gameIdBytes32, rawStake, state.timeControlIdx, { gasLimit: 250000 });
+                        await cTx.wait(1);
+
+                        state.gameId = gameIdBytes32;
+                        showToast(`✓ On-Chain Match Created! (${cTx.hash.slice(0, 10)}...)`);
+                    }
+                } catch (err) {
+                    console.error('On-chain match creation error:', err);
+                    showToast('⚠️ On-chain notice: ' + (err.message || err));
+                }
+            }
+
+            await startNewMatch(state.stakeAmount, state.timeControlIdx);
             document.getElementById('modal-lobby')?.classList.remove('open');
             window.showArenaView();
         });
+
+        // Expose on-chain join match helper on window
+        window.joinMatchOnChain = async function (gameId, playerBSigner) {
+            const ethersLib = window.ethers || (typeof ethers !== 'undefined' ? ethers : null);
+            if (!ethersLib) throw new Error('Ethers library not available');
+            const usdcContract = new ethersLib.Contract(
+                LOCKED.USDC_ADDRESS,
+                ['function approve(address spender, uint256 amount) returns (bool)'],
+                playerBSigner
+            );
+            const escrowContract = new ethersLib.Contract(
+                LOCKED.ESCROW_CONTRACT,
+                ['function joinMatch(bytes32 gameId)'],
+                playerBSigner
+            );
+            const rawStake = ethersLib.parseUnits((state.stakeAmount || 0.1).toString(), 6);
+            const appTx = await usdcContract.approve(LOCKED.ESCROW_CONTRACT, rawStake);
+            await appTx.wait(1);
+            const jTx = await escrowContract.joinMatch(gameId, { gasLimit: 250000 });
+            await jTx.wait(1);
+
+            const bAddress = await playerBSigner.getAddress();
+            await fetch('/api/matches/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gameId, playerB: bAddress })
+            });
+            state.playerB.address = bAddress;
+            state.playerB.connected = true;
+            return jTx.hash;
+        };
 
         // -------------------------------------------------------------
         // LANDING PAGE & NAVIGATION EVENT LISTENERS
