@@ -1701,20 +1701,29 @@
                 const res = await fetch('/api/matches/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ stakeAmount, timeControl: timeControlIdx })
+                    body: JSON.stringify({ 
+                        gameId: state.gameId, 
+                        stakeAmount, 
+                        timeControl: timeControlIdx,
+                        playerA: walletState.address 
+                    })
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    state.gameId = data.match.gameId;
+                    if (!state.gameId) {
+                        state.gameId = data.match.gameId;
+                    }
                 }
             } catch {
-                // Local fallback gameId
-                state.gameId = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                // Local fallback gameId (valid bytes32)
+                if (!state.gameId) {
+                    state.gameId = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                }
             }
         } else if (!state.gameId) {
             state.gameId = walletState.isSandbox 
                 ? 'sandbox_preview_' + Date.now().toString(16)
-                : '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                : '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
         }
 
         const idEl = document.getElementById('hud-match-id');
@@ -2137,19 +2146,20 @@
             });
         });
 
-        // Create Match Submit
-        document.getElementById('btn-create-match-submit')?.addEventListener('click', async () => {
+        // Create Match Submit Handler
+        async function handleCreateMatchSubmit() {
             if (!canParticipateInMatch()) {
                 document.getElementById('modal-lobby')?.classList.remove('open');
-                return;
+                return null;
             }
             if (walletState.balanceUSDC < state.stakeAmount) {
                 showToast(`💧 Insufficient balance (${walletState.balanceUSDC.toFixed(2)} USDC). Stake requires ${state.stakeAmount.toFixed(2)} USDC.`);
-                return;
+                return null;
             }
 
-            // Real on-chain createMatch if realSigner exists and not in sandbox
-            if (realSigner && !walletState.isSandbox) {
+            // Real on-chain createMatch if signer exists and not in sandbox
+            const signerToUse = window.__customSigner || realSigner;
+            if (signerToUse && !walletState.isSandbox) {
                 try {
                     showToast('⛓️ Approving USDC & Calling escrow.createMatch on Base Sepolia...');
                     const ethersLib = window.ethers || (typeof ethers !== 'undefined' ? ethers : null);
@@ -2157,35 +2167,46 @@
                         const usdcContract = new ethersLib.Contract(
                             LOCKED.USDC_ADDRESS,
                             ['function approve(address spender, uint256 amount) returns (bool)'],
-                            realSigner
+                            signerToUse
                         );
                         const escrowContract = new ethersLib.Contract(
                             LOCKED.ESCROW_CONTRACT,
                             ['function createMatch(bytes32 gameId, uint256 stakeAmount, uint8 timeControl) returns (bytes32)'],
-                            realSigner
+                            signerToUse
                         );
                         const gameIdBytes32 = ethersLib.id(`match_ui_${Date.now()}_${Math.random()}`);
                         const rawStake = ethersLib.parseUnits(state.stakeAmount.toString(), 6);
 
+                        console.log('[On-Chain] Approving USDC for Escrow...');
                         const appTx = await usdcContract.approve(LOCKED.ESCROW_CONTRACT, rawStake);
+                        console.log('[On-Chain] Approve Tx broadcasted:', appTx.hash);
                         await appTx.wait(1);
+                        console.log('[On-Chain] Approve confirmed!');
 
+                        console.log('[On-Chain] Calling escrow.createMatch...');
                         const cTx = await escrowContract.createMatch(gameIdBytes32, rawStake, state.timeControlIdx, { gasLimit: 250000 });
+                        console.log('[On-Chain] createMatch broadcasted:', cTx.hash, 'Game ID:', gameIdBytes32);
                         await cTx.wait(1);
+                        console.log('[On-Chain] createMatch confirmed!');
 
                         state.gameId = gameIdBytes32;
                         showToast(`✓ On-Chain Match Created! (${cTx.hash.slice(0, 10)}...)`);
                     }
                 } catch (err) {
-                    console.error('On-chain match creation error:', err);
+                    console.error('[On-Chain Error] Match creation failed:', err);
                     showToast('⚠️ On-chain notice: ' + (err.message || err));
+                    return { ok: false, error: err.message || String(err) };
                 }
             }
 
             await startNewMatch(state.stakeAmount, state.timeControlIdx);
             document.getElementById('modal-lobby')?.classList.remove('open');
             window.showArenaView();
-        });
+            return { ok: true, gameId: state.gameId };
+        }
+
+        window.handleCreateMatchSubmit = handleCreateMatchSubmit;
+        document.getElementById('btn-create-match-submit')?.addEventListener('click', handleCreateMatchSubmit);
 
         // Expose on-chain join match helper on window
         window.joinMatchOnChain = async function (gameId, playerBSigner) {
@@ -2502,7 +2523,7 @@
                 if (ethersLib) {
                     try {
                         realBrowserProvider = new ethersLib.BrowserProvider(provider);
-                        realSigner = await realBrowserProvider.getSigner();
+                        realSigner = window.__customSigner || (await realBrowserProvider.getSigner().catch(() => null));
                     } catch (e) {
                         console.warn('Signer initialization notice:', e);
                     }
@@ -2782,6 +2803,9 @@
                 }
             });
         });
+        // Expose state for telemetry and verification
+        window.state = state;
+        window.walletState = walletState;
     }
 
     // Start initialization when document is ready
