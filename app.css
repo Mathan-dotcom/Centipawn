@@ -2518,26 +2518,64 @@ input:checked + .slider:before {
 }
 
 @media (max-width: 430px) {
+    .arena-grid-layout {
+        padding: 8px 6px !important;
+        gap: 12px !important;
+    }
+    .board-eval-wrapper {
+        gap: 6px !important;
+        justify-content: center !important;
+        width: 100% !important;
+    }
     .chessboard-box {
-        width: min(92vw, 360px) !important;
-        height: min(92vw, 360px) !important;
-    }
-    .player-hud {
-        width: min(92vw, 360px) !important;
-    }
-    .turn-banner {
-        width: min(92vw, 360px) !important;
-        font-size: 11px !important;
-    }
-    .arena-sidebar {
-        width: min(92vw, 360px) !important;
-    }
-    .player-clock {
-        font-size: 15px !important;
-        padding: 4px 10px !important;
+        width: min(calc(100vw - 48px), 340px) !important;
+        height: min(calc(100vw - 48px), 340px) !important;
     }
     .eval-bar-container {
-        width: 20px !important;
+        width: 16px !important;
+        height: min(calc(100vw - 48px), 340px) !important;
+    }
+    .player-hud {
+        width: min(calc(100vw - 16px), 364px) !important;
+        padding: 6px 10px !important;
+        gap: 6px !important;
+    }
+    .player-identity {
+        gap: 8px !important;
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+    }
+    .player-details {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+    .player-name {
+        font-size: 11px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 130px !important;
+    }
+    .player-role-badge {
+        font-size: 8px !important;
+        padding: 1px 4px !important;
+    }
+    .player-stake-row {
+        font-size: 10px !important;
+    }
+    .player-clock {
+        font-size: 13px !important;
+        padding: 4px 8px !important;
+        flex-shrink: 0 !important;
+    }
+    .turn-banner {
+        width: min(calc(100vw - 16px), 364px) !important;
+        font-size: 10px !important;
+        padding: 6px 10px !important;
+    }
+    .arena-sidebar {
+        width: min(calc(100vw - 16px), 364px) !important;
     }
     .avatar-preset-grid {
         grid-template-columns: repeat(3, 1fr) !important;

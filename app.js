@@ -452,6 +452,10 @@
     };
 
     window.showArenaView = function() {
+        ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'loading-overlay'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
         const landing = document.getElementById('landing-page');
         const arena = document.getElementById('arena-container');
         if (landing) {
@@ -3035,6 +3039,7 @@
                 }
 
                 document.getElementById('modal-connect-wallet')?.classList.remove('open');
+                localStorage.setItem('centipawn_connected_address', walletState.address);
                 showToast(`🦊 Connected: ${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)} (${pName})`);
                 playSound('settle');
                 syncLandingPageUI();
@@ -3148,6 +3153,7 @@
             walletState.address = '0x0000000000000000000000000000000000000000';
             realBrowserProvider = null;
             realSigner = null;
+            localStorage.removeItem('centipawn_connected_address');
             syncLandingPageUI();
             syncConnectModalState();
             showToast('🔌 Wallet disconnected');
@@ -3189,6 +3195,8 @@
             walletState.balanceETH = 0.05;
             state.playerA.balanceUSDC = 100.0;
             walletState.providerType = 'Instant Judge Sandbox (Ephemeral Keypair)';
+            localStorage.setItem('centipawn_connected_address', ephemeralAddress);
+            fetchAndApplyUserProfile(ephemeralAddress).catch(() => {});
             document.getElementById('modal-connect-wallet')?.classList.remove('open');
             showToast(`⚡ Connected with Sandbox Keypair (${ephemeralAddress.slice(0, 6)}...${ephemeralAddress.slice(-4)}) - Local Preview Only`);
             playSound('settle');
@@ -3248,6 +3256,16 @@
                 }
             }).catch(() => {});
         }
+
+        // Restore previously connected address from localStorage on page reload (PRD Part A)
+        try {
+            const savedAddr = localStorage.getItem('centipawn_connected_address');
+            if (savedAddr && (!walletState.connected || !walletState.address || walletState.address === '0x0000000000000000000000000000000000000000')) {
+                walletState.address = savedAddr;
+                walletState.connected = true;
+                fetchAndApplyUserProfile(savedAddr).catch(() => {});
+            }
+        } catch (e) {}
 
         // Enter Arena buttons
         document.getElementById('btn-nav-enter-arena')?.addEventListener('click', () => {

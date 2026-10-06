@@ -19,5 +19,40 @@
     "avatarId": "centipawn-phoenix",
     "createdAt": 1791275090515,
     "updatedAt": 1791275090530
+  },
+  "0x46ed9ee824c48bfc3c1be186c8fc2ba2049f9305": {
+    "address": "0x46ed9ee824c48bfc3c1be186c8fc2ba2049f9305",
+    "username": "Kasparov_Updated",
+    "avatarId": "centipawn-phoenix",
+    "createdAt": 1791277707800,
+    "updatedAt": 1791277707805
+  },
+  "0x6e2746da909745109f37831233402e52d87dd8aa": {
+    "address": "0x6e2746da909745109f37831233402e52d87dd8aa",
+    "username": "Magnus_Centipawn",
+    "avatarId": "dragon-hyper",
+    "createdAt": 1791277810803,
+    "updatedAt": 1791277810803
+  },
+  "0xc5ecec28d1ac050210c25a20dc335890aefcc6f4": {
+    "address": "0xc5ecec28d1ac050210c25a20dc335890aefcc6f4",
+    "username": "Magnus_Centipawn",
+    "avatarId": "dragon-hyper",
+    "createdAt": 1791278014933,
+    "updatedAt": 1791278014933
+  },
+  "0x08555faeec6b86dd04bcfcfbc7dc599a6336911f": {
+    "address": "0x08555faeec6b86dd04bcfcfbc7dc599a6336911f",
+    "username": "Magnus_Centipawn",
+    "avatarId": "dragon-hyper",
+    "createdAt": 1791278050839,
+    "updatedAt": 1791278050839
+  },
+  "0xd9fb7ecfbb0440233029637a375dc58f9531ca99": {
+    "address": "0xd9fb7ecfbb0440233029637a375dc58f9531ca99",
+    "username": "Magnus_Centipawn",
+    "avatarId": "dragon-hyper",
+    "createdAt": 1791278398808,
+    "updatedAt": 1791278398808
   }
 }

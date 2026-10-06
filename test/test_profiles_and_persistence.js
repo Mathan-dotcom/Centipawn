@@ -44,7 +44,7 @@ async function runTests() {
 
     // 2. Test GET /api/profile/:address for unrecorded address (NEVER 404)
     console.log('Test 2: GET /api/profile/:address for unknown address (Must never 404)');
-    const testAddr = '0x1111222233334444555566667777888899990000';
+    const testAddr = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
     const unknownRes = await request('GET', `/api/profile/${testAddr}`);
     assert.strictEqual(unknownRes.status, 200, 'Unknown address should return 200');
     assert(unknownRes.data.profile, 'Should return profile object');
