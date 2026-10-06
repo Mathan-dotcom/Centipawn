@@ -30,12 +30,14 @@
         address: '0x0000000000000000000000000000000000000000',
         chainId: 84532, // 84532: Base Sepolia, 1: Ethereum Mainnet
         balanceUSDC: 0.0,
-        providerType: null
+        providerType: null,
+        isSandbox: false
     };
 
     function getPRDWalletState() {
         if (!walletState.connected) return 'DISCONNECTED';
         if (walletState.chainId !== LOCKED.CHAIN_ID) return 'WRONG_NETWORK';
+        if (walletState.isSandbox) return 'SANDBOX_MODE';
         if (walletState.balanceUSDC <= 0) return 'ZERO_BALANCE';
         return 'FUNDED';
     }
@@ -1531,25 +1533,29 @@
 
         let receipt = null;
 
-        try {
-            const res = await fetch('/api/matches/settle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    gameId: state.gameId,
-                    endReason: endReasonCode,
-                    finalFEN,
-                    evalCp,
-                    plies
-                })
-            });
+        if (!walletState.isSandbox) {
+            try {
+                const res = await fetch('/api/matches/settle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gameId: state.gameId,
+                        endReason: endReasonCode,
+                        finalFEN,
+                        evalCp,
+                        plies
+                    })
+                });
 
-            if (res.ok) {
-                const data = await res.json();
-                receipt = data.receipt;
+                if (res.ok) {
+                    const data = await res.json();
+                    receipt = data.receipt;
+                }
+            } catch {
+                // Local fallback simulation
             }
-        } catch {
-            // Local fallback simulation
+        } else {
+            console.warn('[Sandbox Guard] Game is running in Sandbox preview mode. Real backend /api/matches/settle skipped.');
         }
 
         if (!receipt) {
@@ -1690,7 +1696,7 @@
             scroll.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px;" id="empty-move-hint">Game in progress. Moves will be recorded here...</div>';
         }
 
-        if (autoStartClock) {
+        if (autoStartClock && !walletState.isSandbox) {
             try {
                 const res = await fetch('/api/matches/create', {
                     method: 'POST',
@@ -1706,7 +1712,9 @@
                 state.gameId = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
             }
         } else if (!state.gameId) {
-            state.gameId = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+            state.gameId = walletState.isSandbox 
+                ? 'sandbox_preview_' + Date.now().toString(16)
+                : '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
         }
 
         const idEl = document.getElementById('hud-match-id');
@@ -2172,6 +2180,11 @@
         // -------------------------------------------------------------
         function canParticipateInMatch() {
             const prdState = getPRDWalletState();
+            if (walletState.isSandbox || prdState === 'SANDBOX_MODE') {
+                showToast('⚠️ Sandbox mode is local board preview only. Real on-chain match creation, staking, and settlement require connecting a real Web3 wallet with verified Base Sepolia USDC.');
+                document.getElementById('modal-connect-wallet')?.classList.add('open');
+                return false;
+            }
             if (prdState === 'DISCONNECTED') {
                 document.getElementById('modal-connect-wallet')?.classList.add('open');
                 showToast('🔑 Please connect wallet before joining or creating matches.');
@@ -2407,6 +2420,7 @@
 
                 walletState.address = accounts[0];
                 walletState.connected = true;
+                walletState.isSandbox = false;
 
                 // Identify provider brand
                 let pName = 'Injected Web3 Wallet';
@@ -2547,6 +2561,7 @@
         // Disconnect Wallet in Modal
         document.getElementById('btn-wallet-disconnect')?.addEventListener('click', () => {
             walletState.connected = false;
+            walletState.isSandbox = false;
             walletState.providerType = null;
             walletState.balanceUSDC = 0.0;
             walletState.balanceETH = 0.0;
@@ -2588,6 +2603,7 @@
                 } catch (e) {}
             }
             walletState.connected = true;
+            walletState.isSandbox = true;
             walletState.chainId = LOCKED.CHAIN_ID;
             walletState.address = ephemeralAddress;
             walletState.balanceUSDC = 100.0;
@@ -2595,7 +2611,7 @@
             state.playerA.balanceUSDC = 100.0;
             walletState.providerType = 'Instant Judge Sandbox (Ephemeral Keypair)';
             document.getElementById('modal-connect-wallet')?.classList.remove('open');
-            showToast(`⚡ Connected with Sandbox Keypair (${ephemeralAddress.slice(0, 6)}...${ephemeralAddress.slice(-4)})`);
+            showToast(`⚡ Connected with Sandbox Keypair (${ephemeralAddress.slice(0, 6)}...${ephemeralAddress.slice(-4)}) - Local Preview Only`);
             playSound('settle');
             syncLandingPageUI();
             syncConnectModalState();
@@ -2665,13 +2681,13 @@
 
         // Create & Join Match triggers (Opens PRD Section 7/8 Modal)
         document.getElementById('hero-create-match')?.addEventListener('click', () => {
-            modalLobby?.classList.add('open');
+            if (canParticipateInMatch()) modalLobby?.classList.add('open');
         });
         document.getElementById('cta-create-match')?.addEventListener('click', () => {
-            modalLobby?.classList.add('open');
+            if (canParticipateInMatch()) modalLobby?.classList.add('open');
         });
         document.getElementById('hero-join-match')?.addEventListener('click', () => {
-            modalLobby?.classList.add('open');
+            if (canParticipateInMatch()) modalLobby?.classList.add('open');
         });
 
         // Escrow specs buttons
