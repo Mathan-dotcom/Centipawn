@@ -27,46 +27,45 @@ h1, h2, h3, h4, h5, h6,
 /* Starter Screen Call to Action Button */
 #starter-enter-btn {
     position: fixed;
-    bottom: 96px;
+    bottom: 54px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 8;
+    z-index: 12;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 28px;
-    background: rgba(14, 15, 20, 0.85);
-    border: 1px solid rgba(112, 214, 255, 0.4);
-    border-radius: 30px;
-    color: #ffffff;
-    font-family: var(--font-coppergold);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    gap: 14px;
+    padding: 12px 24px;
+    background: rgba(13, 15, 18, 0.88);
+    border: 1px solid rgba(160, 175, 195, 0.26);
+    border-radius: 4px;
+    color: #e6ebf0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 0 24px rgba(112, 214, 255, 0.25), inset 0 0 12px rgba(112, 214, 255, 0.15);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     user-select: none;
-    animation: pulseStarterBtn 2.4s ease-in-out infinite;
 }
 
 #starter-enter-btn:hover {
-    transform: translateX(-50%) scale(1.05);
-    border-color: #70d6ff;
-    box-shadow: 0 0 36px rgba(112, 214, 255, 0.5), inset 0 0 16px rgba(112, 214, 255, 0.3);
-    background: rgba(20, 24, 36, 0.95);
+    transform: translateX(-50%) translateY(-2px);
+    border-color: rgba(112, 214, 255, 0.55);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.75), 0 0 16px rgba(112, 214, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: rgba(19, 23, 29, 0.95);
+    color: #ffffff;
 }
 
-@keyframes pulseStarterBtn {
-    0%, 100% { box-shadow: 0 0 20px rgba(112, 214, 255, 0.2); }
-    50% { box-shadow: 0 0 32px rgba(112, 214, 255, 0.45); }
+#starter-enter-btn:active {
+    transform: translateX(-50%) translateY(0);
 }
 
 /* ==========================================================================
-   LANDING PAGE (Stock Background Wallpaper, Registration, Stats, Settings)
+   LANDING PAGE (Forensic Editorial Protocol Environment)
    ========================================================================== */
 #landing-page {
     position: fixed;
@@ -76,12 +75,11 @@ h1, h2, h3, h4, h5, h6,
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
-    background: radial-gradient(circle at 50% 15%, rgba(8, 8, 10, 0.65) 0%, rgba(8, 8, 10, 0.92) 80%),
-                url('landing_bg.jpg') center/cover no-repeat,
-                #08080a;
+    background: radial-gradient(circle at 50% 12%, rgba(20, 23, 29, 0.94) 0%, rgba(9, 10, 12, 0.98) 75%),
+                #090a0c;
     color: var(--ink);
     opacity: 0;
-    transition: opacity 0.6s ease;
+    transition: opacity 0.5s ease;
 }
 
 #landing-page.active {
@@ -255,48 +253,53 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .btn-hero-primary {
-    padding: 14px 32px;
-    background: linear-gradient(135deg, #70d6ff, #a78bfa);
-    border: none;
-    border-radius: 10px;
-    color: #08080a;
-    font-family: var(--font-coppergold);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    padding: 13px 28px;
+    background: #0f1115;
+    border: 1px solid rgba(112, 214, 255, 0.45);
+    border-radius: 4px;
+    color: #f0f4f8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 4px 24px rgba(112, 214, 255, 0.35);
-    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .btn-hero-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(112, 214, 255, 0.55);
+    background: #141820;
+    border-color: rgba(112, 214, 255, 0.85);
+    box-shadow: 0 6px 24px rgba(112, 214, 255, 0.18), 0 0 12px rgba(112, 214, 255, 0.1);
+    transform: translateY(-1px);
+    color: #ffffff;
 }
 
 .btn-hero-secondary {
-    padding: 14px 28px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    color: #ffffff;
-    font-family: var(--font-coppergold);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    padding: 13px 26px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    color: #d2d7df;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
-    backdrop-filter: blur(12px);
-    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-hero-secondary:hover {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    transform: translateY(-1px);
 }
 
 /* Minimalist Feature Pills Strip */
@@ -418,23 +421,34 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .pillar-card {
-    background: rgba(14, 15, 20, 0.65);
+    background: rgba(13, 15, 18, 0.78);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
+    border-radius: 4px;
     padding: 26px 22px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     display: flex;
     flex-direction: column;
     gap: 10px;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.pillar-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 16px;
+    height: 1px;
+    background: rgba(112, 214, 255, 0.4);
 }
 
 .pillar-card:hover {
     border-color: rgba(112, 214, 255, 0.35);
-    background: rgba(18, 22, 32, 0.82);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    background: rgba(18, 22, 28, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .pillar-header {

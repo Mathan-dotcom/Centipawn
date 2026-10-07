@@ -452,7 +452,7 @@
     };
 
     window.showArenaView = function() {
-        ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'loading-overlay'].forEach(id => {
+        ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'editorial-frame', 'loading-overlay'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });

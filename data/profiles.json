@@ -54,5 +54,12 @@
     "avatarId": "dragon-hyper",
     "createdAt": 1791278398808,
     "updatedAt": 1791278398808
+  },
+  "0x29b1145a44ebaac06d2366144863dbde7a4d1c1d": {
+    "address": "0x29b1145a44ebaac06d2366144863dbde7a4d1c1d",
+    "username": "LeveaD",
+    "avatarId": "knight-neon",
+    "createdAt": 1791394513203,
+    "updatedAt": 1791394513203
   }
 }

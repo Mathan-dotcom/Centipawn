@@ -9,24 +9,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap"
     rel="stylesheet">
 <link rel="stylesheet" href="app.css">
 <style>
     :root {
-        --bg: #08080a;
-        --bg-secondary: #0e0f14;
-        --ink: #f2f2f0;
-        --ink-pure: #ffffff;
-        --dim: rgba(242, 242, 240, .38);
-        --dim-more: rgba(242, 242, 240, .68);
-        --dim-faint: rgba(242, 242, 240, .14);
-        --accent-glow: #c4d2e8;
+        --bg-void: #07080a;
+        --bg-desk: #0b0c10;
+        --bg-surface: #111319;
+        --bg-card: rgba(16, 18, 24, 0.72);
+        --ink-primary: #f2efe9;
+        --ink-secondary: #9da0a8;
+        --ink-dim: rgba(220, 218, 212, 0.42);
+        --ink-faint: rgba(220, 218, 212, 0.16);
+        --ink-ghost: rgba(220, 218, 212, 0.05);
         --accent-cyan: #70d6ff;
-        --accent-purple: #a78bfa;
+        --accent-cyan-dim: rgba(112, 214, 255, 0.18);
+        --accent-cyan-subtle: rgba(112, 214, 255, 0.06);
         --accent-green: #34d399;
-        --card-border-outer: rgba(255, 255, 255, .28);
-        --card-border-inner: rgba(255, 255, 255, .10);
+        --border-subtle: rgba(255, 255, 255, 0.08);
+        --border-hairline: rgba(255, 255, 255, 0.04);
+        --grid-line: rgba(255, 255, 255, 0.018);
+        
+        --font-serif: "Cormorant Garamond", "Cinzel", Georgia, serif;
+        --font-display: "Cinzel", "Cormorant Garamond", serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
     }
 
     * {
@@ -38,46 +46,46 @@
     html,
     body {
         height: 100%;
-        background: var(--bg);
+        background: var(--bg-void);
         overflow: hidden;
-        color: var(--ink);
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+        color: var(--ink-primary);
+        font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
     }
 
     /* Scrollbar */
     ::-webkit-scrollbar {
-        width: 6px;
+        width: 5px;
     }
     ::-webkit-scrollbar-track {
-        background: var(--bg);
+        background: var(--bg-void);
     }
     ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.16);
-        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 2px;
     }
     ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.24);
     }
 
     .mono {
-        font-family: "JetBrains Mono", monospace;
+        font-family: var(--font-mono);
         font-size: 10px;
-        letter-spacing: .2em;
+        letter-spacing: .18em;
         text-transform: uppercase;
         font-weight: 500;
-        color: var(--dim);
+        color: var(--ink-dim);
     }
 
     /* ==========================================================================
-       1. STARTER 5-SECOND LOADER
+       1. FORENSIC INITIAL CALIBRATION LOADER
        ========================================================================== */
     #loader {
         position: fixed;
         inset: 0;
         z-index: 1000;
-        background: #08080a;
+        background: var(--bg-void);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -89,7 +97,7 @@
 
     #loader.done {
         opacity: 0;
-        transform: scale(1.05);
+        transform: scale(1.02);
         pointer-events: none;
     }
 
@@ -99,66 +107,63 @@
         flex-direction: column;
         align-items: center;
         text-align: center;
-        max-width: 440px;
+        max-width: 460px;
         width: 90%;
     }
 
-    .loader-orb {
+    .loader-reticle {
         position: relative;
-        width: 100px;
-        height: 100px;
-        margin-bottom: 34px;
+        width: 84px;
+        height: 84px;
+        margin-bottom: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .loader-ring {
+    .reticle-ring {
         position: absolute;
         inset: 0;
         border-radius: 50%;
-        border: 1px dashed rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    .ring-1 {
-        animation: spinClockwise 12s linear infinite;
-        border-top-color: rgba(196, 210, 232, 0.7);
-        border-right-color: transparent;
-    }
-
-    .ring-2 {
+    .reticle-ring-inner {
+        position: absolute;
         inset: 12px;
-        animation: spinCounter 7s linear infinite;
-        border-bottom-color: rgba(255, 255, 255, 0.45);
-        border-left-color: transparent;
-        border-style: solid;
+        border-radius: 50%;
+        border: 1px dashed rgba(220, 218, 212, 0.22);
+        animation: spinSlow 36s linear infinite;
     }
 
-    .ring-3 {
-        inset: 24px;
-        animation: spinClockwise 4s linear infinite;
-        border-color: rgba(112, 214, 255, 0.25);
+    .reticle-crosshair-h {
+        position: absolute;
+        top: 50%;
+        left: -12px;
+        right: -12px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
     }
 
-    .loader-center-glyph {
-        font-family: "Inter Tight", sans-serif;
-        font-weight: 700;
+    .reticle-crosshair-v {
+        position: absolute;
+        left: 50%;
+        top: -12px;
+        bottom: -12px;
+        width: 1px;
+        background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    }
+
+    .reticle-glyph {
         font-size: 22px;
-        letter-spacing: -0.05em;
-        color: #ffffff;
-        text-shadow: 0 0 16px rgba(255, 255, 255, 0.6);
-        animation: pulseGlyph 2.5s ease-in-out infinite;
+        color: var(--ink-primary);
+        line-height: 1;
+        opacity: 0.9;
+        transform: translateY(-1px);
     }
 
-    @keyframes spinClockwise {
+    @keyframes spinSlow {
         to { transform: rotate(360deg); }
-    }
-    @keyframes spinCounter {
-        to { transform: rotate(-360deg); }
-    }
-    @keyframes pulseGlyph {
-        0%, 100% { opacity: 0.7; transform: scale(0.96); }
-        50% { opacity: 1; transform: scale(1.06); }
     }
 
     .loader-brand {
@@ -168,28 +173,30 @@
     .loader-brand .mono {
         display: block;
         margin-bottom: 8px;
-        color: rgba(196, 210, 232, 0.6);
+        font-size: 9px;
+        letter-spacing: 0.24em;
+        color: var(--ink-dim);
     }
 
     .loader-title {
-        font-family: "Inter Tight", sans-serif;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        color: #f2f2f0;
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        color: var(--ink-primary);
+        text-transform: uppercase;
     }
 
     .loader-track-wrap {
         width: 100%;
-        margin-bottom: 16px;
+        max-width: 320px;
+        margin-bottom: 14px;
     }
 
     .loader-track {
         width: 100%;
-        height: 2px;
+        height: 1px;
         background: rgba(255, 255, 255, 0.08);
-        border-radius: 2px;
-        overflow: hidden;
         position: relative;
     }
 
@@ -199,8 +206,8 @@
         left: 0;
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), #c4d2e8, #ffffff);
-        box-shadow: 0 0 12px rgba(196, 210, 232, 0.6);
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), #70d6ff, #ffffff);
+        box-shadow: 0 0 10px rgba(112, 214, 255, 0.4);
         transition: width 0.05s linear;
     }
 
@@ -209,51 +216,134 @@
         justify-content: space-between;
         align-items: center;
         width: 100%;
+        max-width: 320px;
         margin-top: 10px;
     }
 
+    .loader-status {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        color: var(--ink-dim);
+    }
+
     .loader-pct {
-        font-family: "JetBrains Mono", monospace;
-        font-size: 11px;
-        font-weight: 600;
-        color: #ffffff;
-        letter-spacing: 0.1em;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--ink-primary);
+        letter-spacing: 0.08em;
     }
 
     .loader-footnote {
-        margin-top: 24px;
-        font-size: 9px;
-        letter-spacing: 0.24em;
-        color: rgba(242, 242, 240, 0.24);
+        margin-top: 20px;
+        font-family: var(--font-mono);
+        font-size: 8.5px;
+        letter-spacing: 0.22em;
+        color: rgba(220, 218, 212, 0.22);
+        text-transform: uppercase;
     }
 
     /* ==========================================================================
-       2. 3D STARTER SCENE BACKGROUND & LAYERS
+       2. ARCHIVAL ROOM BACKGROUND & WATERMARK
        ========================================================================== */
     #bg {
         position: fixed;
         inset: 0;
         z-index: 1;
         overflow: hidden;
+        background:
+            /* Focused overhead examination pool directly behind the certificate */
+            radial-gradient(ellipse 68% 62% at 50% 46%, rgba(212, 206, 192, 0.038) 0%, rgba(14, 16, 22, 0.55) 45%, rgba(7, 8, 10, 0.98) 100%),
+            /* Fine architectural drafting grid */
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+            var(--bg-void);
+        background-size: 100% 100%, 64px 64px, 64px 64px;
+        background-position: center, center, center;
+        pointer-events: none;
     }
 
+    /* Contact grounding shadow under floating certificate */
+    #bg::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 76%;
+        transform: translate(-50%, -50%);
+        width: 480px;
+        height: 70px;
+        background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.28) 42%, transparent 72%);
+        pointer-events: none;
+        filter: blur(8px);
+    }
+
+    /* Faint architectural compass ring centered behind document */
+    .drafting-compass-ring {
+        position: absolute;
+        left: 50%;
+        top: 48%;
+        transform: translate(-50%, -50%);
+        width: min(85vw, 680px);
+        height: min(85vw, 680px);
+        border-radius: 50%;
+        border: 1px dashed rgba(255, 255, 255, 0.025);
+        pointer-events: none;
+    }
+
+    .drafting-compass-ring::before {
+        content: '';
+        position: absolute;
+        inset: 48px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.015);
+    }
+
+    /* Redesigned Institutional Engraved Watermark */
     #bg h1 {
         position: absolute;
         left: 50%;
-        top: 50%;
+        top: 48%;
         transform: translate(-50%, -50%) translateZ(0);
-        font-family: "Inter Tight", sans-serif;
-        font-weight: 600;
-        letter-spacing: -.055em;
-        font-size: clamp(80px, 17.5vw, 380px);
-        line-height: .8;
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: 0.22em;
+        font-size: clamp(54px, 11vw, 200px);
+        line-height: 1;
         white-space: nowrap;
-        color: rgba(242, 242, 240, .115);
-        filter: blur(1.5px);
+        text-transform: uppercase;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(225, 220, 210, 0.065);
+        text-shadow: 0 0 60px rgba(0, 0, 0, 0.95);
+        opacity: 0.75;
+        mix-blend-mode: screen;
+        pointer-events: none;
         -webkit-user-select: none;
         user-select: none;
         transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 1.2s ease;
         will-change: transform, opacity;
+    }
+
+    .watermark-sub-ledger {
+        position: absolute;
+        left: 50%;
+        top: calc(48% + clamp(48px, 7.5vw, 130px));
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-family: var(--font-mono);
+        font-size: 8.5px;
+        letter-spacing: 0.26em;
+        text-transform: uppercase;
+        color: rgba(220, 218, 212, 0.16);
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+    .watermark-sub-ledger .ledger-divider {
+        opacity: 0.35;
+        color: var(--accent-cyan);
     }
 
     #dof {
@@ -261,7 +351,7 @@
         inset: -30px;
         z-index: 2;
         pointer-events: none;
-        background: rgba(8, 8, 10, .05);
+        background: transparent;
     }
 
     #gl {
@@ -283,7 +373,7 @@
         pointer-events: none;
         background-repeat: repeat;
         background-size: 160px 160px;
-        opacity: .038 !important;
+        opacity: .028 !important;
     }
 
     #grain2 {
@@ -295,62 +385,452 @@
         inset: 0;
         z-index: 5;
         pointer-events: none;
-        background: radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, .52) 100%);
+        background: radial-gradient(130% 95% at 50% 46%, rgba(0, 0, 0, 0) 38%, rgba(5, 5, 8, .62) 100%);
     }
 
+    /* ==========================================================================
+       3. EDITORIAL ARCHIVAL FRAMING (ZERO COLLISION, POINTER-EVENTS NONE)
+       ========================================================================== */
+    #editorial-frame {
+        position: fixed;
+        inset: 0;
+        z-index: 6;
+        pointer-events: none;
+        user-select: none;
+        color: var(--ink-secondary);
+        font-family: var(--font-mono);
+        transition: opacity 0.4s ease;
+    }
+
+    /* Registration corner brackets */
+    .folio-corner {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-color: rgba(255, 255, 255, 0.14);
+        border-style: solid;
+        pointer-events: none;
+    }
+    .folio-tl { top: 22px; left: 24px; border-width: 1px 0 0 1px; }
+    .folio-tr { top: 22px; right: 24px; border-width: 1px 1px 0 0; }
+    .folio-bl { bottom: 22px; left: 24px; border-width: 0 0 1px 1px; }
+    .folio-br { bottom: 22px; right: 24px; border-width: 0 1px 1px 0; }
+
+    /* Top Archival Header Bar */
+    .editorial-topbar {
+        position: absolute;
+        top: 24px;
+        left: 42px;
+        right: 42px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .topbar-left {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .folio-badge-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .folio-tag {
+        font-size: 8px;
+        letter-spacing: 0.16em;
+        font-weight: 600;
+        padding: 2px 5px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        color: var(--ink-primary);
+        border-radius: 2px;
+    }
+    .folio-id {
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        color: var(--ink-dim);
+    }
+    .folio-descriptor {
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        color: rgba(220, 218, 212, 0.24);
+    }
+
+    .topbar-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        transform: translateY(-2px);
+    }
+    .archival-emblem {
+        font-size: 13px;
+        line-height: 1;
+        color: var(--ink-primary);
+        opacity: 0.85;
+    }
+    .archival-title {
+        font-family: var(--font-display);
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        font-weight: 600;
+        color: var(--ink-primary);
+        text-transform: uppercase;
+    }
+    .archival-sub {
+        font-size: 8px;
+        letter-spacing: 0.20em;
+        color: var(--ink-dim);
+    }
+
+    .topbar-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 3px;
+    }
+    .security-status-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .status-pulse-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent-green);
+        box-shadow: 0 0 8px rgba(52, 211, 153, 0.7);
+    }
+    .security-status-text {
+        font-size: 9px;
+        letter-spacing: 0.16em;
+        color: var(--ink-primary);
+        font-weight: 500;
+    }
+    .oracle-attestation-text {
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        color: var(--ink-dim);
+    }
+
+    /* Left Technical Rail */
+    .editorial-rail-left {
+        position: absolute;
+        top: 110px;
+        left: 26px;
+        bottom: 110px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        pointer-events: none;
+    }
+    .rail-axis-label {
+        writing-mode: vertical-lr;
+        transform: rotate(180deg);
+        font-size: 8px;
+        letter-spacing: 0.22em;
+        color: rgba(220, 218, 212, 0.22);
+    }
+    .rail-coords {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 9px;
+        color: rgba(220, 218, 212, 0.28);
+        padding-left: 2px;
+    }
+    .rail-annotation {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        color: var(--ink-dim);
+        border-left: 1px solid var(--border-hairline);
+        padding-left: 8px;
+    }
+    .rail-annotation .ann-title {
+        font-size: 7.5px;
+        color: var(--ink-primary);
+        font-weight: 600;
+        letter-spacing: 0.18em;
+    }
+    .rail-annotation .ann-math {
+        color: var(--accent-cyan);
+        font-size: 8.5px;
+        margin: 2px 0;
+    }
+
+    /* Right Technical Rail */
+    .editorial-rail-right {
+        position: absolute;
+        top: 110px;
+        right: 26px;
+        bottom: 110px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-end;
+        pointer-events: none;
+    }
+    .editorial-rail-right .rail-axis-label {
+        writing-mode: vertical-lr;
+        font-size: 8px;
+        letter-spacing: 0.22em;
+        color: rgba(220, 218, 212, 0.22);
+    }
+    .editorial-rail-right .rail-coords {
+        align-items: flex-end;
+        padding-right: 2px;
+    }
+    .editorial-rail-right .rail-annotation {
+        align-items: flex-end;
+        border-left: none;
+        border-right: 1px solid var(--border-hairline);
+        padding-left: 0;
+        padding-right: 8px;
+        text-align: right;
+    }
+    .rail-annotation .ann-code {
+        color: var(--ink-primary);
+        font-weight: 500;
+    }
+
+    /* Bottom Technical Ledger Strip */
+    .editorial-bottom-strip {
+        position: absolute;
+        bottom: 22px;
+        left: 42px;
+        right: 42px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-hairline);
+        font-size: 8.5px;
+        letter-spacing: 0.16em;
+    }
+    .strip-label {
+        color: rgba(220, 218, 212, 0.24);
+        margin-right: 8px;
+    }
+    .strip-val {
+        color: var(--ink-dim);
+    }
+
+    /* Responsive fallbacks for technical rails */
+    @media (max-width: 900px) {
+        .editorial-rail-left,
+        .editorial-rail-right {
+            display: none;
+        }
+        .editorial-topbar {
+            left: 24px;
+            right: 24px;
+        }
+        .topbar-center {
+            display: none;
+        }
+        .editorial-bottom-strip {
+            left: 24px;
+            right: 24px;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            text-align: center;
+        }
+    }
+
+    /* ==========================================================================
+       4. INTERACTION HINT & TACTILE CTA BUTTON
+       ========================================================================== */
     #hint {
         position: fixed;
         left: 0;
         right: 0;
-        bottom: 54px;
-        z-index: 6;
+        bottom: 48px;
+        z-index: 7;
         pointer-events: none;
         text-align: center;
-        font-size: 10px;
-        letter-spacing: .22em;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
-        color: rgba(242, 242, 240, .35);
+        color: rgba(220, 218, 212, 0.38);
         opacity: 0;
-        transition: opacity .8s ease;
+        transition: opacity 0.8s ease;
         transform: translateZ(0);
     }
 
-    #hint b {
-        font-weight: 500;
-        color: rgba(242, 242, 240, .75);
+    #hint .hint-bracket {
+        color: rgba(220, 218, 212, 0.18);
+    }
+    #hint .hint-dot {
+        color: var(--accent-cyan);
+        opacity: 0.55;
+        margin: 0 4px;
     }
 
+    /* Precision Machined CTA Button */
+    #starter-enter-btn {
+        position: fixed;
+        bottom: 84px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: inline-flex;
+        align-items: center;
+        gap: 13px;
+        padding: 12px 24px 12px 26px;
+        background: linear-gradient(180deg, #161820 0%, #0c0d12 100%);
+        border: 1px solid rgba(220, 224, 235, 0.15);
+        border-radius: 4px;
+        color: var(--ink-primary);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        cursor: pointer;
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.10),
+            0 16px 36px -10px rgba(0, 0, 0, 0.85),
+            0 3px 8px rgba(0, 0, 0, 0.5);
+        user-select: none;
+        transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #starter-enter-btn:hover {
+        transform: translateX(-50%) translateY(-2px);
+        border-color: rgba(220, 224, 235, 0.32);
+        background: linear-gradient(180deg, #1c1e28 0%, #101218 100%);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.18),
+            0 24px 44px -10px rgba(0, 0, 0, 0.95),
+            0 0 24px rgba(112, 214, 255, 0.08);
+        color: #ffffff;
+    }
+
+    #starter-enter-btn:active {
+        transform: translateX(-50%) translateY(1px);
+        box-shadow:
+            inset 0 2px 4px rgba(0, 0, 0, 0.6),
+            0 6px 14px rgba(0, 0, 0, 0.7);
+    }
+
+    #starter-enter-btn .btn-tactile-indicator {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent-cyan);
+        box-shadow: 0 0 6px rgba(112, 214, 255, 0.6);
+        opacity: 0.85;
+    }
+
+    #starter-enter-btn .btn-arrow-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        background: rgba(112, 214, 255, 0.08);
+        border: 1px solid rgba(112, 214, 255, 0.24);
+        border-radius: 3px;
+        color: var(--accent-cyan);
+        font-size: 10px;
+        line-height: 1;
+        transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    #starter-enter-btn:hover .btn-arrow-badge {
+        transform: translateX(2px);
+        background: rgba(112, 214, 255, 0.16);
+        border-color: rgba(112, 214, 255, 0.45);
+    }
+
+    @media (max-width: 600px) {
+        .folio-descriptor,
+        .oracle-attestation-text {
+            display: none;
+        }
+        .editorial-bottom-strip {
+            display: none;
+        }
+        .editorial-corner {
+            width: 14px;
+            height: 14px;
+        }
+        .corner-tl { top: 12px; left: 12px; }
+        .corner-tr { top: 12px; right: 12px; }
+        .corner-bl { bottom: 12px; left: 12px; }
+        .corner-br { bottom: 12px; right: 12px; }
+        .editorial-topbar {
+            top: 14px;
+            left: 18px;
+            right: 18px;
+            padding-bottom: 8px;
+        }
+        #starter-enter-btn {
+            bottom: 48px;
+            padding: 10px 18px;
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            gap: 10px;
+        }
+        #hint {
+            bottom: 18px;
+            font-size: 8px;
+            letter-spacing: 0.16em;
+        }
+        .watermark-sub-ledger {
+            display: none;
+        }
+    }
 </style>
 
-<!-- 5-Second Web3 Starter Loader -->
+<!-- Forensic Archival Boot Loader -->
 <div id="loader">
     <div class="loader-content">
-        <div class="loader-orb">
-            <div class="loader-ring ring-1"></div>
-            <div class="loader-ring ring-2"></div>
-            <div class="loader-ring ring-3"></div>
-            <div class="loader-center-glyph">♟</div>
+        <div class="loader-reticle">
+            <div class="reticle-ring"></div>
+            <div class="reticle-ring-inner"></div>
+            <div class="reticle-crosshair-h"></div>
+            <div class="reticle-crosshair-v"></div>
+            <div class="reticle-glyph">♟</div>
         </div>
         <div class="loader-brand">
-            <span class="mono">CENTIPAWN WEB3 PROTOCOL // BASE L2 ARCHITECTURE</span>
-            <h2 class="loader-title">INITIALIZING ARENA ENVIRONMENT</h2>
+            <span class="mono">CENTIPAWN PROTOCOL // BASE L2 ARCHITECTURE</span>
+            <h2 class="loader-title">INITIALIZING ARCHIVAL ENVIRONMENT</h2>
         </div>
         <div class="loader-track-wrap">
             <div class="loader-track">
                 <div class="loader-fill" id="loader-fill"></div>
             </div>
             <div class="loader-meta">
-                <span class="mono" id="loader-status">VERIFYING ZERO-KNOWLEDGE PROOFS...</span>
-                <span class="loader-pct" id="loader-pct">0%</span>
+                <span class="loader-status mono" id="loader-status">CALIBRATING CRYPTOGRAPHIC PROOFS...</span>
+                <span class="loader-pct mono" id="loader-pct">0%</span>
             </div>
         </div>
-        <div class="loader-footnote mono">CENTIPAWN PROPORTIONAL CHESS · 2026 GENESIS CERTIFICATE</div>
+        <div class="loader-footnote mono">CENTIPAWN CONTINUOUS CHESS ESCROW · 2026 GENESIS CERTIFICATE</div>
     </div>
 </div>
 
-<!-- Background Wordmark -->
+<!-- Background Archival Environment & Engraved Watermark -->
 <div id="bg">
+    <div class="drafting-compass-ring"></div>
     <h1>CENTIPAWN</h1>
+    <div class="watermark-sub-ledger">
+        <span class="ledger-coord">COORD // 51.5074° N · 0.1278° W</span>
+        <span class="ledger-divider">|</span>
+        <span class="ledger-title">EVALUATION-STAKED CHESS PROTOCOL</span>
+        <span class="ledger-divider">|</span>
+        <span class="ledger-network">EVM 84532 // BASE SEPOLIA</span>
+    </div>
 </div>
 
 <!-- 3D Scene Host Elements -->
@@ -359,12 +839,88 @@
 <div id="grain"></div>
 <div id="grain2"></div>
 <div id="vig"></div>
+
+<!-- Architectural Editorial Foliature (Zero-Collision, Pointer-Events None) -->
+<div id="editorial-frame">
+    <!-- Four Precision Registration Corners -->
+    <div class="folio-corner folio-tl"></div>
+    <div class="folio-corner folio-tr"></div>
+    <div class="folio-corner folio-bl"></div>
+    <div class="folio-corner folio-br"></div>
+
+    <!-- Top Archival Header Bar -->
+    <header class="editorial-topbar">
+        <div class="topbar-left">
+            <div class="folio-badge-row">
+                <span class="folio-tag">SPECIFICATION</span>
+                <span class="folio-id">FOLIO 01-A // VERIFIABLE ARTIFACT</span>
+            </div>
+            <div class="folio-descriptor">CONTRACT ESCROW · CONTINUOUS VALUATION ENGINE</div>
+        </div>
+
+        <div class="topbar-center">
+            <div class="archival-emblem">♟</div>
+            <div class="archival-title">CENTIPAWN PROTOCOL</div>
+            <div class="archival-sub">DETERMINISTIC STOCKFISH SETTLEMENT</div>
+        </div>
+
+        <div class="topbar-right">
+            <div class="security-status-row">
+                <span class="status-pulse-dot"></span>
+                <span class="security-status-text">BASE SEPOLIA SYNCHRONIZED</span>
+            </div>
+            <div class="oracle-attestation-text">ORACLE ATTESTATION // EIP-191 ECDSA</div>
+        </div>
+    </header>
+
+    <!-- Left Vertical Technical Rail -->
+    <aside class="editorial-rail-left">
+        <div class="rail-axis-label">AXIS // VERTICAL FILE</div>
+        <div class="rail-coords">
+            <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+        </div>
+        <div class="rail-annotation">
+            <div class="ann-title">VALUATION RULE</div>
+            <div class="ann-math">P(A) = [1 + e<sup>-0.004Δe</sup>]<sup>-1</sup></div>
+            <div class="ann-bound">BOUNDS: 500 – 9500 BPS</div>
+            <div class="ann-plies">THRESHOLD: ≥ 20 PLIES</div>
+        </div>
+    </aside>
+
+    <!-- Right Vertical Technical Rail -->
+    <aside class="editorial-rail-right">
+        <div class="rail-axis-label">AXIS // HORIZONTAL RANK</div>
+        <div class="rail-coords">
+            <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span>
+        </div>
+        <div class="rail-annotation">
+            <div class="ann-title">SETTLEMENT INVARIANT</div>
+            <div class="ann-code">Σ PAYOUT = 10,000 BPS</div>
+            <div class="ann-dust">RESIDUAL DUST: 0.000000 USDC</div>
+            <div class="ann-fee">HOUSE RAKE: 0.00% (ZERO FEE)</div>
+        </div>
+    </aside>
+
+    <!-- Bottom Technical Ledger Strip -->
+    <div class="editorial-bottom-strip">
+        <div class="strip-left">
+            <span class="strip-label">ESCROW CONTRACT</span>
+            <span class="strip-val">0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0</span>
+        </div>
+        <div class="strip-right">
+            <span class="strip-label">STOCKFISH ENGINE</span>
+            <span class="strip-val">THREADS: 1 · FIXED DEPTH 10 · DETERMINISTIC</span>
+        </div>
+    </div>
+</div>
+
 <div id="hint">
-    <b>Tap Certificate</b> to zoom in & enter &nbsp;·&nbsp; <b>Drag</b> to rotate
+    <span class="hint-bracket">[</span> DRAG ARTIFACT TO ROTATE <span class="hint-dot">·</span> TAP DOCUMENT TO EXAMINE <span class="hint-bracket">]</span>
 </div>
 <button id="starter-enter-btn" onclick="if(window.__sheet && window.__sheet.togglePaperZoom) window.__sheet.togglePaperZoom(); else if(window.togglePaperZoom) window.togglePaperZoom();">
-    <span>ENTER CENTIPAWN CHESS</span>
-    <span style="color:var(--accent-cyan);font-weight:700;">➔</span>
+    <span class="btn-tactile-indicator"></span>
+    <span class="btn-text">ENTER CENTIPAWN CHESS</span>
+    <span class="btn-arrow-badge">➔</span>
 </button>
 
 <script>/**
@@ -848,7 +1404,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             hoverTarget = 0;
             hover = 0;
 
-            const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn'];
+            const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'editorial-frame'];
             if (immediate) {
                 starterIds.forEach(id => {
                     const el = document.getElementById(id);
@@ -879,7 +1435,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         };
 
         window.returnToStarter = function() {
-            const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn'];
+            const starterIds = ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'editorial-frame'];
             starterIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
