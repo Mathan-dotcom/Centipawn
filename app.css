@@ -2813,3 +2813,355 @@ input:checked + .slider:before {
         width: 100% !important;
     }
 }
+
+
+/* ==========================================================================
+   POLISH: TEXT JUSTIFICATION, EMPTY-SPACE ELIMINATION & VIEWPORT FIT
+   ========================================================================== */
+
+/* 1. Universal Editorial Text Justification & Typographic Balance */
+.hero__desc {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.7 !important;
+    max-width: 68ch !important;
+    margin: 0 auto !important;
+}
+
+.route-map__body p {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.75 !important;
+    margin-bottom: 1rem !important;
+    hyphens: auto !important;
+}
+
+.pillar-desc {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.65 !important;
+}
+
+.statement__note {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.6 !important;
+    max-width: 62ch !important;
+    margin: 1.5rem auto 0 !important;
+}
+
+.interstitial__ink {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.35 !important;
+    display: inline-block !important;
+}
+
+.footer__disclaimer {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.65 !important;
+    max-width: 88ch !important;
+    margin: 0 auto !important;
+}
+
+.sim-insight-box {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.6 !important;
+    font-size: 12px !important;
+}
+
+.td-binary,
+.td-centipawn {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.5 !important;
+}
+
+.modal-rules-body p,
+.rules-content p,
+.modal-body p {
+    text-align: justify !important;
+    text-justify: inter-word !important;
+    line-height: 1.6 !important;
+}
+
+/* 2. Empty-Space Elimination in Landing Sections */
+.city-drift {
+    display: none !important;
+}
+
+.hero__cue {
+    display: none !important;
+}
+
+.route-map {
+    min-height: auto !important;
+    padding-block: clamp(3rem, 6vh, 5rem) !important;
+}
+
+.route-map__pin {
+    position: relative !important;
+    height: auto !important;
+}
+
+.route-map__copy {
+    position: relative !important;
+    inset: auto !important;
+    max-width: min(960px, 92vw) !important;
+    margin: 0 auto !important;
+    padding: 2rem 1.5rem !important;
+}
+
+.route-map__lede {
+    margin-bottom: 1.5rem !important;
+}
+
+.route-map__hud {
+    position: static !important;
+    display: inline-flex !important;
+    margin-right: 1.5rem !important;
+    margin-bottom: 1rem !important;
+    font-size: 11px !important;
+}
+
+.route-map__credits {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 1.5rem !important;
+    margin-top: 2rem !important;
+    padding-top: 1.5rem !important;
+    border-top: 1px solid rgba(232, 228, 220, 0.12) !important;
+}
+
+.interstitial {
+    min-height: clamp(380px, 48vh, 520px) !important;
+    padding-block: clamp(2.5rem, 5vh, 4rem) !important;
+}
+
+.interstitial:has(.interstitial__inner--second) {
+    min-height: clamp(480px, 58vh, 640px) !important;
+}
+
+.interstitial__plate {
+    height: 100% !important;
+}
+
+.interstitial__inner {
+    padding-block: 1.5rem !important;
+}
+
+.interstitial__line {
+    max-width: 32ch !important;
+    font-size: clamp(1.8rem, 3.5vw, 3.2rem) !important;
+    line-height: 1.25 !important;
+    text-wrap: balance !important;
+}
+
+.statement,
+.statement--scarlet {
+    min-height: clamp(440px, 52vh, 580px) !important;
+    padding-block: clamp(2.5rem, 5vh, 4rem) !important;
+}
+
+.statement__plate {
+    height: 100% !important;
+}
+
+.windshield {
+    min-height: auto !important;
+    padding: clamp(3rem, 5vh, 4.5rem) var(--pad, 2rem) clamp(3rem, 5vh, 4.5rem) !important;
+}
+
+.footer {
+    min-height: auto !important;
+    padding-block: clamp(3rem, 5vh, 4.5rem) !important;
+}
+
+.trailer__frame--feature {
+    aspect-ratio: auto !important;
+    min-height: 480px !important;
+    margin-bottom: 2rem !important;
+}
+
+.simulator-card {
+    height: auto !important;
+    min-height: 460px !important;
+    padding: 24px 30px !important;
+    gap: 18px !important;
+}
+
+.stills {
+    row-gap: 2.5rem !important;
+    padding-block: 3.5rem 5rem !important;
+}
+
+.stills-challenges-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+    gap: 20px !important;
+    width: 100% !important;
+}
+
+.landing-challenge-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    padding: 22px !important;
+    background: rgba(14, 15, 20, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+}
+
+/* 3. ARENA ZERO-SCROLL DESKTOP WORKSPACE (100vh lock) */
+@media (min-width: 769px) {
+    #arena-container {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .arena-header {
+        flex-shrink: 0 !important;
+        padding: 8px 24px !important;
+        height: 52px !important;
+        min-height: 52px !important;
+    }
+
+    .arena-workspace {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: calc(100vh - 52px) !important;
+        max-height: calc(100vh - 52px) !important;
+        padding: 8px 24px 12px !important;
+        gap: 24px !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: stretch !important;
+        overflow: hidden !important;
+    }
+
+    .board-column {
+        flex: 0 0 auto !important;
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .turn-banner {
+        width: 100% !important;
+        max-width: min(470px, calc(100vh - 275px)) !important;
+        padding: 5px 12px !important;
+        font-size: 11px !important;
+        margin: 0 !important;
+    }
+
+    .player-hud {
+        width: 100% !important;
+        max-width: min(470px, calc(100vh - 275px)) !important;
+        padding: 5px 12px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+    }
+
+    .board-eval-wrapper {
+        flex: 1 1 auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 12px !important;
+        min-height: 0 !important;
+    }
+
+    .chessboard-box {
+        width: min(470px, calc(100vh - 275px)) !important;
+        height: min(470px, calc(100vh - 275px)) !important;
+        aspect-ratio: 1 / 1 !important;
+        border-radius: 8px !important;
+    }
+
+    .eval-bar-container {
+        width: 22px !important;
+        height: min(470px, calc(100vh - 275px)) !important;
+    }
+
+    .arena-sidebar {
+        flex: 0 1 400px !important;
+        width: 400px !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .arena-sidebar .hud-card {
+        padding: 12px 16px !important;
+        gap: 8px !important;
+    }
+
+    .arena-sidebar .move-history-card {
+        flex: 1 1 auto !important;
+        min-height: 70px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+
+    .move-list-scroll {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        min-height: 50px !important;
+    }
+
+    .game-actions-row {
+        flex-shrink: 0 !important;
+        display: flex !important;
+        gap: 8px !important;
+        margin-top: 4px !important;
+    }
+
+    .game-actions-row button {
+        flex: 1 !important;
+        padding: 9px 12px !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+    }
+}
+
+/* 4. Compact Upper-Right Toast Notifications Anchor */
+#toast-container,
+.toasts-container {
+    position: fixed !important;
+    top: 60px !important;
+    right: 20px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: 360px !important;
+    max-width: calc(100vw - 40px) !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 8px !important;
+    pointer-events: none !important;
+}
+
+.toast-msg {
+    width: 100% !important;
+    max-width: 360px !important;
+    box-sizing: border-box !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+    padding: 10px 14px !important;
+    pointer-events: auto !important;
+}

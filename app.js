@@ -630,7 +630,7 @@
                             </p>
                             <h1 class="hero__giant-title" data-col style="--c: 3 / 11" data-hero-lockup>CENTIPAWN</h1>
                             <p class="hero__giant-sub" data-col style="--c: 3 / 11">CONTINUOUS CHESS ESCROW PROTOCOL</p>
-                            <p class="hero__desc" data-col style="--c: 3 / 11" style="max-width: 68ch; font-size: 15px; line-height: 1.6; color: var(--bone);">
+                            <p class="hero__desc" data-col style="--c: 3 / 11; max-width: 68ch; font-size: 15px; line-height: 1.65; color: var(--bone); text-align: justify; text-justify: inter-word; margin: 0 auto;">
                                 In traditional chess wagering, an endgame blunder forfeits 100% of your stake. In Centipawn, Stockfish evaluates the final position: resign past Move 10 and salvage your live position equity on Base Sepolia with zero house rake.
                             </p>
                             <div class="hero__actions" data-col style="--c: 3 / 11" data-hero-fade>
@@ -687,7 +687,7 @@
                                 <button class="demo-chip-btn mono" data-demo-state="FUNDED">04 FUNDED (100 USDC)</button>
                             </div>
 
-                            <div id="hero-onboarding-note" class="mono" data-col style="--c: 3 / 11" style="font-size:10px;color:var(--ash);margin-top:2px;">
+                            <div id="hero-onboarding-note" class="mono" data-col style="--c: 3 / 11; font-size: 10px; color: var(--ash); margin-top: 4px; text-align: center;">
                                 Coinbase Smart Wallet · MetaMask · Rabby · Base Sepolia Testnet
                             </div>
 
@@ -934,7 +934,7 @@
                 </section>
 
                 <!-- 4. Interstitial Callout 1 (Dispatch) -->
-                <section class="interstitial interstitial--centre interstitial--dispatch" style="--int-height:175vh;--int-pull-top:-30vh;--int-pull-bottom:-26vh;--int-image:url('/media/still-car.webp')" data-interstitial data-image="/media/still-car.webp">
+                <section class="interstitial interstitial--centre interstitial--dispatch" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-car.webp')" data-interstitial data-image="/media/still-car.webp">
                     <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
                     <div class="interstitial__inner">
                         <p class="interstitial__meta">
@@ -1100,7 +1100,7 @@
                 </section>
 
                 <!-- 6. Interstitial Callout 2 (Right) -->
-                <section class="interstitial interstitial--right" style="--int-height:185vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-street.webp')" data-interstitial data-image="/media/still-street.webp">
+                <section class="interstitial interstitial--right" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-street.webp')" data-interstitial data-image="/media/still-street.webp">
                     <div class="interstitial__plate" data-int-plate style="--plate-h:118vh;--plate-top:50%"></div>
                     <div class="interstitial__inner">
                         <p class="interstitial__meta">
@@ -1179,7 +1179,7 @@
                 </section>
 
                 <!-- 8. Interstitial Callout 3 (Left) -->
-                <section class="interstitial interstitial--left" style="--int-height:205vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-forest.webp')" data-interstitial data-image="/media/still-forest.webp">
+                <section class="interstitial interstitial--left" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-forest.webp')" data-interstitial data-image="/media/still-forest.webp">
                     <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
                     <div class="interstitial__inner">
                         <p class="interstitial__meta">
