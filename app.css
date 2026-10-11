@@ -3015,8 +3015,13 @@ input:checked + .slider:before {
 }
 
 /* 3. ARENA ZERO-SCROLL DESKTOP WORKSPACE (100vh lock) */
+#arena-container:not(.active) {
+    display: none !important;
+    pointer-events: none !important;
+}
+
 @media (min-width: 769px) {
-    #arena-container {
+    #arena-container.active {
         height: 100vh !important;
         max-height: 100vh !important;
         overflow: hidden !important;

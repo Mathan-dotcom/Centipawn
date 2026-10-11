@@ -710,10 +710,11 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             return _v.set((x - xe * 0.5) * SW, (v - 0.5) * SH + yo, (z - ze * 0.5) * SW);
         }
         function buildQuad() {
+            const curW = window.innerWidth, curH = window.innerHeight;
             const pts = [];
             for (const [u, v] of [[0, 1], [1, 1], [1, 0], [0, 0]]) {
                 cornerPoint(u, v).applyMatrix4(group.matrixWorld).project(camera);
-                pts.push([(_v.x * 0.5 + 0.5) * vw, (-_v.y * 0.5 + 0.5) * vh]);
+                pts.push([(_v.x * 0.5 + 0.5) * curW, (-_v.y * 0.5 + 0.5) * curH]);
             }
             const cx = (pts[0][0] + pts[1][0] + pts[2][0] + pts[3][0]) / 4;
             const cy = (pts[0][1] + pts[1][1] + pts[2][1] + pts[3][1]) / 4;
@@ -732,15 +733,70 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         function useHint() { hintUsed = true; hintEl.style.opacity = '0'; }
 
         /* ======================================================================
-           4. POINTER & INTERACTION (DRAG TO ROTATE + TAP TO ZOOM/INSPECT)
+           4. POINTER & INTERACTION (DRAG TO ROTATE + TAP/CLICK TO ZOOM & ENTER)
            ====================================================================== */
         let loaderDone = false;
         let isZooming = false;
         let isZoomed = false;
         let pDownX = 0, pDownY = 0, pDownTime = 0;
+        let paperPressed = false;
+
+        const raycaster = new T.Raycaster();
+        const mouseNDC = new T.Vector2();
+
+        function hitTestPaper(px, py) {
+            if (!is3DActive) return false;
+            if (typeof px !== 'number' || typeof py !== 'number') return false;
+
+            // 1. Precise 3D raycast against the certificate mesh
+            try {
+                mouseNDC.x = (px / window.innerWidth) * 2 - 1;
+                mouseNDC.y = -(py / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouseNDC, camera);
+                const hits = raycaster.intersectObject(mesh, true);
+                if (hits && hits.length > 0) return true;
+            } catch (err) { }
+
+            // 2. Projected inQuad polygon test
+            if (inQuad(px, py)) return true;
+
+            // 3. Screen projected bounding box with generous padding
+            if (quad && quad.length === 4) {
+                const xs = quad.map(p => p[0]);
+                const ys = quad.map(p => p[1]);
+                const minX = Math.min(...xs) - 28;
+                const maxX = Math.max(...xs) + 28;
+                const minY = Math.min(...ys) - 28;
+                const maxY = Math.max(...ys) + 28;
+                if (px >= minX && px <= maxX && py >= minY && py <= maxY) {
+                    return true;
+                }
+            }
+
+            // 4. Center area fallback on starter page: certificate is centered
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const radiusX = Math.min(window.innerWidth * 0.35, 320);
+            const radiusY = Math.min(window.innerHeight * 0.42, 380);
+            if (Math.abs(px - cx) < radiusX && Math.abs(py - cy) < radiusY) {
+                return true;
+            }
+
+            return false;
+        }
+
+        function enterViaPaper() {
+            if (isZooming) return;
+            if (!loaderDone) {
+                dismissLoader();
+            }
+            useHint();
+            isZoomed = false; // Guarantee zoom IN towards landing page
+            togglePaperZoom();
+        }
 
         window.addEventListener('pointermove', e => {
-            if (!is3DActive || !loaderDone || isZooming) return;
+            if (!is3DActive) return;
             mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
             mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
             if (dragging) {
@@ -748,37 +804,57 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 lastPX = e.clientX; lastPY = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
                 dragYaw += dx * 0.0060;
                 dragPitch = clamp(dragPitch - dy * 0.0045, -0.60, 0.60);
-                if (moved > 40) useHint();
+                if (moved > 35) useHint();
                 return;
             }
-            overSheet = inQuad(e.clientX, e.clientY);
+            overSheet = hitTestPaper(e.clientX, e.clientY);
             hoverTarget = overSheet ? 1 : 0;
         }, { passive: true });
 
         window.addEventListener('pointerdown', e => {
-            if (!is3DActive || !loaderDone || isZooming) return;
-            if (e.target && e.target.closest("#app-container, #landing-page, #arena-container, .modal-overlay, button, input, select, textarea")) return;
-            if (inQuad(e.clientX, e.clientY)) {
-                dragging = true; moved = 0; lastPX = e.clientX; lastPY = e.clientY;
-                pDownX = e.clientX; pDownY = e.clientY; pDownTime = performance.now();
-                velYaw = velPitch = 0; prevYaw = dragYaw; prevPitch = dragPitch;
+            if (!is3DActive) return;
+            if (e.target && e.target.closest("#starter-enter-btn, #app-container, #landing-page, #arena-container, .modal-overlay, button, input, select, textarea")) return;
+            if (!loaderDone) {
+                dismissLoader();
+            }
+            if (hitTestPaper(e.clientX, e.clientY)) {
+                dragging = true;
+                paperPressed = true;
+                moved = 0;
+                lastPX = e.clientX; lastPY = e.clientY;
+                pDownX = e.clientX; pDownY = e.clientY;
+                pDownTime = performance.now();
+                velYaw = velPitch = 0;
+                prevYaw = dragYaw; prevPitch = dragPitch;
             }
         });
 
         window.addEventListener('pointerup', e => {
-            if (!is3DActive || !loaderDone || isZooming) return;
+            if (!is3DActive) return;
             if (dragging) {
                 dragging = false; release = 0.6;
                 const dist = Math.hypot(e.clientX - pDownX, e.clientY - pDownY);
                 const dur = performance.now() - pDownTime;
-                // If it was a touch or click on the paper (minimal movement)
-                if (dist < 18 && dur < 700 && inQuad(e.clientX, e.clientY)) {
-                    togglePaperZoom();
+                // If it was a click/tap on the paper (minimal displacement or brief duration)
+                if (paperPressed && (dist < 40 || dur < 850) && hitTestPaper(e.clientX, e.clientY)) {
+                    paperPressed = false;
+                    enterViaPaper();
+                    return;
                 }
+            }
+            paperPressed = false;
+        });
+
+        // Dedicated click event handler: clicking anywhere on the 3D paper takes user to landing page
+        window.addEventListener('click', e => {
+            if (!is3DActive) return;
+            if (e.target && e.target.closest("#starter-enter-btn, #app-container, #landing-page, #arena-container, .modal-overlay, button, input, select, textarea")) return;
+            if (hitTestPaper(e.clientX, e.clientY)) {
+                enterViaPaper();
             }
         });
 
-        window.addEventListener('pointerleave', () => { hoverTarget = 0; });
+        window.addEventListener('pointerleave', () => { hoverTarget = 0; paperPressed = false; });
 
         /* ======================================================================
            5. PAPER ZOOM INSPECT TOGGLE
@@ -838,6 +914,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
         }
 
         window.togglePaperZoom = togglePaperZoom;
+        window.enterViaPaper = enterViaPaper;
         window.transitionToLandingPage = function(immediate = false) {
             is3DActive = false;
             if (animFrameId) {
@@ -901,7 +978,10 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 animFrameId = requestAnimationFrame(frame);
             }
             if (isZoomed) {
-                togglePaperZoom();
+                isZoomed = false;
+                camera.position.z = 8.2;
+                dragYaw = 0;
+                dragPitch = 0;
             }
         };
 
@@ -999,7 +1079,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
                 buildQuad();
             }
 
-            const wantCursor = isZooming ? 'default' : (dragging ? 'grabbing' : (overSheet ? (isZoomed ? 'zoom-out' : 'zoom-in') : ''));
+            const wantCursor = isZooming ? 'default' : (dragging ? 'grabbing' : (overSheet ? (isZoomed ? 'zoom-out' : 'pointer') : ''));
             if (wantCursor !== cursorNow) { cursorNow = wantCursor; document.body.style.cursor = wantCursor; }
 
             renderer.render(scene, camera);
@@ -1088,7 +1168,7 @@ void sheetPoint(vec2 q, out vec3 P, out vec3 NN){
             group, mat, uni, renderer, scene, camera, mesh,
             togglePaperZoom,
             state: () => ({ intro, dragYaw, dragPitch, hover, quad, isZoomed, isZooming, loaderDone }),
-            hit: (x, y) => inQuad(x, y),
+            hit: (x, y) => hitTestPaper(x, y),
             spin: (y) => { dragYaw = y; release = 1e9; }
         };
     })();
