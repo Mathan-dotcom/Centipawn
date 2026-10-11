@@ -596,6 +596,46 @@ async function handleRequest(req, res) {
         return sendJSON(200, { matches: list });
     }
 
+    // GET /api/matches/:gameId: Fetch single match details for invite link
+    if (pathname.startsWith('/api/matches/') && req.method === 'GET') {
+        const targetId = pathname.replace('/api/matches/', '').trim();
+        let match = matches.get(targetId);
+        if (!match) {
+            for (const [k, v] of matches.entries()) {
+                if (k.toLowerCase() === targetId.toLowerCase()) {
+                    match = v;
+                    break;
+                }
+            }
+        }
+        if (!match) {
+            return sendJSON(404, { error: 'Match not found' });
+        }
+        return sendJSON(200, { success: true, match });
+    }
+
+    // POST /api/matches/move: Live move sync between two players
+    if (pathname === '/api/matches/move' && req.method === 'POST') {
+        const body = await readBody();
+        const { gameId, from, to, promotion, fen, plies, player } = body;
+        let match = matches.get(gameId);
+        if (!match) {
+            for (const [k, v] of matches.entries()) {
+                if (k.toLowerCase() === (gameId || '').toLowerCase()) {
+                    match = v;
+                    break;
+                }
+            }
+        }
+        if (!match) return sendJSON(404, { error: 'Match not found' });
+        if (fen) match.fen = fen;
+        if (plies !== undefined) match.plies = plies;
+        if (from && to) {
+            match.moves.push({ from, to, promotion, player, time: Date.now() });
+        }
+        return sendJSON(200, { success: true, match });
+    }
+
     // ---------------------------------------------------------
     // STATIC FILE SERVING
     // ---------------------------------------------------------
@@ -613,6 +653,20 @@ async function handleRequest(req, res) {
         '.woff2': 'font/woff2',
         '.wasm': 'application/wasm'
     };
+
+    if (pathname.startsWith('/match/') || pathname === '/match') {
+        const indexPath = path.join(__dirname, 'index.html');
+        fs.readFile(indexPath, (readErr, content) => {
+            if (readErr) {
+                res.writeHead(500);
+                res.end('Error loading file');
+                return;
+            }
+            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(content);
+        });
+        return;
+    }
 
     let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
 
