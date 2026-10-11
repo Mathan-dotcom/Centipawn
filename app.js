@@ -25,11 +25,12 @@
     // -------------------------------------------------------------
     // PRD §21 WALLET ONBOARDING & NETWORK STATE
     // -------------------------------------------------------------
+    const storedAddress = (typeof localStorage !== 'undefined' && localStorage.getItem('centipawn_connected_address')) || null;
     const walletState = {
-        connected: false,
-        address: '0x0000000000000000000000000000000000000000',
+        connected: !!storedAddress,
+        address: storedAddress || '0x0000000000000000000000000000000000000000',
         chainId: 84532, // 84532: Base Sepolia, 1: Ethereum Mainnet
-        balanceUSDC: 0.0,
+        balanceUSDC: storedAddress ? 10.0 : 0.0,
         providerType: null,
         isSandbox: false,
         profile: null
@@ -257,12 +258,26 @@
         buildArenaDOM();
         startNewMatch(10.0, 1, false); // 10 USDC, 5+3 Rapid (Default, prepared without timer auto-tick)
         setupEventListeners();
+        initLandingSimulator();
+        initLandingSound();
+        initLandingChallenges();
         initLandingLiveWallpaper();
         initScrollReveal();
+        window.renderBoard = renderBoard;
+        window.updateHUDs = updateHUDs;
         syncLandingPageUI();
 
-        // 3D Starter Page is displayed first. Landing page opens when user clicks "ENTER CENTIPAWN CHESS" or zooms.
-        waitForLoaderDone();
+        // Check for direct invite link (/match/<gameId> or ?match=<gameId> or #match/<gameId>)
+        const inviteGameId = detectInviteLink();
+        if (inviteGameId) {
+            console.log('[Invite Link Detected on Boot]', inviteGameId);
+            setTimeout(() => {
+                openJoinMatchModal(inviteGameId);
+            }, 150);
+        } else {
+            // 3D Starter Page is displayed first. Landing page opens when user clicks "ENTER CENTIPAWN CHESS" or zooms.
+            waitForLoaderDone();
+        }
     }
 
     function waitForLoaderDone() {
@@ -350,6 +365,23 @@
         // -------------------------------------------------------------
         const prdState = getPRDWalletState();
 
+        if (typeof localStorage !== 'undefined' && walletState.connected && walletState.address && walletState.address !== '0x0000000000000000000000000000000000000000') {
+            try { localStorage.setItem('centipawn_connected_address', walletState.address); } catch (_) {}
+        }
+
+        if (state.status === 'ACTIVE' && state.gameId) {
+            const myAddr = (walletState.address || '').toLowerCase();
+            const pBAddr = (state.playerB && state.playerB.address || '').toLowerCase();
+            const pAAddr = (state.playerA && state.playerA.address || '').toLowerCase();
+            if (myAddr && pBAddr && myAddr === pBAddr) {
+                state.boardOrientation = 'b';
+            } else if (myAddr && pAAddr && myAddr === pAAddr) {
+                state.boardOrientation = 'w';
+            }
+            if (typeof renderBoard === 'function') renderBoard();
+            if (typeof updateHUDs === 'function') updateHUDs();
+        }
+
         // 1. Navigation bar: Wallet & Network status
         const navConnectBtn = document.getElementById('btn-connect-wallet-nav');
         const navWalletBadge = document.getElementById('landing-wallet-badge');
@@ -359,18 +391,18 @@
             if (navConnectBtn) navConnectBtn.style.display = 'inline-flex';
             if (navWalletBadge) navWalletBadge.style.display = 'none';
             if (navNetBadge) {
-                navNetBadge.textContent = '○ NOT CONNECTED';
-                navNetBadge.style.color = 'var(--dim)';
+                navNetBadge.innerHTML = '<span class="eyebrow-dot" style="background:var(--ash);"></span> NOT CONNECTED';
+                navNetBadge.style.color = 'var(--ash)';
             }
         } else {
             if (navConnectBtn) navConnectBtn.style.display = 'none';
             if (navWalletBadge) navWalletBadge.style.display = 'inline-flex';
             if (navNetBadge) {
                 if (prdState === 'WRONG_NETWORK') {
-                    navNetBadge.textContent = `● WRONG NET (${walletState.chainId})`;
+                    navNetBadge.innerHTML = `<span class="eyebrow-dot" style="background:#ef4444;"></span> WRONG NET (${walletState.chainId})`;
                     navNetBadge.style.color = '#ef4444';
                 } else {
-                    navNetBadge.textContent = '● 84532 TESTNET';
+                    navNetBadge.innerHTML = '<span class="eyebrow-dot" style="background:var(--accent-green);"></span> 84532 BASE SEPOLIA';
                     navNetBadge.style.color = 'var(--accent-green)';
                 }
             }
@@ -467,9 +499,18 @@
             void arena.offsetWidth;
             arena.classList.add('active');
         }
+        if (state.gameId && window.history && window.history.replaceState) {
+            const targetPath = '/match/' + state.gameId;
+            if (window.location.pathname !== targetPath) {
+                window.history.replaceState(null, '', targetPath);
+            }
+        }
         renderBoard();
         if (!state.clockTimer && state.status === 'ACTIVE') {
             startClockTimer();
+        }
+        if (window.startMatchPolling) {
+            window.startMatchPolling();
         }
         if (window.stopLandingWallpaper) {
             window.stopLandingWallpaper();
@@ -494,155 +535,983 @@
         const landing = document.createElement('div');
         landing.id = 'landing-page';
         landing.innerHTML = `
-            <!-- Sticky Minimalist Navigation -->
-            <header class="landing-nav">
-                <div class="brand-section" id="landing-brand-logo" style="cursor:pointer;">
-                    <div class="brand-glyph">♟</div>
-                    <span class="brand-name">CENTIPAWN</span>
-                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:10px;margin-left:6px;">● 84532 TESTNET</span>
-                </div>
+            <!-- Primary In-Fiction Classified Nav -->
+            <nav class="nav" id="nav" aria-label="Primary">
+                <a class="nav__mark" data-col style="--c: 1 / 5" href="#top" id="landing-brand-logo" aria-label="Centipawn — back to top">
+                    <span class="nav__tag" data-nav-tag>CONTINUOUS ESCROW PROTOCOL · 84532</span>
+                    <span class="nav__logo" data-nav-logo style="opacity: 1;">
+                        <span class="brand-glyph" style="color:var(--red);margin-right:6px;">♟</span> CENTIPAWN
+                    </span>
+                </a>
 
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <button class="btn-primary" id="btn-view-3d-starter" style="padding:7px 13px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);">
+                <ul class="nav__links" data-col style="--c: 5 / 10">
+                    <li><a href="#synopsis" class="landing-nav-link" data-blood><span class="blood__label">Manifest</span></a></li>
+                    <li><a href="#sec-simulator" class="landing-nav-link" data-blood><span class="blood__label">Simulator</span></a></li>
+                    <li><a href="#sec-challenges" class="landing-nav-link" data-blood><span class="blood__label">Lobby</span></a></li>
+                    <li><a href="#sec-architecture" class="landing-nav-link" data-blood><span class="blood__label">Invariants</span></a></li>
+                    <li><a href="#sec-rules" class="landing-nav-link" data-blood><span class="blood__label">Specs</span></a></li>
+                </ul>
+
+                <div class="nav__right" style="grid-column: 10 / 13; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                    <button class="nav__sound active" id="landing-sound-toggle" type="button" data-sound-toggle aria-pressed="true" aria-label="Toggle Sound" title="Toggle Sound SFX">
+                        <span class="nav__wave" aria-hidden="true">
+                            <i></i><i></i><i></i><i></i><i></i>
+                        </span>
+                    </button>
+                    <button class="btn" id="btn-view-3d-starter" title="Inspect Interactive 3D Genesis Certificate" style="padding:0.65em 1.1em;font-size:10px;">
                         📜 3D Certificate
                     </button>
-                    <button class="btn-hero-primary" id="btn-connect-wallet-nav" style="padding:7px 15px;font-size:12px;">
+                    <button class="btn" id="btn-connect-wallet-nav" style="padding:0.65em 1.1em;font-size:10px;">
                         🔑 Connect Wallet
                     </button>
-                    <button class="btn-hero-primary" id="btn-nav-enter-arena" style="padding:7px 16px;font-size:12px;">
-                        ⚔️ Enter Arena
+                    <button class="btn btn--primary" id="btn-nav-enter-arena" style="padding:0.65em 1.3em;font-size:10px;">
+                        <span class="btn__label">⚔️ Enter Arena</span>
+                        <span class="btn__panel" aria-hidden="true">
+                            <span class="btn__breach">
+                                <span class="btn__breach-slice"></span>
+                                <span class="btn__breach-slice"></span>
+                                <span class="btn__breach-slice"></span>
+                            </span>
+                            <span class="btn__panel-label" data-label="⚔️ Enter Arena">⚔️ Enter Arena</span>
+                        </span>
                     </button>
                     <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
                         <div class="wallet-status-dot"></div>
-                        <span class="wallet-address" id="landing-addr">0x0000...0000</span>
+                        <span class="wallet-address mono" id="landing-addr">0x0000...0000</span>
                     </div>
+                    <button class="nav__toggle" id="landing-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="menu" aria-label="Open menu">
+                        <span class="nav__toggle-window" aria-hidden="true">
+                            <span class="nav__toggle-stack" data-menu-label>
+                                <span>Menu</span>
+                                <span>Close</span>
+                            </span>
+                        </span>
+                    </button>
                 </div>
-            </header>
- 
-            <!-- Live Dynamic Wallpaper Canvas & Scroll Cursor Aura -->
+            </nav>
+
+            <!-- Fullscreen Tactical Drawer Menu -->
+            <div class="menu" id="menu" data-menu aria-hidden="true">
+                <div class="menu__edge" aria-hidden="true"></div>
+                <ul class="menu__list">
+                    <li><a href="#synopsis" class="landing-nav-link" data-menu-link><span>01</span>Manifest</a></li>
+                    <li><a href="#sec-simulator" class="landing-nav-link" data-menu-link><span>02</span>Simulator</a></li>
+                    <li><a href="#sec-challenges" class="landing-nav-link" data-menu-link><span>03</span>Match Lobby</a></li>
+                    <li><a href="#sec-architecture" class="landing-nav-link" data-menu-link><span>04</span>Four Invariants</a></li>
+                    <li><a href="#sec-rules" class="landing-nav-link" data-menu-link><span>05</span>Settlement Specs</a></li>
+                </ul>
+            </div>
+
+            <!-- Organic Blood Scrollbar Element -->
+            <div class="scrollbar" data-scrollbar aria-hidden="true">
+                <div class="scrollbar__track">
+                    <div class="scrollbar__thumb" id="landing-scroll-thumb"></div>
+                    <svg class="scrollbar__ink" viewBox="0 0 16 1000" preserveAspectRatio="none" data-scrollbar-ink focusable="false">
+                        <path class="scrollbar__stroke scrollbar__stroke--heavy" d="M 8 0 C 5 140, 11 250, 7 400 S 12 640, 8 780 S 6 920, 9 1000"></path>
+                        <path class="scrollbar__stroke scrollbar__stroke--thin" d="M 8 0 C 11 160, 5 280, 9 430 S 4 660, 8 800 S 11 930, 7 1000"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Live Dynamic Wallpaper Canvas & Cursor Aura -->
             <canvas id="landing-live-wallpaper"></canvas>
             <div id="landing-cursor-glow"></div>
 
-            <!-- Main Landing Content Scroll Area -->
-            <div class="landing-content">
-                <!-- Minimalist Hero Section -->
-                <section class="landing-hero scroll-reveal" id="landing-hero">
-                    <div class="hero-pill-badge mono">BASE SEPOLIA // PROPORTIONAL ESCROW</div>
-                    <h1 class="hero-title">Continuous Chess Escrow</h1>
-                    <p class="hero-subtitle">
-                        Position determines payout. Resign past Move 10 and salvage your live Stockfish position equity on Base Sepolia with zero house rake.
-                    </p>
-                    <div class="hero-actions-row">
-                        <button class="btn-hero-primary" id="hero-connect-wallet" style="display:none;">
-                            🔑 CONNECT WALLET TO PLAY ➔
-                        </button>
-                        <button class="btn-hero-primary" id="hero-switch-network" style="display:none;background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
-                            ⚠️ SWITCH TO BASE SEPOLIA ➔
-                        </button>
-                        <button class="btn-hero-primary" id="hero-play-arena">
-                            ⚔️ ENTER LIVE ARENA ➔
-                        </button>
-                        <button class="btn-hero-secondary" id="hero-create-match">
-                            ⚡ CREATE MATCH
-                        </button>
-                        <button class="btn-hero-secondary" id="hero-join-match">
-                            🤝 JOIN MATCH
-                        </button>
-                        <button class="btn-hero-secondary" id="hero-view-escrow">
-                            📜 RULES
-                        </button>
+            <!-- Main Content Container -->
+            <main class="landing-content">
+                <!-- 1. Hero Section -->
+                <header class="hero" id="top">
+                    <div class="hero__pin">
+                        <div class="hero__mobile-plate" data-hero-mobile-plate aria-hidden="true"></div>
+                        <div class="hero__grade" aria-hidden="true"></div>
+                        <div class="hero__center">
+                            <p class="eyebrow eyebrow--red hero__presents" data-col style="--c: 3 / 11" data-hero-fade>
+                                BASE SEPOLIA [CHAIN 84532] · FIDE RULES · STOCKFISH 10 ORACLE
+                            </p>
+                            <h1 class="hero__giant-title" data-col style="--c: 3 / 11" data-hero-lockup>CENTIPAWN</h1>
+                            <p class="hero__giant-sub" data-col style="--c: 3 / 11">CONTINUOUS CHESS ESCROW PROTOCOL</p>
+                            <p class="hero__desc" data-col style="--c: 3 / 11" style="max-width: 68ch; font-size: 15px; line-height: 1.6; color: var(--bone);">
+                                In traditional chess wagering, an endgame blunder forfeits 100% of your stake. In Centipawn, Stockfish evaluates the final position: resign past Move 10 and salvage your live position equity on Base Sepolia with zero house rake.
+                            </p>
+                            <div class="hero__actions" data-col style="--c: 3 / 11" data-hero-fade>
+                                <button class="btn btn--primary" id="hero-connect-wallet" style="display:none;">
+                                    <span class="btn__label">🔑 CONNECT WALLET TO PLAY ➔</span>
+                                    <span class="btn__panel" aria-hidden="true">
+                                        <span class="btn__breach">
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                        </span>
+                                        <span class="btn__panel-label" data-label="🔑 CONNECT WALLET TO PLAY ➔">🔑 CONNECT WALLET TO PLAY ➔</span>
+                                    </span>
+                                </button>
+                                <button class="btn btn--primary" id="hero-switch-network" style="display:none;">
+                                    <span class="btn__label">⚠️ SWITCH TO BASE SEPOLIA ➔</span>
+                                    <span class="btn__panel" aria-hidden="true">
+                                        <span class="btn__breach">
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                        </span>
+                                        <span class="btn__panel-label" data-label="⚠️ SWITCH TO BASE SEPOLIA ➔">⚠️ SWITCH TO BASE SEPOLIA ➔</span>
+                                    </span>
+                                </button>
+                                <button class="btn btn--primary" id="hero-play-arena">
+                                    <span class="btn__label">⚔️ ENTER LIVE ARENA ➔</span>
+                                    <span class="btn__panel" aria-hidden="true">
+                                        <span class="btn__breach">
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                            <span class="btn__breach-slice"></span>
+                                        </span>
+                                        <span class="btn__panel-label" data-label="⚔️ ENTER LIVE ARENA ➔">⚔️ ENTER LIVE ARENA ➔</span>
+                                    </span>
+                                </button>
+                                <button class="btn" id="hero-create-match">
+                                    ⚡ CREATE ESCROW MATCH
+                                </button>
+                                <button class="btn" id="hero-join-match">
+                                    🤝 JOIN OPEN MATCH
+                                </button>
+                                <button class="btn" id="hero-view-escrow">
+                                    📜 SETTLEMENT SPEC
+                                </button>
+                            </div>
+
+                            <!-- Judge & Demonstration State Switcher -->
+                            <div class="demo-chips-container" data-col style="--c: 3 / 11">
+                                <span class="demo-chips-label mono">JUDGE DEMO STATES:</span>
+                                <button class="demo-chip-btn mono" data-demo-state="DISCONNECTED">01 DISCONNECTED</button>
+                                <button class="demo-chip-btn mono" data-demo-state="WRONG_NETWORK">02 WRONG NET</button>
+                                <button class="demo-chip-btn mono" data-demo-state="ZERO_BALANCE">03 ZERO BALANCE</button>
+                                <button class="demo-chip-btn mono" data-demo-state="FUNDED">04 FUNDED (100 USDC)</button>
+                            </div>
+
+                            <div id="hero-onboarding-note" class="mono" data-col style="--c: 3 / 11" style="font-size:10px;color:var(--ash);margin-top:2px;">
+                                Coinbase Smart Wallet · MetaMask · Rabby · Base Sepolia Testnet
+                            </div>
+
+                            <!-- 4 Metric Cards -->
+                            <div class="hero-metrics-grid" data-col style="--c: 2 / 12">
+                                <div class="metric-card">
+                                    <span class="metric-label">PROTOCOL FEE</span>
+                                    <span class="metric-val" style="color:var(--accent-green);">0% (Zero Take)</span>
+                                    <span class="metric-sub">100% of pot disbursed</span>
+                                </div>
+                                <div class="metric-card">
+                                    <span class="metric-label">ANTI-SANDBAG</span>
+                                    <span class="metric-val">≥ 20 Plies</span>
+                                    <span class="metric-sub">Move 10 threshold enforced</span>
+                                </div>
+                                <div class="metric-card">
+                                    <span class="metric-label">SIGMOID CLAMP</span>
+                                    <span class="metric-val">5% — 95%</span>
+                                    <span class="metric-sub">Capital protection guaranteed</span>
+                                </div>
+                                <div class="metric-card">
+                                    <span class="metric-label">JOIN WINDOW</span>
+                                    <span class="metric-val">10 Minutes</span>
+                                    <span class="metric-sub">100% creator stake refund</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hero__cue" data-hero-fade>
+                            <span class="hero__cue-label">Descend</span>
+                            <span class="hero__cue-line" aria-hidden="true"></span>
+                        </div>
                     </div>
-                    <div id="hero-onboarding-note" class="mono" style="font-size:10px;color:var(--dim);margin-top:4px;text-align:center;">
-                        Coinbase Smart Wallet · MetaMask · Rabby · Injected Web3
+                </header>
+
+                <!-- 2. Route Map / Settlement Manifest -->
+                <section class="route-map" id="synopsis" data-route-layout="split" data-route-map aria-labelledby="route-map-title">
+                    <div class="route-map__pin" data-route-pin>
+                        <div class="route-map__fallback" aria-hidden="true"></div>
+                        <canvas class="route-map__canvas" data-route-canvas aria-hidden="true"></canvas>
+                        <div class="route-map__scrim" aria-hidden="true"></div>
+                        <svg class="route-map__arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" data-route-arc>
+                            <defs>
+                                <linearGradient id="route-arc-fade" gradientUnits="userSpaceOnUse" data-route-arc-grad>
+                                    <stop offset="0" stop-color="#ff211a" stop-opacity="0"></stop>
+                                    <stop offset="0.22" stop-color="#ff211a" stop-opacity="0.55"></stop>
+                                    <stop offset="0.78" stop-color="#ff211a" stop-opacity="0.55"></stop>
+                                    <stop offset="1" stop-color="#ff211a" stop-opacity="0"></stop>
+                                </linearGradient>
+                            </defs>
+                            <path d="" data-route-arc-path></path>
+                        </svg>
+                        <p class="route-map__hud route-map__hud--origin" data-route-hud>
+                            <span>23:58</span> <span>Move 01 Genesis</span>
+                        </p>
+                        <p class="route-map__hud route-map__hud--checkpoint" data-route-hud>
+                            <span>02:41</span> <span>Move 10 Anti-Sandbag Lock</span>
+                        </p>
+                        <p class="route-map__hud route-map__hud--hospital" data-route-hud>
+                            <span>04:17</span> <span>Endgame Settlement</span>
+                        </p>
+                        <div class="route-map__copy">
+                            <h2 class="sr-only" id="route-map-title">Synopsis — continuous chess equity settlement</h2>
+                            <p class="route-map__kicker" data-route-kicker>Settlement Manifest · Record 84532-CP</p>
+                            <p class="route-map__lede" data-route-lede>
+                                <span class="route-map__lede-line">
+                                    <span class="route-map__lede-reveal">
+                                        <span data-lede-line><span class="route-map__lede-ink">One blunder.</span></span>
+                                    </span>
+                                </span>
+                                <span class="route-map__lede-line">
+                                    <span class="route-map__lede-reveal">
+                                        <span data-lede-line><span class="route-map__lede-ink">One endgame.</span></span>
+                                    </span>
+                                </span>
+                                <span class="route-map__lede-line">
+                                    <span class="route-map__lede-reveal">
+                                        <span data-lede-line><span class="route-map__lede-ink">Zero total loss.</span></span>
+                                    </span>
+                                </span>
+                            </p>
+                            <div class="route-map__body" data-route-body>
+                                <p>
+                                    Every competitive chess player knows the frustration of outplaying an opponent for 40 moves, only to make a mouse-slip blunder in the endgame and forfeit 100% of their staked capital.
+                                </p>
+                                <p>
+                                    Centipawn solves this with continuous algorithmic escrow. Resign past Move 10, and Stockfish calculates your fair mathematical equity on Base Sepolia with zero house rake.
+                                </p>
+                            </div>
+                            <dl class="route-map__credits" data-route-credits>
+                                <div>
+                                    <dt>Protocol Oracle</dt>
+                                    <dd>Stockfish 10</dd>
+                                </div>
+                                <div>
+                                    <dt>Consensus L2</dt>
+                                    <dd>Base Sepolia (84532)</dd>
+                                </div>
+                                <div>
+                                    <dt>Platform Take</dt>
+                                    <dd class="route-map__date">0.00% (Zero Fee)</dd>
+                                </div>
+                            </dl>
+                            <div class="route-map__readout" data-route-readout>
+                                <span>Move 01 · Locked Stake</span>
+                                <span>Move 10 · Anti-Sandbag Cleared</span>
+                                <strong>Settlement · Sigmoid Clamped</strong>
+                            </div>
+                        </div>
+                        <div class="route-map__lock" data-route-lock>
+                            <span>Protocol lock</span>
+                            <strong>04:17:08</strong>
+                        </div>
                     </div>
                 </section>
 
-                <!-- Minimalist 3-Pillars Grid -->
-                <section class="landing-pillars scroll-reveal">
-                    <div class="pillar-card">
-                        <div class="pillar-header">
-                            <span class="pillar-index mono">01</span>
-                            <span class="pillar-icon">⚖️</span>
-                        </div>
-                        <h3 class="pillar-title">Proportional Payouts</h3>
-                        <p class="pillar-desc">
-                            Resign past Move 10 to salvage 5%–95% of the pot based on real-time Stockfish win probability. Never forfeit everything on a close endgame.
-                        </p>
+                <!-- 3. Feature Showcase // Interactive Sigmoid Payout Simulator -->
+                <section class="section grid trailer" id="sec-simulator">
+                    <div class="trailer__head" data-col style="--c: 1 / 13">
+                        <p class="eyebrow eyebrow--red" data-reveal>PRD Section 11 // Continuous Mathematical Proofs</p>
+                        <p class="trailer__runtime eyebrow" data-reveal>Live Interactive Simulator</p>
                     </div>
 
-                    <div class="pillar-card">
-                        <div class="pillar-header">
-                            <span class="pillar-index mono">02</span>
-                            <span class="pillar-icon">🛡️</span>
+                    <div class="trailer__frame trailer__frame--feature" data-col style="--c: 1 / 13">
+                        <div class="simulator-card">
+                            <!-- Formula Banner -->
+                            <div class="formula-strip">
+                                <div>
+                                    <span class="formula-code">P(Win_A) = 1 / (1 + e^(-0.004 × eval_cp))</span>
+                                </div>
+                                <span class="formula-badge mono">CLAMPED [500 BPS — 9500 BPS]</span>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="sim-controls-grid">
+                                <div class="sim-control-row">
+                                    <div class="sim-label-row">
+                                        <span class="sim-label">TOTAL ESCROW POT STAKE</span>
+                                        <span class="sim-val-badge mono" id="sim-pot-display">100.00 USDC</span>
+                                    </div>
+                                    <div class="sim-pot-btns-row">
+                                        <button class="sim-pot-btn" data-pot="10">10.00 USDC</button>
+                                        <button class="sim-pot-btn" data-pot="50">50.00 USDC</button>
+                                        <button class="sim-pot-btn active" data-pot="100">100.00 USDC</button>
+                                        <button class="sim-pot-btn" data-pot="250">250.00 USDC</button>
+                                    </div>
+                                </div>
+
+                                <div class="sim-control-row">
+                                    <div class="sim-label-row">
+                                        <span class="sim-label">STOCKFISH BOARD EVALUATION</span>
+                                        <div>
+                                            <span class="sim-val-badge mono" id="sim-eval-val" style="color:var(--text-white);">+320 CP</span>
+                                            <span class="mono" id="sim-eval-pawns" style="color:var(--red-ember);font-size:11px;margin-left:6px;">(+3.20 Pawns)</span>
+                                        </div>
+                                    </div>
+                                    <input type="range" class="sim-slider" id="sim-eval-slider" min="-800" max="800" step="10" value="320">
+                                    <div class="sim-presets-row">
+                                        <button class="sim-preset-btn" data-cp="-600">Decisive Black (-600)</button>
+                                        <button class="sim-preset-btn" data-cp="-250">Black Advantage (-250)</button>
+                                        <button class="sim-preset-btn" data-cp="0">Dead Even (0)</button>
+                                        <button class="sim-preset-btn active" data-cp="320">White Advantage (+320)</button>
+                                        <button class="sim-preset-btn" data-cp="550">White Dominant (+550)</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Analytics Grid -->
+                            <div class="sim-analytics-grid">
+                                <!-- White Card -->
+                                <div class="player-calc-card white-card">
+                                    <div class="player-card-header">
+                                        <span class="player-card-role mono">PLAYER A (WHITE)</span>
+                                        <span class="mono" id="sim-pct-white" style="font-size:13px;font-weight:700;color:var(--text-white);">78.2%</span>
+                                    </div>
+                                    <div class="player-payout-val" id="sim-payout-white">78.24 USDC</div>
+                                    <div class="player-card-meta">
+                                        <span>ON-CHAIN BASIS POINTS:</span>
+                                        <strong id="sim-bps-white" style="color:#ffffff;">7824 BPS</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Black Card -->
+                                <div class="player-calc-card black-card">
+                                    <div class="player-card-header">
+                                        <span class="player-card-role mono">PLAYER B (BLACK)</span>
+                                        <span class="mono" id="sim-pct-black" style="font-size:13px;font-weight:700;color:var(--red-ember);">21.8%</span>
+                                    </div>
+                                    <div class="player-payout-val" id="sim-payout-black">21.76 USDC</div>
+                                    <div class="player-card-meta">
+                                        <span>ON-CHAIN BASIS POINTS:</span>
+                                        <strong id="sim-bps-black" style="color:var(--red-ember);">2176 BPS</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Visual Ratio Bar -->
+                            <div class="sim-ratio-track" title="Real-Time Proportional Equity Distribution">
+                                <div class="sim-ratio-white" id="sim-bar-white" style="width: 78.2%;"></div>
+                                <div class="sim-ratio-black" id="sim-bar-black" style="width: 21.8%;"></div>
+                            </div>
+
+                            <!-- Real-World Insight Callout -->
+                            <div class="sim-insight-box" id="sim-insight-text">
+                                Position favors <strong>White (+3.20)</strong>. Under traditional wagering, resigning forfeits 100% ($0.00). In Centipawn, Black salvages <strong>21.76 USDC (21.8%)</strong>, and White captures <strong>78.24 USDC (78.2%)</strong> without grinding a lost clock.
+                            </div>
                         </div>
-                        <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
-                        <p class="pillar-desc">
-                            Resigning before Move 10 (20 plies) strictly forfeits 100% to opponent, preventing early rage-quits and preserving match integrity.
-                        </p>
                     </div>
 
-                    <div class="pillar-card">
-                        <div class="pillar-header">
-                            <span class="pillar-index mono">03</span>
-                            <span class="pillar-icon">⚡</span>
-                        </div>
-                        <h3 class="pillar-title">0% Platform Fee</h3>
-                        <p class="pillar-desc">
-                            Zero house take. 100% of deposited USDC disburse directly to competitors via verified Base Sepolia smart contracts.
+                    <div class="trailer__archive" data-col style="--c: 1 / 5" data-reveal>
+                        <p class="eyebrow eyebrow--red">Mathematical Invariants</p>
+                        <p>Sigmoid curve dampens extreme outliers while guaranteeing capital protection between 500 and 9500 BPS.</p>
+                    </div>
+
+                    <div class="trailer__frame trailer__frame--teaser" data-col style="--c: 5 / 9">
+                        <img class="trailer__still" src="/media/still-street.webp" alt="Sigmoid Curve vs Linear" aria-hidden="true" style="object-position:center 45%;">
+                        <span class="trailer__scrim" aria-hidden="true"></span>
+                        <span class="trailer__caption">
+                            <span class="trailer__caption-kicker">Secondary · File 01</span>
+                            <strong style="color:#fff;font-family:var(--font-display);font-size:16px;">Sigmoid Curve vs Linear</strong>
+                            <p style="font-size:11px;color:var(--ash);margin-top:6px;line-height:1.5;">Smooth exponential saturation prevents a single minor advantage from snowballing into total liquidation.</p>
+                        </span>
+                    </div>
+
+                    <div class="trailer__frame trailer__frame--teaser" data-col style="--c: 9 / 13">
+                        <img class="trailer__still" src="/media/still-forest.webp" alt="EIP-191 Oracle Attestation" aria-hidden="true" style="object-position:center 40%;">
+                        <span class="trailer__scrim" aria-hidden="true"></span>
+                        <span class="trailer__caption">
+                            <span class="trailer__caption-kicker">Secondary · File 02</span>
+                            <strong style="color:#fff;font-family:var(--font-display);font-size:16px;">EIP-191 Oracle Attestation</strong>
+                            <p style="font-size:11px;color:var(--ash);margin-top:6px;line-height:1.5;">Stockfish computes the final FEN position, and cryptographic signature proves basis points on Base Sepolia.</p>
+                        </span>
+                    </div>
+                </section>
+
+                <!-- City Drift 1 -->
+                <section class="city-drift" data-city-drift data-city-flip="false" data-city-view="flythrough" style="--cd-pull-top:-17vh;--cd-pull-bottom:-24vh" aria-hidden="true">
+                    <div class="city-drift__pin" data-city-pin>
+                        <canvas class="city-drift__canvas" data-city-canvas></canvas>
+                        <p class="city-drift__hud" data-city-hud>
+                            <span>04:41</span> <span>En route · Base Sepolia Consensus</span>
                         </p>
                     </div>
                 </section>
 
-                <!-- Sleek Minimalist Contract Verification Strip -->
-                <div class="landing-contract-strip scroll-reveal">
-                    <div class="contract-pill-item">
-                        <span class="contract-pill-label mono">ESCROW</span>
-                        <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                            0x0451...a5C0 ↗
+                <!-- 4. Interstitial Callout 1 (Dispatch) -->
+                <section class="interstitial interstitial--centre interstitial--dispatch" style="--int-height:175vh;--int-pull-top:-30vh;--int-pull-bottom:-26vh;--int-image:url('/media/still-car.webp')" data-interstitial data-image="/media/still-car.webp">
+                    <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
+                    <div class="interstitial__inner">
+                        <p class="interstitial__meta">
+                            <span class="interstitial__stamp" data-int-stamp>23:58</span>
+                            <span class="interstitial__label">Protocol Genesis</span>
+                        </p>
+                        <p class="interstitial__line" data-int-line>
+                            <span class="interstitial__ink">A 40-move masterpiece forfeited to a single blunder. Traditional escrow awards 100% to the victor regardless of positional dominance.</span>
+                        </p>
+                    </div>
+                    <div class="interstitial__dispatch" data-int-dispatch aria-hidden="true">
+                        <span class="interstitial__dispatch-beam" data-int-dispatch-beam></span>
+                        <span class="interstitial__dispatch-origin"></span>
+                        <span class="interstitial__dispatch-line" data-int-dispatch-line></span>
+                        <span class="interstitial__dispatch-copy" data-int-dispatch-copy>
+                            <strong>Oracle attestation active</strong>
+                            <span>Block confirmation · 84532:07</span>
+                        </span>
+                    </div>
+                </section>
+
+                <!-- 5. Active Match Lobby // Evidence Stills Grid -->
+                <section class="stills grid" id="sec-challenges">
+                    <div class="stills__head" data-col style="--c: 1 / 13">
+                        <p class="eyebrow eyebrow--red">Match Lobby</p>
+                        <p class="stills__archive">Recovered evidence · Active Escrow Challenges 84532-CP</p>
+                    </div>
+
+                    <div class="challenges-filter-row" data-col style="--c: 1 / 13">
+                        <button class="challenge-filter-pill active" data-filter="all">ALL CHALLENGES (3)</button>
+                        <button class="challenge-filter-pill" data-filter="rapid">RAPID (5+3)</button>
+                        <button class="challenge-filter-pill" data-filter="blitz">BLITZ (3+2)</button>
+                        <button class="challenge-filter-pill" data-filter="classical">CLASSICAL (10+0)</button>
+                    </div>
+
+                    <div class="stills-challenges-grid" data-col style="--c: 1 / 13">
+                        <!-- Match 1: Rapid -->
+                        <div class="landing-challenge-card" data-category="rapid" data-stake="10.0" data-tc="1">
+                            <div class="challenge-card-top">
+                                <span class="challenge-tc-badge mono">5+3 RAPID</span>
+                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
+                            </div>
+                            <div class="challenge-stake-box">
+                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
+                                <div class="challenge-stake-val">10.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
+                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 20.00 USDC · 0% FEE</span>
+                            </div>
+                            <div class="challenge-player-row">
+                                <div class="challenge-player-avatar">♚</div>
+                                <div>
+                                    <div class="challenge-player-name">GrandmasterZero</div>
+                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x892a...42C1 · CREATOR</span>
+                                </div>
+                            </div>
+                            <button class="btn btn--primary btn-challenge-accept">
+                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
+                                <span class="btn__panel" aria-hidden="true">
+                                    <span class="btn__breach">
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                    </span>
+                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- Match 2: Blitz -->
+                        <div class="landing-challenge-card" data-category="blitz" data-stake="1.0" data-tc="0">
+                            <div class="challenge-card-top">
+                                <span class="challenge-tc-badge mono">3+2 BLITZ</span>
+                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
+                            </div>
+                            <div class="challenge-stake-box">
+                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
+                                <div class="challenge-stake-val">1.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
+                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 2.00 USDC · 0% FEE</span>
+                            </div>
+                            <div class="challenge-player-row">
+                                <div class="challenge-player-avatar">♞</div>
+                                <div>
+                                    <div class="challenge-player-name">Satoshi_Kasparov</div>
+                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x3D41...99b9 · CREATOR</span>
+                                </div>
+                            </div>
+                            <button class="btn btn--primary btn-challenge-accept">
+                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
+                                <span class="btn__panel" aria-hidden="true">
+                                    <span class="btn__breach">
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                    </span>
+                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- Match 3: Classical -->
+                        <div class="landing-challenge-card" data-category="classical" data-stake="25.0" data-tc="2">
+                            <div class="challenge-card-top">
+                                <span class="challenge-tc-badge mono">10+0 CLASSICAL</span>
+                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
+                            </div>
+                            <div class="challenge-stake-box">
+                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
+                                <div class="challenge-stake-val">25.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
+                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 50.00 USDC · 0% FEE</span>
+                            </div>
+                            <div class="challenge-player-row">
+                                <div class="challenge-player-avatar">♛</div>
+                                <div>
+                                    <div class="challenge-player-name">DeepPawn_Alpha</div>
+                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x71a2...98E1 · CREATOR</span>
+                                </div>
+                            </div>
+                            <button class="btn btn--primary btn-challenge-accept">
+                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
+                                <span class="btn__panel" aria-hidden="true">
+                                    <span class="btn__breach">
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                    </span>
+                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Match Card -->
+                    <div class="create-challenge-card" id="btn-landing-create-challenge" data-col style="--c: 1 / 13; margin-top: 1.5rem; display: flex; flex-direction: column; align-items: center; padding: 2rem; background: var(--ink-2); border: 1px dashed var(--hairline); text-align: center; cursor: pointer;">
+                        <div style="font-size:32px;filter:drop-shadow(0 0 10px rgba(255,33,26,0.6));">♟</div>
+                        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--bone);text-transform:uppercase;margin-top:8px;">Deploy Custom Match</div>
+                        <p style="font-size:12px;color:var(--ash);max-width:320px;line-height:1.5;margin-top:6px;">Choose your USDC stake (0.10 to 25 USDC) and time control on Base Sepolia.</p>
+                        <button class="btn btn--primary" style="margin-top:12px;">
+                            <span class="btn__label">⚡ CREATE MATCH</span>
+                            <span class="btn__panel" aria-hidden="true">
+                                <span class="btn__breach">
+                                    <span class="btn__breach-slice"></span>
+                                    <span class="btn__breach-slice"></span>
+                                    <span class="btn__breach-slice"></span>
+                                </span>
+                                <span class="btn__panel-label" data-label="⚡ CREATE MATCH">⚡ CREATE MATCH</span>
+                            </span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- City Drift 2 -->
+                <section class="city-drift" data-city-drift data-city-flip="false" data-city-view="aerial" style="--cd-pull-top:-8vh;--cd-pull-bottom:-22vh" aria-hidden="true">
+                    <div class="city-drift__pin" data-city-pin>
+                        <div class="city-drift__heat" data-city-heat aria-hidden="true"></div>
+                        <canvas class="city-drift__canvas" data-city-canvas></canvas>
+                        <div class="city-drift__waypoint" data-city-waypoint aria-hidden="true">
+                            <span class="city-drift__waypoint-dot"></span>
+                            <span class="city-drift__waypoint-text">
+                                <span class="city-drift__waypoint-stamp">04:29</span>
+                                <span class="city-drift__waypoint-label">Oracle Signal Confirmed · Base Sepolia</span>
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. Interstitial Callout 2 (Right) -->
+                <section class="interstitial interstitial--right" style="--int-height:185vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-street.webp')" data-interstitial data-image="/media/still-street.webp">
+                    <div class="interstitial__plate" data-int-plate style="--plate-h:118vh;--plate-top:50%"></div>
+                    <div class="interstitial__inner">
+                        <p class="interstitial__meta">
+                            <span class="interstitial__stamp" data-int-stamp>01:36</span>
+                            <span class="interstitial__label">Game Integrity</span>
+                        </p>
+                        <p class="interstitial__line" data-int-line>
+                            <span class="interstitial__ink">Resigning before Move 10 strictly forfeits <mark class="interstitial__hl">100%</mark>. Beyond 20 completed plies, pure <mark class="interstitial__hl">Stockfish evaluation</mark> governs payout.</span>
+                        </p>
+                    </div>
+                    <div class="interstitial__inner interstitial__inner--second" data-int-second>
+                        <p class="interstitial__meta">
+                            <span class="interstitial__stamp" data-int-stamp>02:04</span>
+                            <span class="interstitial__label">Continuous Equity</span>
+                        </p>
+                        <p class="interstitial__line" data-int-line>
+                            <span class="interstitial__ink">Cross move 10 and every single centipawn of board advantage is mathematically <mark class="interstitial__hl">protected</mark>.</span>
+                        </p>
+                    </div>
+                    <div class="interstitial__connector" data-int-connector aria-hidden="true">
+                        <span class="interstitial__connector-line">
+                            <span class="interstitial__connector-track"></span>
+                            <span class="interstitial__connector-draw" data-int-connector-draw></span>
+                        </span>
+                        <span class="interstitial__connector-marker" data-int-connector-marker>
+                            <span class="interstitial__connector-pointer"></span>
+                            <span class="interstitial__connector-copy">
+                                <strong>03:46</strong>
+                                <span>Stockfish Depth 10 Verified</span>
+                            </span>
+                        </span>
+                    </div>
+                </section>
+
+                <!-- 7. Statement Scarlet Wash Section (24-Stop Dispersion Linear Gradient) -->
+                <section class="statement statement--scarlet statement-scarlet-section" data-statement data-texture="true">
+                    <div class="statement__plate statement__plate--keyed" aria-hidden="true">
+                        <img src="/media/poster-hand-keyed.webp" alt="" data-statement-plate>
+                    </div>
+                    <div class="statement__wash" aria-hidden="true"></div>
+                    <div class="statement__flare" data-statement-flare aria-hidden="true"></div>
+                    <div class="statement__inner">
+                        <p class="statement__kicker">[ CONTINUOUS ESCROW ]</p>
+                        <h2 class="statement__type">
+                            <span class="statement__line" data-statement-line style="--blur:3px">
+                                <span class="statement__line-inner"><span class="statement__ink"> Every </span></span>
+                            </span>
+                            <span class="statement__line" data-statement-line style="--blur:2px">
+                                <span class="statement__line-inner"><span class="statement__ink"> Centipawn<span class="statement__gap" aria-hidden="true"></span> Matters </span></span>
+                            </span>
+                            <span class="statement__line" data-statement-line style="--blur:5px">
+                                <span class="statement__line-inner"><span class="statement__ink"> On </span></span>
+                            </span>
+                            <span class="statement__line" data-statement-line style="--blur:11px">
+                                <span class="statement__line-inner"><span class="statement__ink"> Base </span></span>
+                            </span>
+                        </h2>
+                        <p class="statement__note">Stockfish evaluates the position. The smart contract calculates the sigmoid. The pot is disbursed instantly.</p>
+                        <div style="grid-column: 1 / 13; display: flex; justify-content: center; margin-top: 2.5rem;">
+                            <button class="btn btn--primary" id="cta-play-arena">
+                                <span class="btn__label">⚔️ ENTER CENTIPAWN ARENA NOW ➔</span>
+                                <span class="btn__panel" aria-hidden="true">
+                                    <span class="btn__breach">
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                        <span class="btn__breach-slice"></span>
+                                    </span>
+                                    <span class="btn__panel-label" data-label="⚔️ ENTER CENTIPAWN ARENA NOW ➔">⚔️ ENTER CENTIPAWN ARENA NOW ➔</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="statement__fall" aria-hidden="true">
+                        <canvas data-statement-fall></canvas>
+                    </div>
+                </section>
+
+                <!-- 8. Interstitial Callout 3 (Left) -->
+                <section class="interstitial interstitial--left" style="--int-height:205vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-forest.webp')" data-interstitial data-image="/media/still-forest.webp">
+                    <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
+                    <div class="interstitial__inner">
+                        <p class="interstitial__meta">
+                            <span class="interstitial__stamp" data-int-stamp>05:12</span>
+                            <span class="interstitial__label">On-Chain Settlement</span>
+                        </p>
+                        <p class="interstitial__line" data-int-line>
+                            <span class="interstitial__ink">Between player and payout: <mark class="interstitial__hl">zero rake</mark>, 100% decentralized escrow, and immutable mathematics.</span>
+                        </p>
+                    </div>
+                </section>
+
+                <!-- 9. Cast Rows // Seven Protocol Invariants -->
+                <section class="section grid cast" id="sec-architecture">
+                    <div class="cast__field" data-col style="--c: 1 / 13" data-cast-field aria-hidden="true"></div>
+                    <p class="eyebrow eyebrow--red" data-col style="--c: 1 / 5">Protocol Invariants & Rules</p>
+                    <ul class="cast__list" data-col style="--c: 1 / 13">
+                        <li class="cast__row" style="--shift:-6%" data-cast-row>
+                            <span class="cast__index">01</span>
+                            <h3 class="cast__name" data-cast-name data-real="Sigmoid Payout"> Sigmoid Payout </h3>
+                            <span class="cast__meta">k = 0.004</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">k = 0.004 continuous curve</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:9%" data-cast-row>
+                            <span class="cast__index">02</span>
+                            <h3 class="cast__name" data-cast-name data-real="Anti-Sandbagging"> Anti-Sandbagging </h3>
+                            <span class="cast__meta">Move 10 Threshold</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">≥ 20 plies mandatory</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:-11%" data-cast-row>
+                            <span class="cast__index">03</span>
+                            <h3 class="cast__name" data-cast-name data-real="Capital Clamp"> Capital Clamp </h3>
+                            <span class="cast__meta">5% - 95% Bound</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">500 bps to 9500 bps bound</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:5%" data-cast-row>
+                            <span class="cast__index">04</span>
+                            <h3 class="cast__name" data-cast-name data-real="Zero Protocol Take"> Zero Protocol Take </h3>
+                            <span class="cast__meta">0% Fee</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">0 bps platform fee</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:-8%" data-cast-row>
+                            <span class="cast__index">05</span>
+                            <h3 class="cast__name" data-cast-name data-real="Stockfish 10"> Stockfish 10 </h3>
+                            <span class="cast__meta">Fixed Depth 10</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">fixed depth 10 evaluation</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:10%" data-cast-row>
+                            <span class="cast__index">06</span>
+                            <h3 class="cast__name" data-cast-name data-real="EIP-712 ECDSA"> EIP-712 ECDSA </h3>
+                            <span class="cast__meta">Signed Proof</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">ECDSA cryptographic proof</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                        <li class="cast__row" style="--shift:-4%" data-cast-row>
+                            <span class="cast__index">07</span>
+                            <h3 class="cast__name" data-cast-name data-real="Join Timeout"> Join Timeout </h3>
+                            <span class="cast__meta">600s Refund</span>
+                            <span class="cast__scrawl" data-cast-scrawl>
+                                <span class="cast__scrawl-text">600 seconds 100% creator return</span>
+                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
+                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
+                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
+                                </svg>
+                            </span>
+                        </li>
+                    </ul>
+
+                    <div class="pillars-grid" data-col style="--c: 1 / 13; margin-top: 3rem;">
+                        <div class="pillar-card">
+                            <span class="pillar-index mono">01 // CONTINUOUS EQUITY</span>
+                            <h3 class="pillar-title">Sigmoidal Payouts</h3>
+                            <p class="pillar-desc">
+                                Resigning past Move 10 maps final Stockfish centipawns into 5%–95% win probability. No sudden total liquidation on tight tactical endgames.
+                            </p>
+                        </div>
+                        <div class="pillar-card">
+                            <span class="pillar-index mono">02 // GAME INTEGRITY</span>
+                            <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
+                            <p class="pillar-desc">
+                                Resigning before Move 10 (20 completed plies) strictly forfeits 100% of the pot to the opponent, stopping opening griefing and rage-quits.
+                            </p>
+                        </div>
+                        <div class="pillar-card">
+                            <span class="pillar-index mono">03 // ECONOMIC PURITY</span>
+                            <h3 class="pillar-title">0% Platform Fee</h3>
+                            <p class="pillar-desc">
+                                Centipawn takes zero house rake. 100% of deposited USDC is disbursed directly to players via verified Base Sepolia smart contracts.
+                            </p>
+                        </div>
+                        <div class="pillar-card">
+                            <span class="pillar-index mono">04 // ORACLE ATTESTATION</span>
+                            <h3 class="pillar-title">EIP-191 Signatures</h3>
+                            <p class="pillar-desc">
+                                Stockfish 10 computes the definitive FEN evaluation. The oracle key cryptographically signs basis points directly for smart contract execution.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 10. Windshield / Comparison Matrix & Specs -->
+                <section class="windshield" id="sec-rules" data-texture>
+                    <div class="windshield__glass" data-ws-glass>
+                        <img class="windshield__source" src="/media/resident-bg.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" data-ws-plate>
+                        <div class="windshield__card windshield__card--rest" data-ws-card data-index="0" aria-hidden="false">
+                            <p class="windshield__eyebrow">The flaw of traditional chess</p>
+                            <p class="windshield__title">Binary Forfeiture</p>
+                        </div>
+                        <div class="windshield__card" data-ws-card data-index="1" aria-hidden="true">
+                            <p class="windshield__eyebrow">And</p>
+                            <p class="windshield__title">Endgame Tilt</p>
+                        </div>
+                        <div class="windshield__card" data-ws-card data-index="2" aria-hidden="true">
+                            <p class="windshield__eyebrow">The mathematical remedy</p>
+                            <p class="windshield__title">Sigmoid Escrow</p>
+                        </div>
+                        <div class="windshield__card" data-ws-card data-index="3" aria-hidden="true">
+                            <p class="windshield__eyebrow">Live on testnet</p>
+                            <p class="windshield__title">Base Sepolia 84532</p>
+                        </div>
+                        <div class="windshield__card" data-ws-card data-index="4" aria-hidden="true">
+                            <p class="windshield__eyebrow">Continuous chess wagering</p>
+                            <p class="windshield__title">Centipawn</p>
+                        </div>
+                        <div class="windshield__wipers" data-ws-wipers aria-hidden="true">
+                            <div class="windshield__wiper" data-ws-wiper>
+                                <span class="windshield__arm"></span>
+                                <span class="windshield__blade"></span>
+                            </div>
+                        </div>
+                        <div class="windshield__veil" data-ws-veil aria-hidden="true">
+                            <span></span><span></span>
+                        </div>
+                        <div class="windshield__vignette" aria-hidden="true"></div>
+                    </div>
+
+                    <div class="comparison-table-wrap" style="width:100%;max-width:1100px;margin-top:1.5rem;position:relative;z-index:1;">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Match Scenario</th>
+                                    <th>Traditional Binary Wagering</th>
+                                    <th>Centipawn Web3 Protocol</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="td-scenario">Late Tactical Slip (Move 42)</td>
+                                    <td class="td-binary">100% Liquidation. Player loses entire deposited stake.</td>
+                                    <td class="td-centipawn"><strong>Retains 70%–85% equity</strong> proportional to final Stockfish evaluation.</td>
+                                </tr>
+                                <tr>
+                                    <td class="td-scenario">Opponent Clock Stalling</td>
+                                    <td class="td-binary">Losing player drags clock to zero out of spite.</td>
+                                    <td class="td-centipawn"><strong>Incentivized early resignation</strong> to lock in remaining 5%–35% pot equity.</td>
+                                </tr>
+                                <tr>
+                                    <td class="td-scenario">Draw / Stalemate Resolution</td>
+                                    <td class="td-binary">Hefty platform rake (up to 10%) deducted from refund.</td>
+                                    <td class="td-centipawn"><strong>Exact 50 / 50 split</strong> with 0% protocol fee disbursed on Base.</td>
+                                </tr>
+                                <tr>
+                                    <td class="td-scenario">Settlement Custody</td>
+                                    <td class="td-binary">Centralized server database custody with withdrawal limits.</td>
+                                    <td class="td-centipawn"><strong>Verified Base Sepolia Escrow</strong> (Chain ID 84532) smart contract.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Verified Base Sepolia Contract Strip -->
+                    <div class="landing-contract-strip scroll-reveal" id="sec-contracts" style="width:100%;max-width:1100px;margin-top:2rem;position:relative;z-index:1;">
+                        <div class="contract-pill-item">
+                            <span class="contract-pill-label mono">ESCROW CONTRACT</span>
+                            <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                                0x0451...a5C0 ↗
+                            </a>
+                        </div>
+                        <div class="contract-pill-item">
+                            <span class="contract-pill-label mono">CIRCLE TESTNET USDC</span>
+                            <a href="https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                                0x036C...CF7e ↗
+                            </a>
+                        </div>
+                        <div class="contract-pill-item">
+                            <span class="contract-pill-label mono">STOCKFISH 10 ORACLE</span>
+                            <a href="https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                                0x410F...A3a9 ↗
+                            </a>
+                        </div>
+                        <div class="contract-pill-item">
+                            <span class="contract-pill-label mono">PROTOCOL FEE</span>
+                            <span class="contract-pill-val fee-free mono">0.00% (ZERO TAKE)</span>
+                        </div>
+                        <button class="contract-strip-btn mono" id="btn-view-specs-bottom">
+                            READ SPEC ➔
+                        </button>
+                    </div>
+
+                    <div class="windshield__actions" style="margin-top:1.5rem;position:relative;z-index:1;">
+                        <button class="btn btn--primary" id="btn-view-specs">
+                            <span class="btn__label">📜 Open PRD Settlement Rules</span>
+                            <span class="btn__panel" aria-hidden="true">
+                                <span class="btn__breach">
+                                    <span class="btn__breach-slice"></span>
+                                    <span class="btn__breach-slice"></span>
+                                    <span class="btn__breach-slice"></span>
+                                </span>
+                                <span class="btn__panel-label" data-label="📜 Open PRD Settlement Rules">📜 Open PRD Settlement Rules</span>
+                            </span>
+                        </button>
+                        <a class="btn" href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer">
+                            Basescan Explorer ↗
                         </a>
                     </div>
-                    <div class="contract-pill-item">
-                        <span class="contract-pill-label mono">USDC</span>
-                        <a href="https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                            0x036C...CF7e ↗
-                        </a>
-                    </div>
-                    <div class="contract-pill-item">
-                        <span class="contract-pill-label mono">ORACLE</span>
-                        <a href="https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                            0x410F...A3a9 ↗
-                        </a>
-                    </div>
-                    <div class="contract-pill-item">
-                        <span class="contract-pill-label mono">FEE</span>
-                        <span class="contract-pill-val fee-free mono">0% (Zero Take)</span>
-                    </div>
-                    <button class="contract-strip-btn mono" id="btn-view-specs-bottom">
-                        READ SPEC ➔
-                    </button>
+                </section>
+            </main>
+
+            <!-- 11. Full-Bleed Crimson Footer -->
+            <footer class="footer grid">
+                <div class="footer__top" data-col style="--c: 1 / 13">
+                    <span class="footer__rating">Chain 84532 · Base Sepolia Testnet</span>
+                    <ul class="footer__social" aria-label="Official Centipawn channels">
+                        <li>
+                            <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                                <span>GitHub ↗</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer" class="footer-social-link linkedin" id="footer-link-linkedin" title="LinkedIn Profile">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                <span>LinkedIn ↗</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
 
-                <!-- Minimalist Footer with LinkedIn & GitHub Links -->
-                <footer class="landing-footer">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:14px;">♟</span>
-                        <span class="mono" style="color:#ffffff;font-size:10px;letter-spacing:0.12em;">CENTIPAWN // BASE L2</span>
+                <div class="footer__markwrap" data-col-bleed data-footer-markwrap>
+                    <h2 class="sr-only">Centipawn — Continuous Chess Escrow</h2>
+                    <div class="footer__mark" aria-hidden="true" data-footer-mark>CENTIPAWN</div>
+                    <p class="footer__byline">
+                        <span>Continuous Chess Escrow</span>
+                        EvalStake PRD v2.1
+                    </p>
+                </div>
+
+                <ul class="footer__studios" data-col style="--c: 1 / 13" data-footer-logos aria-label="Centipawn infrastructure partners">
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">BASE</span></li>
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">COINBASE</span></li>
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">CIRCLE USDC</span></li>
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">STOCKFISH 10</span></li>
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">ETHEREUM</span></li>
+                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">FIDE RULES</span></li>
+                </ul>
+
+                <div class="footer__legalwrap" data-col style="--c: 1 / 13">
+                    <div class="footer__legal">
+                        <span class="footer__date">Base Sepolia Smart Contract Escrow (Chain ID 84532)</span>
+                        <ul>
+                            <li><span>0% Platform Take</span></li>
+                            <li>
+                                <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer">
+                                    Verified Contract ↗
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:0.1em;">EVALSTAKE CHESS PRD V2.1 · 0% PLATFORM FEE · STOCKFISH 10</span>
-                    <div class="footer-social-links">
-                        <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                            <span>GitHub</span>
-                            <span style="font-size:9px;opacity:0.6;">↗</span>
-                        </a>
-                        <a href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer" class="footer-social-link linkedin" id="footer-link-linkedin" title="LinkedIn Profile">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                            <span>LinkedIn</span>
-                            <span style="font-size:9px;opacity:0.6;">↗</span>
-                        </a>
-                    </div>
-                </footer>
+                    <p class="footer__disclaimer">
+                        Centipawn Protocol v2.1. Peer-to-peer non-custodial chess wagering protocol governed by continuous Stockfish evaluation oracles on Base Sepolia. Anti-sandbagging invariant strictly enforced before Move 10 (20 completed plies). Mathematical sigmoid curve guarantees proportional capital distribution without house rake.
+                    </p>
+                </div>
+            </footer>
+
+            <!-- Film Grain Overlay from Resident Evil -->
+            <div class="grain-overlay grain-overlay--svg" data-grain data-grain-variant="svg" data-grain-animate="true" style="--grain-strength-desktop:0.12;--grain-strength-mobile:0.075;--grain-size:7.8125rem;--grain-image:url('/media/texture-grain.webp');--grain-contrast:125%;--grain-brightness:60%;--grain-speed:1s;--grain-z:10001" aria-hidden="true">
+                <svg class="grain-overlay__svg" focusable="false">
+                    <filter id="resident-grain-filter" x="-20%" y="-20%" width="140%" height="140%">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="2" stitchTiles="stitch"></feTurbulence>
+                        <feColorMatrix type="saturate" values="0"></feColorMatrix>
+                    </filter>
+                </svg>
+                <span class="grain-overlay__layer grain-overlay__layer--dark" style="--grain-filter:url('#resident-grain-filter')"></span>
+                <span class="grain-overlay__layer grain-overlay__layer--light" style="--grain-filter:url('#resident-grain-filter')"></span>
             </div>
+
+            <!-- Custom SVG Blood Drip & Film Grain Filters -->
+            <svg class="sr-only" aria-hidden="true" focusable="false">
+                <filter id="blood-drip" x="-30%" y="-40%" width="160%" height="180%">
+                    <feTurbulence id="blood-turbulence" type="fractalNoise" baseFrequency="0.07 0.11" numOctaves="3" seed="7" result="noise" />
+                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+                <filter id="blood-drip-fine" x="-12%" y="-18%" width="124%" height="136%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.9 1.1" numOctaves="2" seed="4" result="n" />
+                    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" xChannelSelector="R" yChannelSelector="G" />
+                </filter>
+            </svg>
         `;
 
         // 2. Arena Container (Live Chessboard, Clocks, Eval Bar, Move Notation)
@@ -764,6 +1633,12 @@
                         <div class="card-header-row">
                             <span class="card-title">ESCROW STATUS</span>
                             <span class="mono" id="hud-match-id" style="font-size:10px;color:var(--dim);cursor:pointer;" title="Click to copy Match ID">ID: 0x9a7...d4</span>
+                        </div>
+
+                        <!-- Match Invite Link Row -->
+                        <div id="arena-invite-row" style="margin:4px 0 8px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.18);padding:6px 10px;border-radius:4px;">
+                            <span class="mono" style="font-size:10px;color:var(--dim);">INVITE:</span>
+                            <button id="btn-arena-copy-invite" class="btn-primary" style="font-size:10px;padding:3px 8px;font-weight:600;background:var(--red,#ff211a);color:#fff;border-radius:3px;">🔗 Copy Invite Link</button>
                         </div>
 
                         <div class="escrow-pot-display">
@@ -1171,6 +2046,107 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ============================================================== -->
+            <!-- MODAL: MATCH INVITE LINK (PRD Section 7 Invite-Only)           -->
+            <!-- ============================================================== -->
+            <div class="modal-overlay" id="modal-invite-link">
+                <div class="modal-card" style="max-width:480px;">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title">⚔️ Match Challenge Created</h3>
+                            <span class="mono" style="font-size:10px;color:var(--accent-green);">ON-CHAIN ESCROW READY</span>
+                        </div>
+                        <button class="modal-close-btn" id="modal-invite-close">✕</button>
+                    </div>
+
+                    <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">
+                        Your match has been created on Base Sepolia. Share this invite link with your opponent to join!
+                    </div>
+
+                    <div style="margin-bottom:14px;">
+                        <label class="mono" style="font-size:10px;color:var(--dim-more);display:block;margin-bottom:6px;">SHAREABLE INVITE LINK</label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="input-invite-link" readonly
+                                   style="flex:1;padding:10px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;font-family:monospace;font-size:12px;">
+                            <button class="btn-primary" id="btn-copy-invite-link" style="white-space:nowrap;padding:10px 14px;background:var(--red,#ff211a);color:#fff;font-weight:600;">
+                                📋 Copy Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11px;margin-bottom:16px;">
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">STAKE PER PLAYER</span>
+                            <div id="invite-summary-stake" style="font-weight:700;color:#fff;font-size:13px;">0.10 USDC</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">TOTAL POT</span>
+                            <div id="invite-summary-pot" style="font-weight:700;color:var(--accent-green,#34d399);font-size:13px;">0.20 USDC</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">TIME CONTROL</span>
+                            <div id="invite-summary-tc" style="font-weight:700;color:#fff;font-size:13px;">5+3 Rapid</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">GAME ID</span>
+                            <div id="invite-summary-id" style="font-family:monospace;color:var(--accent-cyan,#70d6ff);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">0x...</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn-primary" id="btn-invite-enter-arena" style="width:100%;background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;font-weight:700;padding:12px;">
+                            Enter Match Arena ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================== -->
+            <!-- MODAL: JOIN MATCH VIA INVITE (PRD Section 8)                    -->
+            <!-- ============================================================== -->
+            <div class="modal-overlay" id="modal-join-match">
+                <div class="modal-card" style="max-width:500px;">
+                    <div class="modal-header">
+                        <div>
+                            <h3 class="modal-title">⚔️ Chess Escrow Challenge</h3>
+                            <span class="mono" style="font-size:10px;color:var(--accent-cyan);">BASE SEPOLIA ESCROW</span>
+                        </div>
+                        <button class="modal-close-btn" id="modal-join-close">✕</button>
+                    </div>
+
+                    <div style="font-size:12px;color:var(--dim);margin-bottom:12px;line-height:1.5;">
+                        You have received a challenge! Both players lock equal USDC into non-custodial smart escrow with continuous evaluation equity.
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px;margin-bottom:14px;">
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">REQUIRED STAKE</span>
+                            <div id="join-modal-stake" style="font-weight:700;color:#fff;font-size:15px;">0.10 USDC</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">TOTAL POT</span>
+                            <div id="join-modal-pot" style="font-weight:700;color:var(--accent-green,#34d399);font-size:15px;">0.20 USDC</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">TIME CONTROL</span>
+                            <div id="join-modal-tc" style="font-weight:700;color:#fff;font-size:13px;">5+3 Rapid</div>
+                        </div>
+                        <div>
+                            <span class="mono" style="color:var(--dim);font-size:10px;">CHALLENGER (WHITE)</span>
+                            <div id="join-modal-challenger" style="font-family:monospace;color:var(--accent-cyan,#70d6ff);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">0x...</div>
+                        </div>
+                    </div>
+
+                    <div id="join-match-status-msg" style="font-size:11px;color:#fbbf24;margin-bottom:10px;min-height:16px;"></div>
+
+                    <div class="modal-actions">
+                        <button class="btn-primary" id="btn-join-match-action" style="width:100%;padding:13px;font-weight:700;background:linear-gradient(135deg,#70d6ff,#34d399);color:#08080a;">
+                            🔗 Connect Wallet & Join Match
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
 
         document.body.appendChild(landing);
@@ -1450,6 +2426,23 @@
         updateHUDs();
         appendMoveNotation(move);
         updateLiveStockfishEval();
+
+        // Broadcast move to server for live two-player sync
+        if (state.gameId && !walletState.isSandbox) {
+            fetch('/api/matches/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    gameId: state.gameId,
+                    from,
+                    to,
+                    promotion,
+                    fen: state.chess.fen(),
+                    plies: state.chess.history().length,
+                    player: walletState.address
+                })
+            }).catch(() => {});
+        }
 
         // Check game-ending conditions
         if (isGameCheckmate()) {
@@ -2098,157 +3091,222 @@
         const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
         if (!ctx) return;
 
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
+        // Clamped DPR for optimal performance and crispness on 4K/Retina displays
+        let dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+        let width = canvas.width = Math.floor(window.innerWidth * dpr);
+        let height = canvas.height = Math.floor(window.innerHeight * dpr);
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
 
         const handleResize = () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+            width = canvas.width = Math.floor(window.innerWidth * dpr);
+            height = canvas.height = Math.floor(window.innerHeight * dpr);
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
         };
         window.addEventListener('resize', handleResize, { passive: true });
 
-        // Ambient Harmonic Nebula Orbs matching landing_bg.jpg
-        const orbs = [
-            { x: width * 0.22, y: height * 0.35, vx: 0.16, vy: 0.12, r: 300, color: 'rgba(112, 214, 255, 0.05)' }, // Cyan
-            { x: width * 0.78, y: height * 0.50, vx: -0.14, vy: 0.15, r: 340, color: 'rgba(167, 139, 250, 0.045)' }, // Purple
-            { x: width * 0.50, y: height * 0.75, vx: 0.11, vy: -0.14, r: 320, color: 'rgba(59, 130, 246, 0.04)' }   // Royal Blue
+        // Pre-Render Nebula Glow Orbs onto Offscreen Canvases (Zero GC, 120 FPS GPU Blitting)
+        const orbDefs = [
+            { x: width * 0.22, y: height * 0.35, vx: 0.16 * dpr, vy: 0.12 * dpr, r: 280 * dpr, color: 'rgba(255, 33, 26, 0.055)' },
+            { x: width * 0.78, y: height * 0.50, vx: -0.14 * dpr, vy: 0.15 * dpr, r: 320 * dpr, color: 'rgba(27, 58, 66, 0.075)' },
+            { x: width * 0.50, y: height * 0.75, vx: 0.11 * dpr, vy: -0.14 * dpr, r: 300 * dpr, color: 'rgba(255, 106, 61, 0.045)' }
         ];
 
-        // Celestial Chess & Base Constellation Nodes (Optimized count for 120 FPS)
-        const glyphs = ['♟', '♞', '♜', '◆', '●', '✦'];
-        const numNodes = Math.min(32, Math.max(18, Math.floor(window.innerWidth / 40)));
-        const nodes = [];
+        const orbCanvases = orbDefs.map(orb => {
+            const oc = document.createElement('canvas');
+            const diam = Math.ceil(orb.r * 2);
+            oc.width = diam;
+            oc.height = diam;
+            const octx = oc.getContext('2d');
+            const g = octx.createRadialGradient(orb.r, orb.r, 0, orb.r, orb.r, orb.r);
+            g.addColorStop(0, orb.color);
+            g.addColorStop(1, 'rgba(8, 8, 10, 0)');
+            octx.fillStyle = g;
+            octx.beginPath();
+            octx.arc(orb.r, orb.r, orb.r, 0, Math.PI * 2);
+            octx.fill();
+            return { canvas: oc, r: orb.r, x: orb.x, y: orb.y, vx: orb.vx, vy: orb.vy };
+        });
 
+        // Pre-Render Glyphs to Offscreen Canvases (Prevents costly font parsing inside RAF loop)
+        const glyphChars = ['♟', '♞', '♜', '◆', '●', '✦'];
+        const glyphCanvases = {};
+        glyphChars.forEach(ch => {
+            const gc = document.createElement('canvas');
+            gc.width = Math.ceil(28 * dpr);
+            gc.height = Math.ceil(28 * dpr);
+            const gctx = gc.getContext('2d');
+            gctx.font = `${Math.round(14 * dpr)}px "Inter", sans-serif`;
+            gctx.textAlign = 'center';
+            gctx.textBaseline = 'middle';
+            gctx.fillStyle = '#e8e4dc';
+            gctx.fillText(ch, gc.width / 2, gc.height / 2);
+            glyphCanvases[ch] = gc;
+        });
+
+        // Atmospheric Rain Drops (Optimized particle count with batched GPU draw call)
+        const numRain = 65;
+        const rainDrops = [];
+        for (let i = 0; i < numRain; i++) {
+            rainDrops.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                len: (Math.random() * 24 + 12) * dpr,
+                speed: (Math.random() * 8 + 12) * dpr,
+                alpha: Math.random() * 0.16 + 0.05
+            });
+        }
+
+        // Constellation Nodes
+        const numNodes = Math.min(28, Math.max(16, Math.floor(window.innerWidth / 50)));
+        const nodes = [];
         for (let i = 0; i < numNodes; i++) {
             nodes.push({
                 x: Math.random() * width,
                 y: Math.random() * height,
-                vx: (Math.random() - 0.5) * 0.30,
-                vy: (Math.random() - 0.5) * 0.30,
-                radius: Math.random() * 2 + 1.2,
+                vx: (Math.random() - 0.5) * 0.28 * dpr,
+                vy: (Math.random() - 0.5) * 0.28 * dpr,
+                radius: (Math.random() * 1.8 + 1.0) * dpr,
                 depth: Math.random() * 0.6 + 0.4,
                 alpha: Math.random() * 0.35 + 0.2,
-                glyph: Math.random() < 0.26 ? glyphs[Math.floor(Math.random() * glyphs.length)] : null,
-                color: Math.random() < 0.45 ? '#70d6ff' : (Math.random() < 0.45 ? '#a78bfa' : '#ffffff')
+                glyph: Math.random() < 0.25 ? glyphChars[Math.floor(Math.random() * glyphChars.length)] : null,
+                color: Math.random() < 0.4 ? '#ff211a' : (Math.random() < 0.35 ? '#ff6a3d' : '#e8e4dc')
             });
         }
 
-        // Mouse & Cursor Scroll Tracking (RAF Ticked for Zero-Lag 120Hz Hardware Acceleration)
-        let mouseX = width / 2;
-        let mouseY = height / 2;
-        let targetMouseX = width / 2;
-        let targetMouseY = height / 2;
-        let cursorFadeTimer = null;
+        let mouseX = (window.innerWidth / 2) * dpr;
+        let mouseY = (window.innerHeight / 2) * dpr;
+        let targetMouseX = mouseX;
+        let targetMouseY = mouseY;
         let scrollY = 0;
-        let glowRafPending = false;
-
-        const requestGlowUpdate = () => {
-            if (glowRafPending) return;
-            glowRafPending = true;
-            requestAnimationFrame(() => {
-                glowRafPending = false;
-                if (cursorGlow) {
-                    cursorGlow.style.transform = `translate3d(${targetMouseX - 210}px, ${targetMouseY - 210}px, 0)`;
-                    cursorGlow.classList.add('active');
-                    clearTimeout(cursorFadeTimer);
-                    cursorFadeTimer = setTimeout(() => {
-                        cursorGlow.classList.remove('active');
-                    }, 1000);
-                }
-            });
-        };
+        let lastTime = performance.now();
+        let cursorGlowActive = false;
 
         window.addEventListener('pointermove', (e) => {
             if (!container.classList.contains('active')) return;
-            targetMouseX = e.clientX;
-            targetMouseY = e.clientY;
-            requestGlowUpdate();
+            targetMouseX = e.clientX * dpr;
+            targetMouseY = e.clientY * dpr;
+            if (!cursorGlowActive && cursorGlow) {
+                cursorGlowActive = true;
+                cursorGlow.classList.add('active');
+            }
         }, { passive: true });
 
         container.addEventListener('scroll', () => {
-            scrollY = container.scrollTop;
-            requestGlowUpdate();
-        }, { passive: true });
-
-        window.addEventListener('wheel', () => {
-            if (!container.classList.contains('active')) return;
-            requestGlowUpdate();
+            scrollY = container.scrollTop * dpr;
         }, { passive: true });
 
         document.addEventListener('mouseleave', () => {
-            if (cursorGlow) cursorGlow.classList.remove('active');
+            if (cursorGlowActive && cursorGlow) {
+                cursorGlowActive = false;
+                cursorGlow.classList.remove('active');
+            }
         });
 
-        function renderFrame() {
+        const scrollThumb = document.getElementById('landing-scroll-thumb');
+
+        function renderFrame(now) {
             if (!wallpaperActive || !container.classList.contains('active')) return;
             wallpaperAnimId = requestAnimationFrame(renderFrame);
 
-            // Tab hidden: skip all canvas calculations to conserve GPU/CPU
+            // Tab hidden: skip all computations to keep background FPS ultra-light
             if (document.hidden) return;
 
-            // Smooth mouse interpolation
-            mouseX += (targetMouseX - mouseX) * 0.05;
-            mouseY += (targetMouseY - mouseY) * 0.05;
+            const dt = Math.min((now - lastTime) / 16.667, 2.0);
+            lastTime = now;
+
+            // Interpolate smooth mouse
+            mouseX += (targetMouseX - mouseX) * 0.08 * dt;
+            mouseY += (targetMouseY - mouseY) * 0.08 * dt;
+
+            // Synchronize cursor glow without layout thrashing
+            if (cursorGlow && cursorGlowActive) {
+                const clientX = mouseX / dpr;
+                const clientY = mouseY / dpr;
+                cursorGlow.style.transform = `translate3d(${clientX - 210}px, ${clientY - 210}px, 0)`;
+            }
+
+            // Synchronize GPU scrollbar thumb progress
+            if (scrollThumb) {
+                const maxScroll = container.scrollHeight - container.clientHeight;
+                const progress = maxScroll > 0 ? Math.min(1, Math.max(0, container.scrollTop / maxScroll)) : 0;
+                const trackH = container.clientHeight - 40;
+                scrollThumb.style.transform = `translate3d(-50%, ${progress * trackH}px, 0)`;
+            }
 
             ctx.clearRect(0, 0, width, height);
 
-            // 1. Draw Breathing Nebula Orbs
-            for (let i = 0; i < orbs.length; i++) {
-                const orb = orbs[i];
-                orb.x += orb.vx;
-                orb.y += orb.vy;
-                if (orb.x < -100) orb.x = width + 100;
-                if (orb.x > width + 100) orb.x = -100;
-                if (orb.y < -100) orb.y = height + 100;
-                if (orb.y > height + 100) orb.y = -100;
-
-                const grad = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.r);
-                grad.addColorStop(0, orb.color);
-                grad.addColorStop(1, 'rgba(8, 8, 10, 0)');
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(orb.x, orb.y, orb.r, 0, Math.PI * 2);
-                ctx.fill();
+            // 1. Draw Pre-Rendered Nebula Orbs (Direct GPU Blitting)
+            for (let i = 0; i < orbCanvases.length; i++) {
+                const o = orbCanvases[i];
+                o.x += o.vx * dt;
+                o.y += o.vy * dt;
+                if (o.x < -o.r) o.x = width + o.r;
+                if (o.x > width + o.r) o.x = -o.r;
+                if (o.y < -o.r) o.y = height + o.r;
+                if (o.y > height + o.r) o.y = -o.r;
+                ctx.drawImage(o.canvas, o.x - o.r, o.y - o.r);
             }
 
-            // 2. Connect Nearby Nodes with Faint L2 Neural Circuit Lines (Single Batched Draw Call for Max FPS)
-            ctx.lineWidth = 0.75;
-            ctx.strokeStyle = 'rgba(196, 210, 232, 0.12)';
+            // 2. Batched Rain Streaks
+            ctx.lineWidth = 1;
             ctx.beginPath();
+            for (let i = 0; i < rainDrops.length; i++) {
+                const drop = rainDrops[i];
+                drop.y += drop.speed * dt;
+                drop.x += drop.speed * 0.12 * dt;
+                if (drop.y > height) {
+                    drop.y = -drop.len;
+                    drop.x = Math.random() * width;
+                }
+                if (drop.x > width) drop.x = -10;
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x + 3 * dpr, drop.y + drop.len);
+            }
+            ctx.strokeStyle = 'rgba(232, 228, 220, 0.10)';
+            ctx.stroke();
+
+            // 3. Batched Constellation Neural Circuit Lines
+            ctx.lineWidth = 0.75;
+            ctx.beginPath();
+            const thresholdSq = 14400 * dpr * dpr;
             for (let i = 0; i < nodes.length; i++) {
                 const a = nodes[i];
                 for (let j = i + 1; j < nodes.length; j++) {
                     const b = nodes[j];
                     const dx = a.x - b.x;
                     const dy = a.y - b.y;
-                    if (dx * dx + dy * dy < 14400) { // ~120px threshold
+                    if (dx * dx + dy * dy < thresholdSq) {
                         ctx.moveTo(a.x, a.y);
                         ctx.lineTo(b.x, b.y);
                     }
                 }
             }
+            ctx.strokeStyle = 'rgba(232, 228, 220, 0.055)';
             ctx.stroke();
 
-            // 3. Draw Nodes and Chess Glyphs with Parallax Drift
-            const scrollParallax = scrollY * 0.22;
+            // 4. Draw Nodes and Chess Glyphs
+            const scrollParallax = scrollY * 0.18;
             for (let i = 0; i < nodes.length; i++) {
                 const node = nodes[i];
-                node.x += node.vx;
-                node.y += node.vy;
+                node.x += node.vx * dt;
+                node.y += node.vy * dt;
 
-                // Wrap around edges
                 if (node.x < 0) node.x = width;
                 if (node.x > width) node.x = 0;
                 if (node.y < 0) node.y = height;
                 if (node.y > height) node.y = 0;
 
-                // Fast squared-distance mouse repulsion
+                // Mouse Repulsion
                 const mdx = node.x - mouseX;
                 const mdy = node.y - mouseY;
                 const mDistSq = mdx * mdx + mdy * mdy;
-                if (mDistSq < 19600 && mDistSq > 0) { // 140px threshold
+                const repThresholdSq = 19600 * dpr * dpr;
+                if (mDistSq < repThresholdSq && mDistSq > 0) {
                     const mDist = Math.sqrt(mDistSq);
-                    const force = (1 - mDist / 140) * 1.5;
+                    const force = (1 - mDist / (140 * dpr)) * 1.5 * dt;
                     node.x += (mdx / mDist) * force;
                     node.y += (mdy / mDist) * force;
                 }
@@ -2256,11 +3314,10 @@
                 const renderY = (node.y - scrollParallax * (node.depth - 0.3)) % height;
                 const finalY = renderY < 0 ? renderY + height : renderY;
 
-                if (node.glyph) {
-                    ctx.font = `${Math.round(11 * node.depth)}px "Inter", sans-serif`;
-                    ctx.fillStyle = node.color;
+                if (node.glyph && glyphCanvases[node.glyph]) {
+                    const gCanvas = glyphCanvases[node.glyph];
                     ctx.globalAlpha = Math.min(0.65, node.alpha * 1.4);
-                    ctx.fillText(node.glyph, node.x, finalY);
+                    ctx.drawImage(gCanvas, node.x - gCanvas.width / 2, finalY - gCanvas.height / 2);
                     ctx.globalAlpha = 1;
                 } else {
                     ctx.beginPath();
@@ -2276,7 +3333,8 @@
         window.startLandingWallpaper = function() {
             if (wallpaperActive) return;
             wallpaperActive = true;
-            renderFrame();
+            lastTime = performance.now();
+            wallpaperAnimId = requestAnimationFrame(renderFrame);
         };
 
         window.stopLandingWallpaper = function() {
@@ -2286,9 +3344,6 @@
                 wallpaperAnimId = null;
             }
         };
-
-        // Note: Do not auto-run on initial boot to prevent fighting the 3D starter page for GPU/CPU.
-        // It begins automatically when showLandingPage() is triggered.
     }
 
     // -------------------------------------------------------------
@@ -2305,22 +3360,183 @@
             const observer = new IntersectionObserver((entries) => {
                 for (let i = 0; i < entries.length; i++) {
                     const entry = entries[i];
-                    entry.target.classList.toggle('revealed', entry.isIntersecting);
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
                 }
             }, {
                 root: container,
-                threshold: 0.08,
-                rootMargin: '30px 0px'
+                threshold: 0.05,
+                rootMargin: '40px 0px'
             });
 
             elements.forEach(el => observer.observe(el));
 
             window.refreshScrollReveal = () => {
-                container.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+                container.querySelectorAll('.scroll-reveal:not(.revealed)').forEach(el => observer.observe(el));
             };
         } else {
             elements.forEach(el => el.classList.add('revealed'));
         }
+    }
+
+    // -------------------------------------------------------------
+    // LANDING PAGE INTERACTIVE MODULES (Simulator, Sound, Challenges)
+    // -------------------------------------------------------------
+    function initLandingSimulator() {
+        const slider = document.getElementById('sim-eval-slider');
+        if (!slider) return;
+
+        let pot = 100.0;
+        const potBtns = document.querySelectorAll('.sim-pot-btn');
+        const presetBtns = document.querySelectorAll('.sim-preset-btn');
+        const evalVal = document.getElementById('sim-eval-val');
+        const evalPawns = document.getElementById('sim-eval-pawns');
+        const pctWhite = document.getElementById('sim-pct-white');
+        const pctBlack = document.getElementById('sim-pct-black');
+        const payoutWhite = document.getElementById('sim-payout-white');
+        const payoutBlack = document.getElementById('sim-payout-black');
+        const bpsWhite = document.getElementById('sim-bps-white');
+        const bpsBlack = document.getElementById('sim-bps-black');
+        const barWhite = document.getElementById('sim-bar-white');
+        const barBlack = document.getElementById('sim-bar-black');
+        const insightText = document.getElementById('sim-insight-text');
+
+        function updateSim() {
+            const cp = parseInt(slider.value, 10);
+            const pawns = (cp / 100).toFixed(2);
+            const pawnsStr = cp > 0 ? `+${pawns}` : `${pawns}`;
+            const cpStr = cp > 0 ? `+${cp} CP` : `${cp} CP`;
+
+            if (evalVal) evalVal.textContent = cpStr;
+            if (evalPawns) evalPawns.textContent = `(${pawnsStr} Pawns)`;
+
+            // PRD formula: P(Win_A) = 1 / (1 + e^(-0.004 * cp)) clamped to [0.05, 0.95]
+            let winProbA = 1 / (1 + Math.exp(-0.004 * cp));
+            winProbA = Math.max(0.05, Math.min(0.95, winProbA));
+
+            const bpsA = Math.round(winProbA * 10000);
+            const bpsB = 10000 - bpsA;
+            const payoutA = Number(((pot * bpsA) / 10000).toFixed(2));
+            const payoutB = Number((pot - payoutA).toFixed(2));
+            const pctA = (winProbA * 100).toFixed(1);
+            const pctB = ((1 - winProbA) * 100).toFixed(1);
+
+            if (pctWhite) pctWhite.textContent = `${pctA}%`;
+            if (pctBlack) pctBlack.textContent = `${pctB}%`;
+            if (payoutWhite) payoutWhite.textContent = `${payoutA.toFixed(2)} USDC`;
+            if (payoutBlack) payoutBlack.textContent = `${payoutB.toFixed(2)} USDC`;
+            if (bpsWhite) bpsWhite.textContent = `${bpsA} BPS`;
+            if (bpsBlack) bpsBlack.textContent = `${bpsB} BPS`;
+
+            if (barWhite) barWhite.style.width = `${pctA}%`;
+            if (barBlack) barBlack.style.width = `${pctB}%`;
+
+            presetBtns.forEach(btn => {
+                const btnCp = parseInt(btn.dataset.cp, 10);
+                btn.classList.toggle('active', btnCp === cp);
+            });
+
+            if (insightText) {
+                if (cp > 30) {
+                    insightText.innerHTML = `Position favors <strong>White (${pawnsStr})</strong>. Under traditional wagering, resigning forfeits 100% ($0.00). In Centipawn, Black salvages <strong>${payoutB.toFixed(2)} USDC (${pctB}%)</strong>, and White captures <strong>${payoutA.toFixed(2)} USDC (${pctA}%)</strong> without grinding a lost clock.`;
+                } else if (cp < -30) {
+                    insightText.innerHTML = `Position favors <strong>Black (${pawnsStr})</strong>. Under traditional wagering, White forfeits 100% ($0.00). In Centipawn, White salvages <strong>${payoutA.toFixed(2)} USDC (${pctA}%)</strong>, and Black claims <strong>${payoutB.toFixed(2)} USDC (${pctB}%)</strong> on Base Sepolia.`;
+                } else {
+                    insightText.innerHTML = `Position is dead even (<strong>${cpStr}</strong>). Under equal evaluation, both players retain equitable balances: White captures <strong>${payoutA.toFixed(2)} USDC (${pctA}%)</strong> and Black captures <strong>${payoutB.toFixed(2)} USDC (${pctB}%)</strong>.`;
+                }
+            }
+        }
+
+        slider.addEventListener('input', updateSim);
+
+        potBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                potBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                pot = parseFloat(btn.dataset.pot) || 100.0;
+                updateSim();
+            });
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                slider.value = btn.dataset.cp;
+                updateSim();
+            });
+        });
+
+        updateSim();
+    }
+
+    function initLandingSound() {
+        const soundBtn = document.getElementById('landing-sound-toggle');
+        if (!soundBtn) return;
+
+        soundBtn.addEventListener('click', () => {
+            state.soundEnabled = !state.soundEnabled;
+            soundBtn.classList.toggle('active', state.soundEnabled);
+            const arenaSoundIcon = document.getElementById('sound-icon');
+            if (arenaSoundIcon) {
+                arenaSoundIcon.textContent = state.soundEnabled ? '🔊' : '🔇';
+            }
+            if (state.soundEnabled) {
+                playSound('move');
+                showToast('🔊 Protocol Audio Effects: Enabled');
+            } else {
+                showToast('🔇 Protocol Audio Effects: Muted');
+            }
+        });
+    }
+
+    function initLandingChallenges() {
+        const filterPills = document.querySelectorAll('.challenge-filter-pill');
+        const challengeCards = document.querySelectorAll('.landing-challenge-card');
+        const modalLobby = document.getElementById('modal-lobby');
+
+        filterPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                filterPills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const filter = pill.dataset.filter;
+                challengeCards.forEach(card => {
+                    const cat = card.dataset.category;
+                    if (filter === 'all' || cat === filter) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        challengeCards.forEach(card => {
+            const acceptBtn = card.querySelector('.btn-challenge-accept');
+            if (acceptBtn) {
+                acceptBtn.addEventListener('click', () => {
+                    const stake = parseFloat(card.dataset.stake) || 10.0;
+                    const tc = parseInt(card.dataset.tc, 10) || 1;
+                    state.stakeAmount = stake;
+                    state.timeControlIdx = tc;
+                    if (canParticipateInMatch()) {
+                        if (modalLobby) modalLobby.classList.add('open');
+                        const stakeBtns = document.querySelectorAll('.stake-opt-btn');
+                        stakeBtns.forEach(b => {
+                            if (parseFloat(b.dataset.stake) === stake) {
+                                b.click();
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        document.getElementById('btn-landing-create-challenge')?.addEventListener('click', () => {
+            if (canParticipateInMatch()) {
+                if (modalLobby) modalLobby.classList.add('open');
+            }
+        });
     }
 
     // -------------------------------------------------------------
@@ -2461,6 +3677,10 @@
                 walletState.profile = data.profile;
                 updateUserProfileUI(data.profile);
                 closeProfileModal();
+                if (pendingJoinGameId) {
+                    updateJoinButtonState();
+                    document.getElementById('modal-join-match')?.classList.add('open');
+                }
                 showToast(`✅ Profile saved: ${data.profile.username} ${data.profile.avatar.icon}`);
                 playSound('settle');
             } else {
@@ -2637,6 +3857,206 @@
         });
 
         // Create Match Submit Handler
+        
+        // -------------------------------------------------------------
+        // INVITE LINK & TWO-PLAYER MATCH JOIN FLOW (Step 3)
+        // -------------------------------------------------------------
+        let pendingJoinGameId = null;
+        let matchPollTimer = null;
+
+        function detectInviteLink() {
+            let gameId = null;
+            const pathname = window.location.pathname || '';
+            const matchIdx = pathname.indexOf('/match/');
+            if (matchIdx !== -1) {
+                gameId = pathname.slice(matchIdx + 7).split('/')[0].split('?')[0].trim();
+            } else {
+                const params = new URLSearchParams(window.location.search);
+                if (params.get('match')) {
+                    gameId = params.get('match').trim();
+                } else if (window.location.hash.startsWith('#match/')) {
+                    gameId = window.location.hash.replace('#match/', '').trim();
+                }
+            }
+            return gameId;
+        }
+
+        window.detectInviteLink = detectInviteLink;
+
+        function showInviteLinkModal(gameId, stake, tcIdx) {
+            const modal = document.getElementById('modal-invite-link');
+            const input = document.getElementById('input-invite-link');
+            const stakeEl = document.getElementById('invite-summary-stake');
+            const potEl = document.getElementById('invite-summary-pot');
+            const tcEl = document.getElementById('invite-summary-tc');
+            const idEl = document.getElementById('invite-summary-id');
+
+            const link = `${window.location.origin}/match/${gameId}`;
+            if (input) input.value = link;
+            if (stakeEl) stakeEl.textContent = `${Number(stake).toFixed(2)} USDC`;
+            if (potEl) potEl.textContent = `${(Number(stake) * 2).toFixed(2)} USDC`;
+            if (tcEl) {
+                const tcConfigs = [
+                    { label: '3+2 Blitz' },
+                    { label: '5+3 Rapid' },
+                    { label: '10+0 Classical' }
+                ];
+                tcEl.textContent = tcConfigs[tcIdx]?.label || '5+3 Rapid';
+            }
+            if (idEl) idEl.textContent = `${gameId.slice(0, 10)}...${gameId.slice(-6)}`;
+
+            const hudRow = document.getElementById('arena-invite-row');
+            if (hudRow) hudRow.style.display = 'flex';
+
+            if (modal) modal.classList.add('open');
+        }
+
+        window.showInviteLinkModal = showInviteLinkModal;
+
+        async function openJoinMatchModal(gameId) {
+            pendingJoinGameId = gameId;
+            // Transition directly past 3D starter splash
+            if (window.transitionToLandingPage) {
+                window.transitionToLandingPage(true);
+            }
+            ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+            if (window.showLandingPage) {
+                window.showLandingPage();
+            }
+
+            const modal = document.getElementById('modal-join-match');
+            const stakeEl = document.getElementById('join-modal-stake');
+            const potEl = document.getElementById('join-modal-pot');
+            const tcEl = document.getElementById('join-modal-tc');
+            const challengerEl = document.getElementById('join-modal-challenger');
+            const statusMsg = document.getElementById('join-match-status-msg');
+
+            // Fetch match details from server
+            try {
+                if (statusMsg) statusMsg.textContent = 'Fetching match details from Base Sepolia...';
+                const res = await fetch(`/api/matches/${gameId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const match = data.match;
+                    if (match) {
+                        state.gameId = match.gameId;
+                        state.stakeAmount = Number(match.stakeAmount);
+                        state.timeControlIdx = match.timeControl || 1;
+                        state.playerA.address = match.playerA;
+                        if (match.playerB) state.playerB.address = match.playerB;
+
+                        // RELOAD PERSISTENCE: If match is ACTIVE or SETTLED, restore board & enter Arena!
+                        if (match.status === 'ACTIVE' || match.status === 'SETTLED') {
+                            state.status = match.status;
+                            state.totalPot = Number(match.totalPot) || match.stakeAmount * 2;
+                            if (match.fen && state.chess) {
+                                state.chess.load(match.fen);
+                            }
+                            const myAddr = (walletState.address || '').toLowerCase();
+                            const pB = (match.playerB || '').toLowerCase();
+                            const isPlayerB = myAddr && pB && myAddr === pB;
+                            state.boardOrientation = isPlayerB ? 'b' : 'w';
+                            if (match.playerB) state.playerB.connected = true;
+
+                            if (modal) modal.classList.remove('open');
+                            window.showArenaView();
+                            updateHUDs();
+                            renderBoard();
+                            updateLiveStockfishEval();
+                            return;
+                        }
+
+                        // RELOAD PERSISTENCE: If creator reloads before player B joins
+                        const myAddr = (walletState.address || '').toLowerCase();
+                        if (myAddr && match.playerA && myAddr === match.playerA.toLowerCase()) {
+                            if (modal) modal.classList.remove('open');
+                            window.showArenaView();
+                            showInviteLinkModal(match.gameId, match.stakeAmount, match.timeControl || 1);
+                            updateHUDs();
+                            renderBoard();
+                            return;
+                        }
+
+                        if (stakeEl) stakeEl.textContent = `${Number(match.stakeAmount).toFixed(2)} USDC`;
+                        if (potEl) potEl.textContent = `${(Number(match.stakeAmount) * 2).toFixed(2)} USDC`;
+                        if (tcEl) tcEl.textContent = match.timeControlLabel || '5+3 Rapid';
+                        if (challengerEl) challengerEl.textContent = `${match.playerA.slice(0, 6)}...${match.playerA.slice(-4)}`;
+                        if (statusMsg) statusMsg.textContent = '';
+                    }
+                } else {
+                    if (statusMsg) statusMsg.textContent = 'Joining match with default 0.10 USDC parameter';
+                }
+            } catch (e) {
+                if (statusMsg) statusMsg.textContent = '';
+            }
+
+            if (modal) modal.classList.add('open');
+            updateJoinButtonState();
+        }
+
+        window.openJoinMatchModal = openJoinMatchModal;
+
+        function updateJoinButtonState() {
+            const joinBtn = document.getElementById('btn-join-match-action');
+            if (!joinBtn) return;
+            if (!walletState.connected) {
+                joinBtn.textContent = '🔗 Connect Wallet & Join Match';
+                joinBtn.style.background = 'linear-gradient(135deg,#70d6ff,#34d399)';
+                joinBtn.style.color = '#08080a';
+            } else {
+                const stake = state.stakeAmount || 0.1;
+                joinBtn.textContent = `⚔️ Deposit ${stake.toFixed(2)} USDC & Join Match`;
+                joinBtn.style.background = 'var(--red, #ff211a)';
+                joinBtn.style.color = '#ffffff';
+            }
+        }
+
+        function startMatchPolling() {
+            if (matchPollTimer) clearInterval(matchPollTimer);
+            matchPollTimer = setInterval(async () => {
+                if (!state.gameId || state.status !== 'ACTIVE') return;
+                try {
+                    const res = await fetch(`/api/matches/${state.gameId}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    const match = data.match;
+                    if (!match) return;
+
+                    // Sync opponent connection in HUD
+                    if (match.playerB && match.playerB !== state.playerB.address) {
+                        state.playerB.address = match.playerB;
+                        state.playerB.connected = true;
+                        updateHUDs();
+                    }
+
+                    // Sync moves from opponent
+                    if (match.fen && match.fen !== state.chess.fen()) {
+                        const localPlies = state.chess.history().length;
+                        if ((match.plies || 0) > localPlies) {
+                            state.chess.load(match.fen);
+                            renderBoard();
+                            updateHUDs();
+                            updateLiveStockfishEval();
+                            playSound('move');
+                        }
+                    }
+
+                    // Sync settlement
+                    if (match.status === 'SETTLED' && match.settlement) {
+                        state.status = 'SETTLED';
+                        state.lastSettlementReceipt = match.settlement;
+                        showSettlementReceiptModal(match.settlement);
+                        stopClockTimer();
+                    }
+                } catch (e) {}
+            }, 1200);
+        }
+
+        window.startMatchPolling = startMatchPolling;
+
         async function handleCreateMatchSubmit() {
             if (!canParticipateInMatch()) {
                 document.getElementById('modal-lobby')?.classList.remove('open');
@@ -2691,7 +4111,7 @@
 
             await startNewMatch(state.stakeAmount, state.timeControlIdx);
             document.getElementById('modal-lobby')?.classList.remove('open');
-            window.showArenaView();
+            showInviteLinkModal(state.gameId, state.stakeAmount, state.timeControlIdx);
             return { ok: true, gameId: state.gameId };
         }
 
@@ -2702,15 +4122,17 @@
         window.joinMatchOnChain = async function (gameId, playerBSigner) {
             const ethersLib = window.ethers || (typeof ethers !== 'undefined' ? ethers : null);
             if (!ethersLib) throw new Error('Ethers library not available');
+            const signerToUse = playerBSigner || window.__customSigner || realSigner;
+            if (!signerToUse) throw new Error('No wallet signer connected');
             const usdcContract = new ethersLib.Contract(
                 LOCKED.USDC_ADDRESS,
                 ['function approve(address spender, uint256 amount) returns (bool)'],
-                playerBSigner
+                signerToUse
             );
             const escrowContract = new ethersLib.Contract(
                 LOCKED.ESCROW_CONTRACT,
                 ['function joinMatch(bytes32 gameId)'],
-                playerBSigner
+                signerToUse
             );
             const rawStake = ethersLib.parseUnits((state.stakeAmount || 0.1).toString(), 6);
             const appTx = await usdcContract.approve(LOCKED.ESCROW_CONTRACT, rawStake);
@@ -2718,7 +4140,7 @@
             const jTx = await escrowContract.joinMatch(gameId, { gasLimit: 250000 });
             await jTx.wait(1);
 
-            const bAddress = await playerBSigner.getAddress();
+            const bAddress = await signerToUse.getAddress();
             await fetch('/api/matches/join', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2732,6 +4154,101 @@
         // -------------------------------------------------------------
         // LANDING PAGE & NAVIGATION EVENT LISTENERS
         // -------------------------------------------------------------
+        // Match Invite Modal Event Listeners
+        document.getElementById('btn-copy-invite-link')?.addEventListener('click', () => {
+            const input = document.getElementById('input-invite-link');
+            const btn = document.getElementById('btn-copy-invite-link');
+            if (!input) return;
+            const link = input.value;
+            navigator.clipboard.writeText(link).then(() => {
+                if (btn) btn.textContent = '✓ Copied!';
+                showToast('✓ Invite link copied to clipboard!');
+                setTimeout(() => { if (btn) btn.textContent = '📋 Copy Link'; }, 2000);
+            }).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                if (btn) btn.textContent = '✓ Copied!';
+                showToast('✓ Invite link copied!');
+                setTimeout(() => { if (btn) btn.textContent = '📋 Copy Link'; }, 2000);
+            });
+        });
+
+        document.getElementById('btn-invite-enter-arena')?.addEventListener('click', () => {
+            document.getElementById('modal-invite-link')?.classList.remove('open');
+            window.showArenaView();
+        });
+
+        document.getElementById('modal-invite-close')?.addEventListener('click', () => {
+            document.getElementById('modal-invite-link')?.classList.remove('open');
+            window.showArenaView();
+        });
+
+        document.getElementById('btn-arena-copy-invite')?.addEventListener('click', () => {
+            if (!state.gameId) return;
+            const link = `${window.location.origin}/match/${state.gameId}`;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('✓ Match invite link copied to clipboard!');
+            }).catch(() => {
+                showToast(`Invite Link: ${link}`);
+            });
+        });
+
+        // Join Match Modal Event Listeners
+        document.getElementById('modal-join-close')?.addEventListener('click', () => {
+            document.getElementById('modal-join-match')?.classList.remove('open');
+        });
+
+        document.getElementById('btn-join-match-action')?.addEventListener('click', async () => {
+            if (!pendingJoinGameId) return;
+
+            if (!walletState.connected) {
+                openConnectModal();
+                return;
+            }
+
+            const joinBtn = document.getElementById('btn-join-match-action');
+            const statusMsg = document.getElementById('join-match-status-msg');
+            if (joinBtn) {
+                joinBtn.disabled = true;
+                joinBtn.textContent = '⏳ Processing On-Chain Join...';
+            }
+            if (statusMsg) statusMsg.textContent = 'Approving USDC & joining escrow on Base Sepolia...';
+
+            try {
+                const signer = window.__customSigner || realSigner;
+                if (signer && !walletState.isSandbox) {
+                    await window.joinMatchOnChain(pendingJoinGameId, signer);
+                } else {
+                    await fetch('/api/matches/join', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gameId: pendingJoinGameId, playerB: walletState.address })
+                    });
+                }
+
+                state.gameId = pendingJoinGameId;
+                state.playerB.address = walletState.address;
+                state.playerB.connected = true;
+                state.boardOrientation = 'b';
+                state.status = 'ACTIVE';
+
+                showToast('✓ Successfully joined match!');
+                playSound('settle');
+
+                document.getElementById('modal-join-match')?.classList.remove('open');
+                window.showArenaView();
+                pendingJoinGameId = null;
+            } catch (err) {
+                console.error('Join match error:', err);
+                showToast('⚠️ Join match error: ' + (err.message || err));
+                if (statusMsg) statusMsg.textContent = 'Error: ' + (err.message || err);
+                if (joinBtn) {
+                    joinBtn.disabled = false;
+                    updateJoinButtonState();
+                }
+            }
+        });
+
         // Hub / Landing Return Button in Arena Header
         document.getElementById('btn-back-to-landing')?.addEventListener('click', () => {
             window.showLandingPage();
@@ -2870,6 +4387,9 @@
                 walletState.chainId = LOCKED.CHAIN_ID;
                 syncLandingPageUI();
                 syncConnectModalState();
+                if (typeof updateJoinButtonState === 'function') {
+                    updateJoinButtonState();
+                }
                 return;
             }
 
@@ -3301,12 +4821,12 @@
         });
 
         // Smooth Scroll Navigation for Landing Page Links
-        document.querySelectorAll('.landing-nav-btn').forEach(link => {
+        document.querySelectorAll('.landing-nav-link, .landing-nav-btn, [data-menu-link]').forEach(link => {
             link.addEventListener('click', (e) => {
                 const href = link.getAttribute('href');
                 if (href && href.startsWith('#')) {
                     e.preventDefault();
-                    document.querySelectorAll('.landing-nav-btn').forEach(l => l.classList.remove('active'));
+                    document.querySelectorAll('.landing-nav-link, .landing-nav-btn').forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
                     const targetEl = document.querySelector(href);
                     if (targetEl) {
@@ -3315,6 +4835,24 @@
                 }
             });
         });
+
+        // Mobile Drawer Menu Toggle
+        const menuToggle = document.getElementById('landing-menu-toggle');
+        const drawerMenu = document.getElementById('menu');
+        if (menuToggle && drawerMenu) {
+            menuToggle.addEventListener('click', () => {
+                const isOpen = drawerMenu.classList.toggle('open');
+                menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                menuToggle.classList.toggle('active', isOpen);
+            });
+            drawerMenu.querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    drawerMenu.classList.remove('open');
+                    menuToggle.setAttribute('aria-expanded', 'false');
+                    menuToggle.classList.remove('active');
+                });
+            });
+        }
         // Expose state for telemetry and verification
         window.state = state;
         window.walletState = walletState;
