@@ -564,16 +564,8 @@
                     <button class="btn" id="btn-connect-wallet-nav" style="padding:0.65em 1.1em;font-size:10px;">
                         🔑 Connect Wallet
                     </button>
-                    <button class="btn btn--primary" id="btn-nav-enter-arena" style="padding:0.65em 1.3em;font-size:10px;">
+                    <button class="btn btn--primary" id="btn-nav-enter-arena">
                         <span class="btn__label">⚔️ Enter Arena</span>
-                        <span class="btn__panel" aria-hidden="true">
-                            <span class="btn__breach">
-                                <span class="btn__breach-slice"></span>
-                                <span class="btn__breach-slice"></span>
-                                <span class="btn__breach-slice"></span>
-                            </span>
-                            <span class="btn__panel-label" data-label="⚔️ Enter Arena">⚔️ Enter Arena</span>
-                        </span>
                     </button>
                     <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
                         <div class="wallet-status-dot"></div>
@@ -636,36 +628,12 @@
                             <div class="hero__actions" data-col style="--c: 3 / 11" data-hero-fade>
                                 <button class="btn btn--primary" id="hero-connect-wallet" style="display:none;">
                                     <span class="btn__label">🔑 CONNECT WALLET TO PLAY ➔</span>
-                                    <span class="btn__panel" aria-hidden="true">
-                                        <span class="btn__breach">
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                        </span>
-                                        <span class="btn__panel-label" data-label="🔑 CONNECT WALLET TO PLAY ➔">🔑 CONNECT WALLET TO PLAY ➔</span>
-                                    </span>
                                 </button>
                                 <button class="btn btn--primary" id="hero-switch-network" style="display:none;">
                                     <span class="btn__label">⚠️ SWITCH TO BASE SEPOLIA ➔</span>
-                                    <span class="btn__panel" aria-hidden="true">
-                                        <span class="btn__breach">
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                        </span>
-                                        <span class="btn__panel-label" data-label="⚠️ SWITCH TO BASE SEPOLIA ➔">⚠️ SWITCH TO BASE SEPOLIA ➔</span>
-                                    </span>
                                 </button>
                                 <button class="btn btn--primary" id="hero-play-arena">
                                     <span class="btn__label">⚔️ ENTER LIVE ARENA ➔</span>
-                                    <span class="btn__panel" aria-hidden="true">
-                                        <span class="btn__breach">
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                            <span class="btn__breach-slice"></span>
-                                        </span>
-                                        <span class="btn__panel-label" data-label="⚔️ ENTER LIVE ARENA ➔">⚔️ ENTER LIVE ARENA ➔</span>
-                                    </span>
                                 </button>
                                 <button class="btn" id="hero-create-match">
                                     ⚡ CREATE ESCROW MATCH
@@ -991,14 +959,6 @@
                             </div>
                             <button class="btn btn--primary btn-challenge-accept">
                                 <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
-                                <span class="btn__panel" aria-hidden="true">
-                                    <span class="btn__breach">
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                    </span>
-                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
-                                </span>
                             </button>
                         </div>
 
@@ -1022,14 +982,6 @@
                             </div>
                             <button class="btn btn--primary btn-challenge-accept">
                                 <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
-                                <span class="btn__panel" aria-hidden="true">
-                                    <span class="btn__breach">
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                    </span>
-                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
-                                </span>
                             </button>
                         </div>
 
@@ -1053,14 +1005,6 @@
                             </div>
                             <button class="btn btn--primary btn-challenge-accept">
                                 <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
-                                <span class="btn__panel" aria-hidden="true">
-                                    <span class="btn__breach">
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                    </span>
-                                    <span class="btn__panel-label" data-label="⚔️ ACCEPT CHALLENGE">⚔️ ACCEPT CHALLENGE</span>
-                                </span>
                             </button>
                         </div>
                     </div>
@@ -1072,14 +1016,6 @@
                         <p style="font-size:12px;color:var(--ash);max-width:320px;line-height:1.5;margin-top:6px;">Choose your USDC stake (0.10 to 25 USDC) and time control on Base Sepolia.</p>
                         <button class="btn btn--primary" style="margin-top:12px;">
                             <span class="btn__label">⚡ CREATE MATCH</span>
-                            <span class="btn__panel" aria-hidden="true">
-                                <span class="btn__breach">
-                                    <span class="btn__breach-slice"></span>
-                                    <span class="btn__breach-slice"></span>
-                                    <span class="btn__breach-slice"></span>
-                                </span>
-                                <span class="btn__panel-label" data-label="⚡ CREATE MATCH">⚡ CREATE MATCH</span>
-                            </span>
                         </button>
                     </div>
                 </section>
@@ -1162,14 +1098,6 @@
                         <div style="grid-column: 1 / 13; display: flex; justify-content: center; margin-top: 2.5rem;">
                             <button class="btn btn--primary" id="cta-play-arena">
                                 <span class="btn__label">⚔️ ENTER CENTIPAWN ARENA NOW ➔</span>
-                                <span class="btn__panel" aria-hidden="true">
-                                    <span class="btn__breach">
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                        <span class="btn__breach-slice"></span>
-                                    </span>
-                                    <span class="btn__panel-label" data-label="⚔️ ENTER CENTIPAWN ARENA NOW ➔">⚔️ ENTER CENTIPAWN ARENA NOW ➔</span>
-                                </span>
                             </button>
                         </div>
                     </div>
@@ -1417,14 +1345,6 @@
                     <div class="windshield__actions" style="margin-top:1.5rem;position:relative;z-index:1;">
                         <button class="btn btn--primary" id="btn-view-specs">
                             <span class="btn__label">📜 Open PRD Settlement Rules</span>
-                            <span class="btn__panel" aria-hidden="true">
-                                <span class="btn__breach">
-                                    <span class="btn__breach-slice"></span>
-                                    <span class="btn__breach-slice"></span>
-                                    <span class="btn__breach-slice"></span>
-                                </span>
-                                <span class="btn__panel-label" data-label="📜 Open PRD Settlement Rules">📜 Open PRD Settlement Rules</span>
-                            </span>
                         </button>
                         <a class="btn" href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer">
                             Basescan Explorer ↗
