@@ -56,14 +56,19 @@ const LOCKED_PARAMS = {
 
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
 let oracleKey = (process.env.ORACLE_KEY || '').trim();
-if (!oracleKey) {
-    console.error('[Security Fatal] ORACLE_KEY is required in environment or local .env. Terminating server initialization.');
-    throw new Error('[Security Fatal] ORACLE_KEY is required in environment or local .env.');
-}
-if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
+const isEphemeralOracle = !oracleKey;
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
-const oracleWallet = new ethers.Wallet(oracleKey, provider);
-console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+let oracleWallet;
+
+if (isEphemeralOracle) {
+    oracleWallet = ethers.Wallet.createRandom().connect(provider);
+    console.warn('No ORACLE_KEY set: running in EPHEMERAL SANDBOX ORACLE mode. Signatures will NOT be accepted by the deployed escrow, so no on-chain settlement is possible.');
+    console.log(`[Oracle] Initialized ephemeral sandbox signer: ${oracleWallet.address}`);
+} else {
+    if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
+    oracleWallet = new ethers.Wallet(oracleKey, provider);
+    console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+}
 
 // In-Memory Matches Database
 const matches = new Map();
@@ -273,7 +278,7 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
     let onChainMined = false;
 
     try {
-        if (ethers.isAddress(ESCROW_CONTRACT_ADDRESS)) {
+        if (!isEphemeralOracle && ethers.isAddress(ESCROW_CONTRACT_ADDRESS)) {
             const escrow = new ethers.Contract(
                 ESCROW_CONTRACT_ADDRESS,
                 [
@@ -415,6 +420,7 @@ async function handleRequest(req, res) {
             usdcAddress: usdc,
             usdcAddressLength: usdc.length,
             oracleAddress: oracleWallet.address,
+            ephemeralOracle: isEphemeralOracle,
             escrowContract: ESCROW_CONTRACT_ADDRESS,
             activeMatchesCount: matches.size
         });
