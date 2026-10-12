@@ -499,18 +499,21 @@
                 <div class="brand-section" id="landing-brand-logo" style="cursor:pointer;">
                     <div class="brand-glyph">♟</div>
                     <span class="brand-name">CENTIPAWN</span>
-                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:10px;margin-left:6px;">● 84532 TESTNET</span>
+                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:10px;margin-left:8px;letter-spacing:0.16em;">● BASE SEPOLIA 84532</span>
                 </div>
 
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <button class="btn-primary" id="btn-view-3d-starter" style="padding:7px 13px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.18);">
-                        📜 3D Certificate
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="landing-nav-btn mono" id="btn-view-3d-starter">
+                        <span class="btn-pip-gold"></span>
+                        <span>3D ARTIFACT</span>
+                        <span style="opacity:0.6;font-size:10px;">↗</span>
                     </button>
-                    <button class="btn-hero-primary" id="btn-connect-wallet-nav" style="padding:7px 15px;font-size:12px;">
-                        🔑 Connect Wallet
+                    <button class="landing-nav-btn mono" id="btn-connect-wallet-nav">
+                        <span>CONNECT WALLET</span>
                     </button>
-                    <button class="btn-hero-primary" id="btn-nav-enter-arena" style="padding:7px 16px;font-size:12px;">
-                        ⚔️ Enter Arena
+                    <button class="btn-hero-primary mono" id="btn-nav-enter-arena" style="padding:9px 18px;font-size:10px;">
+                        <span>ENTER ARENA</span>
+                        <span class="btn-arrow-mini">➔</span>
                     </button>
                     <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
                         <div class="wallet-status-dot"></div>
@@ -527,69 +530,88 @@
             <div class="landing-content">
                 <!-- Minimalist Hero Section -->
                 <section class="landing-hero scroll-reveal" id="landing-hero">
-                    <div class="hero-pill-badge mono">BASE SEPOLIA // PROPORTIONAL ESCROW</div>
+                    <div class="hero-pill-badge mono">
+                        <span class="hero-badge-pip"></span>
+                        <span>BASE SEPOLIA // CONTINUOUS VALUATION ESCROW</span>
+                    </div>
                     <h1 class="hero-title">Continuous Chess Escrow</h1>
                     <p class="hero-subtitle">
-                        Position determines payout. Resign past Move 10 and salvage your live Stockfish position equity on Base Sepolia with zero house rake.
+                        Position equity determines payout. Resign past Move 10 to salvage your live Stockfish evaluation on Base Sepolia with zero platform rake.
                     </p>
                     <div class="hero-actions-row">
-                        <button class="btn-hero-primary" id="hero-connect-wallet" style="display:none;">
-                            🔑 CONNECT WALLET TO PLAY ➔
+                        <button class="btn-hero-primary mono" id="hero-connect-wallet" style="display:none;">
+                            <span>CONNECT WALLET TO PLAY</span>
+                            <span class="btn-arrow-mini">➔</span>
                         </button>
-                        <button class="btn-hero-primary" id="hero-switch-network" style="display:none;background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
-                            ⚠️ SWITCH TO BASE SEPOLIA ➔
+                        <button class="btn-hero-primary mono" id="hero-switch-network" style="display:none;background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
+                            <span>SWITCH TO BASE SEPOLIA</span>
+                            <span class="btn-arrow-mini">➔</span>
                         </button>
-                        <button class="btn-hero-primary" id="hero-play-arena">
-                            ⚔️ ENTER LIVE ARENA ➔
+                        <button class="btn-hero-primary mono" id="hero-play-arena">
+                            <span class="btn-gold-pip"></span>
+                            <span>ENTER LIVE ARENA</span>
+                            <span class="btn-arrow-mini">➔</span>
                         </button>
-                        <button class="btn-hero-secondary" id="hero-create-match">
-                            ⚡ CREATE MATCH
+                        <button class="btn-hero-secondary mono" id="hero-create-match">
+                            <span>CREATE MATCH</span>
                         </button>
-                        <button class="btn-hero-secondary" id="hero-join-match">
-                            🤝 JOIN MATCH
+                        <button class="btn-hero-secondary mono" id="hero-join-match">
+                            <span>JOIN MATCH</span>
                         </button>
-                        <button class="btn-hero-secondary" id="hero-view-escrow">
-                            📜 RULES
+                        <button class="btn-hero-secondary mono" id="hero-view-escrow">
+                            <span>SPECIFICATION</span>
                         </button>
                     </div>
-                    <div id="hero-onboarding-note" class="mono" style="font-size:10px;color:var(--dim);margin-top:4px;text-align:center;">
-                        Coinbase Smart Wallet · MetaMask · Rabby · Injected Web3
+                    <div id="hero-onboarding-note" class="mono" style="font-size:9.5px;color:rgba(200,196,188,0.35);margin-top:6px;letter-spacing:0.18em;text-align:center;">
+                        COINBASE SMART WALLET · METAMASK · RABBY · EIP-1193 INJECTED
                     </div>
                 </section>
 
-                <!-- Minimalist 3-Pillars Grid -->
+                <!-- Architectural 3-Pillars Triptych -->
                 <section class="landing-pillars scroll-reveal">
                     <div class="pillar-card">
                         <div class="pillar-header">
-                            <span class="pillar-index mono">01</span>
-                            <span class="pillar-icon">⚖️</span>
+                            <span class="pillar-index mono">// 01</span>
+                            <span class="pillar-tag mono">VALUATION RULE</span>
                         </div>
-                        <h3 class="pillar-title">Proportional Payouts</h3>
+                        <h3 class="pillar-title">Proportional Valuation</h3>
                         <p class="pillar-desc">
-                            Resign past Move 10 to salvage 5%–95% of the pot based on real-time Stockfish win probability. Never forfeit everything on a close endgame.
+                            Resign past Move 10 to salvage 5%–95% of pot equity computed deterministically from real-time Stockfish depth-10 evaluation. No total loss on close endgames.
                         </p>
+                        <div class="pillar-footer mono">
+                            <span>FORMULA</span>
+                            <span class="pillar-accent">P(A) = [1 + e<sup>-0.004Δe</sup>]<sup>-1</sup></span>
+                        </div>
                     </div>
 
                     <div class="pillar-card">
                         <div class="pillar-header">
-                            <span class="pillar-index mono">02</span>
-                            <span class="pillar-icon">🛡️</span>
+                            <span class="pillar-index mono">// 02</span>
+                            <span class="pillar-tag mono">GAME INTEGRITY</span>
                         </div>
                         <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
                         <p class="pillar-desc">
-                            Resigning before Move 10 (20 plies) strictly forfeits 100% to opponent, preventing early rage-quits and preserving match integrity.
+                            Resignations prior to Move 10 (20 plies) strictly forfeit 100% of deposited stakes to the opponent, mathematically preventing early rage-quits and griefing.
                         </p>
+                        <div class="pillar-footer mono">
+                            <span>COMMITMENT</span>
+                            <span class="pillar-accent">≥ 20 PLIES REQUIRED</span>
+                        </div>
                     </div>
 
                     <div class="pillar-card">
                         <div class="pillar-header">
-                            <span class="pillar-index mono">03</span>
-                            <span class="pillar-icon">⚡</span>
+                            <span class="pillar-index mono">// 03</span>
+                            <span class="pillar-tag mono">SETTLEMENT INVARIANT</span>
                         </div>
-                        <h3 class="pillar-title">0% Platform Fee</h3>
+                        <h3 class="pillar-title">Zero Platform Fee</h3>
                         <p class="pillar-desc">
-                            Zero house take. 100% of deposited USDC disburse directly to competitors via verified Base Sepolia smart contracts.
+                            Zero house take. 10,000 basis points of deposited USDC disburse directly to competitor smart accounts via verified Base Sepolia escrow contracts.
                         </p>
+                        <div class="pillar-footer mono">
+                            <span>HOUSE RAKE</span>
+                            <span class="pillar-accent">0.00% (ZERO FEE)</span>
+                        </div>
                     </div>
                 </section>
 

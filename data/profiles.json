@@ -61,5 +61,19 @@
     "avatarId": "knight-neon",
     "createdAt": 1791394513203,
     "updatedAt": 1791394513203
+  },
+  "0xfcdb0a6f5f96d512b6b82905827cabd33650d6ad": {
+    "address": "0xfcdb0a6f5f96d512b6b82905827cabd33650d6ad",
+    "username": "Kasparov_Updated",
+    "avatarId": "centipawn-phoenix",
+    "createdAt": 1791826943569,
+    "updatedAt": 1791826943579
+  },
+  "0x98de658653826593b3f7620852da8f2c4c8442b0": {
+    "address": "0x98de658653826593b3f7620852da8f2c4c8442b0",
+    "username": "Magnus_Centipawn",
+    "avatarId": "dragon-hyper",
+    "createdAt": 1791827177775,
+    "updatedAt": 1791827177775
   }
 }
