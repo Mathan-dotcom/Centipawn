@@ -307,9 +307,7 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
         console.warn(`[Oracle] Note on chain broadcast:`, onChainErr.message);
     }
 
-    if (!txHash) {
-        txHash = ethers.keccak256(ethers.toUtf8Bytes(`BASE_SETTLE:${match.gameId}:${timestamp}:${oracleSignature}`));
-    }
+    const onChain = onChainMined && !!txHash;
 
     const totalPot = match.stakeAmount * 2;
     const payoutUSDC_A = Number(((totalPot * calc.payoutBpsToA) / 10000).toFixed(2));
@@ -336,8 +334,9 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
         finalStateHash,
         oracleSignature,
         timestamp,
-        txHash,
-        baseScanUrl: `https://sepolia.basescan.org/tx/${txHash}`
+        onChain,
+        txHash: onChain ? txHash : null,
+        baseScanUrl: onChain ? `https://sepolia.basescan.org/tx/${txHash}` : null
     };
 }
 

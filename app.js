@@ -945,7 +945,7 @@
                             <span style="font-size:24px;">⚖️</span>
                             <div>
                                 <h3 class="modal-title">Game Settlement Receipt</h3>
-                                <span class="mono" style="font-size:10px;color:var(--accent-green);">ON-CHAIN SETTLEMENT VERIFIED (BASE)</span>
+                                <span class="mono" id="modal-settle-badge" style="font-size:10px;color:var(--accent-green);">ON-CHAIN SETTLEMENT VERIFIED (BASE)</span>
                             </div>
                         </div>
                         <button class="modal-close-btn" id="modal-settle-close">✕</button>
@@ -1855,7 +1855,6 @@
             const totalPot = state.totalPot;
             const payoutUSDC_A = calc.payoutUSDC_A;
             const payoutUSDC_B = calc.payoutUSDC_B;
-            const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
             receipt = {
                 gameId: state.gameId,
@@ -1877,8 +1876,9 @@
                 oracleAddress: LOCKED.ORACLE_ADDRESS,
                 finalStateHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
                 oracleSignature: '0x' + Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-                txHash,
-                baseScanUrl: `https://sepolia.basescan.org/tx/${txHash}`
+                onChain: false,
+                txHash: null,
+                baseScanUrl: null
             };
         }
 
@@ -1892,6 +1892,19 @@
         const modal = document.getElementById('modal-settlement');
         const body = document.getElementById('settlement-receipt-body');
         if (!modal || !body) return;
+
+        const badgeHeader = document.getElementById('modal-settle-badge');
+        if (badgeHeader) {
+            if (r.onChain && r.txHash) {
+                badgeHeader.textContent = 'ON-CHAIN SETTLEMENT VERIFIED (BASE)';
+                badgeHeader.style.color = 'var(--accent-green)';
+            } else {
+                badgeHeader.textContent = 'SANDBOX / SIMULATED (OFF-CHAIN)';
+                badgeHeader.style.color = '#fbbf24';
+            }
+        }
+
+        const isVerifiedOnChain = Boolean(r.onChain && r.txHash);
 
         body.innerHTML = `
             <div class="receipt-line">
@@ -1938,9 +1951,22 @@
                 <span style="color:var(--dim);">Oracle Signer:</span>
                 <span style="color:var(--accent-cyan);">${r.oracleAddress}</span>
             </div>
+            ${r.oracleSignature ? `
             <div class="receipt-line">
-                <span style="color:var(--dim);">Base Sepolia Tx Hash:</span>
-                <a href="${r.baseScanUrl}" target="_blank" class="receipt-hash-link">${r.txHash.slice(0, 18)}...${r.txHash.slice(-8)} ↗</a>
+                <span style="color:var(--dim);">Oracle signature:</span>
+                <span style="font-size:9px;color:var(--dim-more);word-break:break-all;">${r.oracleSignature}</span>
+            </div>
+            ` : ''}
+            <div class="receipt-line">
+                <span style="color:var(--dim);">Settlement Status:</span>
+                ${isVerifiedOnChain ? `
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="background:rgba(52,211,153,0.15);color:var(--accent-green);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(52,211,153,0.3);">VERIFIED ON-CHAIN</span>
+                        <a href="https://sepolia.basescan.org/tx/${r.txHash}" target="_blank" class="receipt-hash-link">${r.txHash.slice(0, 14)}...${r.txHash.slice(-8)} ↗</a>
+                    </div>
+                ` : `
+                    <span style="background:rgba(251,191,36,0.15);color:#fbbf24;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid rgba(251,191,36,0.3);">SANDBOX / SIMULATED: no on-chain transaction</span>
+                `}
             </div>
         `;
 
@@ -1967,8 +1993,19 @@
 
             const linkEl = document.getElementById('summary-basescan-link');
             if (linkEl) {
-                linkEl.href = r.baseScanUrl || `https://sepolia.basescan.org/tx/${r.txHash}`;
-                linkEl.textContent = `${r.txHash.slice(0, 10)}...${r.txHash.slice(-6)} ↗`;
+                if (isVerifiedOnChain) {
+                    linkEl.href = r.baseScanUrl || `https://sepolia.basescan.org/tx/${r.txHash}`;
+                    linkEl.textContent = `${r.txHash.slice(0, 10)}...${r.txHash.slice(-6)} ↗`;
+                    linkEl.style.pointerEvents = 'auto';
+                    linkEl.style.color = '';
+                    linkEl.style.fontSize = '';
+                } else {
+                    linkEl.removeAttribute('href');
+                    linkEl.textContent = 'SANDBOX / SIMULATED: no on-chain transaction';
+                    linkEl.style.pointerEvents = 'none';
+                    linkEl.style.color = '#fbbf24';
+                    linkEl.style.fontSize = '10px';
+                }
             }
         }
     }
