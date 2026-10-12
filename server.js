@@ -166,9 +166,19 @@ function evaluatePosition(fen) {
             }
         }
 
-        // Mobility factor
-        const moves = chess.moves().length;
-        evalCp += (chess.turn() === 'w' ? moves * 5 : -moves * 5);
+        // Mobility factor: white moves minus black moves
+        const turn = chess.turn();
+        const currentMoves = chess.moves().length;
+        const tokens = fen.split(' ');
+        tokens[1] = turn === 'w' ? 'b' : 'w';
+        tokens[3] = '-';
+        let otherMoves = 0;
+        try {
+            otherMoves = new Chess(tokens.join(' ')).moves().length;
+        } catch {}
+        const whiteMoves = turn === 'w' ? currentMoves : otherMoves;
+        const blackMoves = turn === 'b' ? currentMoves : otherMoves;
+        evalCp += (whiteMoves - blackMoves) * 5;
 
         return evalCp;
     } catch {
