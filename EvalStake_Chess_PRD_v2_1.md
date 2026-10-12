@@ -311,6 +311,7 @@ A suitable production implementation can use a standard chess rules library such
 # 10. Stockfish Configuration
 
 Stockfish runs on the server.
+> **Implementation Note**: In this demo release, the server evaluation is implemented as a deterministic heuristic evaluation engine (piece-square tables + mobility) producing centipawn scores.
 
 The same server-side engine configuration must be used for:
 

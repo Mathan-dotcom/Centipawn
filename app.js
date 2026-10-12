@@ -536,7 +536,7 @@
                     </div>
                     <h1 class="hero-title">Continuous Chess Escrow</h1>
                     <p class="hero-subtitle">
-                        Position equity determines payout. Resign past Move 10 to salvage your live Stockfish evaluation on Base Sepolia with zero platform rake.
+                        Position equity determines payout. Resign past Move 10 to salvage your live heuristic evaluation engine (piece-square tables + mobility) on Base Sepolia with zero platform rake.
                     </p>
                     <div class="hero-actions-row">
                         <button class="btn-hero-primary mono" id="hero-connect-wallet" style="display:none;">
@@ -576,7 +576,7 @@
                         </div>
                         <h3 class="pillar-title">Proportional Valuation</h3>
                         <p class="pillar-desc">
-                            Resign past Move 10 to salvage 5%–95% of pot equity computed deterministically from real-time Stockfish depth-10 evaluation. No total loss on close endgames.
+                            Resign past Move 10 to salvage 5%–95% of pot equity computed deterministically from real-time heuristic evaluation engine (piece-square tables + mobility). No total loss on close endgames.
                         </p>
                         <div class="pillar-footer mono">
                             <span>FORMULA</span>
@@ -650,7 +650,7 @@
                         <span style="font-size:14px;">♟</span>
                         <span class="mono" style="color:#ffffff;font-size:10px;letter-spacing:0.12em;">CENTIPAWN // BASE L2</span>
                     </div>
-                    <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:0.1em;">EVALSTAKE CHESS PRD V2.1 · 0% PLATFORM FEE · STOCKFISH 10</span>
+                    <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:0.1em;">EVALSTAKE CHESS PRD V2.1 · 0% PLATFORM FEE · HEURISTIC EVALUATION ENGINE (PIECE-SQUARE TABLES + MOBILITY)</span>
                     <div class="footer-social-links">
                         <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -751,7 +751,7 @@
                     <!-- Board & Live Stockfish Eval Bar -->
                     <div class="board-eval-wrapper">
                         <!-- Vertical Live Eval Bar -->
-                        <div class="eval-bar-container" title="Live Stockfish Centipawn Evaluation">
+                        <div class="eval-bar-container" title="Live Centipawn Evaluation (heuristic evaluation engine: piece-square tables + mobility)">
                             <div class="eval-bar-label black-score" id="eval-label-black"></div>
                             <div class="eval-bar-black" id="eval-fill-black" style="height: 50%;"></div>
                             <div class="eval-bar-white" id="eval-fill-white" style="height: 50%;"></div>
@@ -835,7 +835,7 @@
 
                     <!-- Match Tactical Actions -->
                     <div class="game-actions-row">
-                        <button class="btn-danger" id="btn-resign-action" title="Resign position with Stockfish proportional payout">
+                        <button class="btn-danger" id="btn-resign-action" title="Resign position with proportional payout (heuristic evaluation engine: piece-square tables + mobility)">
                             🏳️ Resign (Proportional)
                         </button>
                         <button class="btn-primary" id="btn-draw-action">
@@ -901,7 +901,7 @@
 
                     <div class="resign-preview-box">
                         <div class="resign-stat-row">
-                            <span style="color:var(--dim-more);">Current Stockfish Evaluation:</span>
+                            <span style="color:var(--dim-more);">Current Evaluation (heuristic evaluation engine: piece-square tables + mobility):</span>
                             <span class="resign-eval-badge" id="modal-resign-eval">+3.20</span>
                         </div>
                         <div class="resign-stat-row">
@@ -924,7 +924,7 @@
                     </div>
 
                     <p class="modal-notice-text" id="modal-resign-warning">
-                        Resignation payout is strictly based on the server/oracle Stockfish position evaluation.
+                        Resignation payout is strictly based on the server/oracle heuristic evaluation engine (piece-square tables + mobility).
                         Because you have completed ≥ 20 plies, the pot is split proportionally according to position strength.
                     </p>
 
@@ -1045,7 +1045,7 @@
 
                         <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;">
                             <div style="font-weight:600;color:#fbbf24;margin-bottom:4px;">Minimum 20-Ply Anti-Sandbagging Rule (Section 5.2)</div>
-                            <span style="color:var(--dim-more);">Resignation before 20 completed plies forfeits 100% to the opponent. After ≥ 20 plies, the Stockfish evaluation formula governs the payout.</span>
+                            <span style="color:var(--dim-more);">Resignation before 20 completed plies forfeits 100% to the opponent. After ≥ 20 plies, the heuristic evaluation engine (piece-square tables + mobility) governs the payout.</span>
                         </div>
 
                         <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;">
@@ -1647,7 +1647,7 @@
                 plyBadge.className = 'ply-threshold-box over-threshold';
             }
             if (plyDesc) {
-                plyDesc.textContent = `≥ 20 Plies met! Stockfish proportional resignation enabled.`;
+                plyDesc.textContent = `≥ 20 Plies met! Proportional resignation enabled (heuristic evaluation engine: piece-square tables + mobility).`;
             }
         }
 
@@ -1796,7 +1796,7 @@
             pctA.textContent = `${(payout.winProbA * 100).toFixed(1)}% of Pot`;
             valB.textContent = `${payout.payoutUSDC_B.toFixed(2)} USDC`;
             pctB.textContent = `${(100 - payout.winProbA * 100).toFixed(1)}% of Pot`;
-            warning.innerHTML = `Resignation payout is calculated from the final position strength via Stockfish evaluation. Clamped to 5%–95%.`;
+            warning.innerHTML = `Resignation payout is calculated from the final position strength via heuristic evaluation engine (piece-square tables + mobility). Clamped to 5%–95%.`;
         }
 
         modal.classList.add('open');
@@ -1919,7 +1919,7 @@
                 <span style="color:#ffffff;">${r.plies} plies</span>
             </div>
             <div class="receipt-line">
-                <span style="color:var(--dim);">Final Stockfish Eval:</span>
+                <span style="color:var(--dim);">Final Eval (heuristic evaluation engine: piece-square tables + mobility):</span>
                 <span style="color:var(--accent-cyan);font-weight:700;">${r.stockfishEval >= 0 ? '+' : ''}${(r.stockfishEval / 100).toFixed(1)} cp</span>
             </div>
             <div class="receipt-line" style="background:rgba(52,211,153,0.06);padding:6px;border-radius:4px;">
