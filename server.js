@@ -57,8 +57,8 @@ const LOCKED_PARAMS = {
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
 let oracleKey = (process.env.ORACLE_KEY || '').trim();
 if (!oracleKey) {
-    console.warn('[Security] Notice: ORACLE_KEY not detected in process.env. Using default Base Sepolia dev oracle key. Configure ORACLE_KEY in production deployment.');
-    oracleKey = '0xd816571171d8df7d745e238f5102003568302c85de1a92f9b4cb8a00cd098269';
+    console.error('[Security Fatal] ORACLE_KEY is required in environment or local .env. Terminating server initialization.');
+    throw new Error('[Security Fatal] ORACLE_KEY is required in environment or local .env.');
 }
 if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
