@@ -1876,6 +1876,7 @@
                 oracleAddress: LOCKED.ORACLE_ADDRESS,
                 finalStateHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
                 oracleSignature: '0x' + Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+                isSandbox: true,
                 onChain: false,
                 txHash: null,
                 baseScanUrl: null
@@ -1905,6 +1906,9 @@
         }
 
         const isVerifiedOnChain = Boolean(r.onChain && r.txHash);
+        const isSandboxMode = Boolean(r.isSandbox || walletState.isSandbox);
+        const signerLabel = isSandboxMode ? 'Mock signer (sandbox):' : 'Oracle Signer:';
+        const signatureLabel = isSandboxMode ? 'Mock signature (sandbox, not from the oracle server):' : 'Oracle signature:';
 
         body.innerHTML = `
             <div class="receipt-line">
@@ -1948,12 +1952,12 @@
                 <span style="font-size:9px;color:var(--dim-more);word-break:break-all;">${r.finalFEN}</span>
             </div>
             <div class="receipt-line">
-                <span style="color:var(--dim);">Oracle Signer:</span>
+                <span style="color:var(--dim);">${signerLabel}</span>
                 <span style="color:var(--accent-cyan);">${r.oracleAddress}</span>
             </div>
             ${r.oracleSignature ? `
             <div class="receipt-line">
-                <span style="color:var(--dim);">Oracle signature:</span>
+                <span style="color:var(--dim);">${signatureLabel}</span>
                 <span style="font-size:9px;color:var(--dim-more);word-break:break-all;">${r.oracleSignature}</span>
             </div>
             ` : ''}
