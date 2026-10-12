@@ -751,7 +751,7 @@
                     <!-- Board & Live Stockfish Eval Bar -->
                     <div class="board-eval-wrapper">
                         <!-- Vertical Live Eval Bar -->
-                        <div class="eval-bar-container" title="Live Centipawn Evaluation (heuristic evaluation engine: piece-square tables + mobility)">
+                        <div class="eval-bar-container" title="Live Pawn Evaluation (heuristic evaluation engine: piece-square tables + mobility)">
                             <div class="eval-bar-label black-score" id="eval-label-black"></div>
                             <div class="eval-bar-black" id="eval-fill-black" style="height: 50%;"></div>
                             <div class="eval-bar-white" id="eval-fill-white" style="height: 50%;"></div>
@@ -1542,12 +1542,12 @@
         if (fillWhiteEl) fillWhiteEl.style.height = `${whitePct}%`;
         if (fillBlackEl) fillBlackEl.style.height = `${blackPct}%`;
 
-        const cpFormatted = (evalCp / 100).toFixed(1);
+        const pawnFormatted = (evalCp / 100).toFixed(1);
         if (evalWhiteEl) {
-            evalWhiteEl.textContent = evalCp >= 0 ? `+${cpFormatted}` : '';
+            evalWhiteEl.textContent = evalCp >= 0 ? `+${pawnFormatted}` : '';
         }
         if (evalBlackEl) {
-            evalBlackEl.textContent = evalCp < 0 ? `${cpFormatted}` : '';
+            evalBlackEl.textContent = evalCp < 0 ? `${pawnFormatted}` : '';
         }
 
         // Update Proportional Split widget
@@ -1779,7 +1779,7 @@
         const pctB = document.getElementById('modal-resign-pct-b');
         const warning = document.getElementById('modal-resign-warning');
 
-        if (evalBadge) evalBadge.textContent = evalCp >= 0 ? `+${(evalCp / 100).toFixed(1)} cp` : `${(evalCp / 100).toFixed(1)} cp`;
+        if (evalBadge) evalBadge.textContent = evalCp >= 0 ? `+${(evalCp / 100).toFixed(1)} pawns` : `${(evalCp / 100).toFixed(1)} pawns`;
         if (pliesBadge) {
             pliesBadge.textContent = `${plies} plies (${plies >= LOCKED.MIN_RESIGN_PLIES ? '≥ 20 Requirement Met' : '< 20 Plies Penalty Active'})`;
             pliesBadge.style.color = plies >= LOCKED.MIN_RESIGN_PLIES ? 'var(--accent-green)' : '#fbbf24';
@@ -1933,7 +1933,7 @@
             </div>
             <div class="receipt-line">
                 <span style="color:var(--dim);">Final Eval (heuristic evaluation engine: piece-square tables + mobility):</span>
-                <span style="color:var(--accent-cyan);font-weight:700;">${r.stockfishEval >= 0 ? '+' : ''}${(r.stockfishEval / 100).toFixed(1)} cp</span>
+                <span style="color:var(--accent-cyan);font-weight:700;">${r.stockfishEval >= 0 ? '+' : ''}${(r.stockfishEval / 100).toFixed(1)} pawns</span>
             </div>
             <div class="receipt-line" style="background:rgba(52,211,153,0.06);padding:6px;border-radius:4px;">
                 <span style="color:var(--accent-green);font-weight:700;">Player A Payout:</span>
