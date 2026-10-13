@@ -6,3 +6,5 @@ scratch/
 data/profiles.json
 artifacts/*.png
 test/*.png
+
+.vercel

@@ -1,4 +1,4 @@
-const { handleRequest } = require('../server.js');
+const { handleRequest } = require('../engine.js');
 
 module.exports = async (req, res) => {
     try {

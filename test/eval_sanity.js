@@ -3,7 +3,7 @@ if (!process.env.ORACLE_KEY) {
     process.env.ORACLE_KEY = '0xd816571171d8df7d745e238f5102003568302c85de1a92f9b4cb8a00cd098269';
 }
 
-const { evaluatePosition } = require('../server.js');
+const { evaluatePosition } = require('../engine.js');
 
 function mirrorFen(fen) {
     const parts = fen.split(' ');

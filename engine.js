@@ -757,13 +757,14 @@ if (require.main === module) {
     });
 }
 
-module.exports = {
-    server,
-    handleRequest,
-    calculateSettlementFormula,
-    signOracleSettlement,
-    evaluatePosition,
-    matches,
-    LOCKED_PARAMS,
-    oracleWallet
-};
+module.exports = handleRequest;
+module.exports.default = handleRequest;
+module.exports.server = server;
+module.exports.handleRequest = handleRequest;
+module.exports.calculateSettlementFormula = calculateSettlementFormula;
+module.exports.signOracleSettlement = signOracleSettlement;
+module.exports.evaluatePosition = evaluatePosition;
+module.exports.matches = matches;
+module.exports.LOCKED_PARAMS = LOCKED_PARAMS;
+module.exports.oracleWallet = oracleWallet;
+
