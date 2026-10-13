@@ -3,8 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const { ethers } = require('ethers');
 
-const DATA_DIR = path.join(__dirname, 'data');
-const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+const isVercel = !!process.env.VERCEL;
+const BUNDLED_DIR = path.join(__dirname, 'data');
+const BUNDLED_FILE = path.join(BUNDLED_DIR, 'profiles.json');
+const DATA_DIR = isVercel ? '/tmp/centipawn' : BUNDLED_DIR;
+const PROFILES_FILE = isVercel ? path.join(DATA_DIR, 'profiles.json') : BUNDLED_FILE;
 
 // Preset Avatars (12 bundled icon/emoji presets)
 const PRESET_AVATARS = [
@@ -63,19 +66,31 @@ function generateIdenticonSvg(address) {
 // Load profiles from persistent storage
 function initStorage() {
     try {
-        if (!fs.existsSync(DATA_DIR)) {
-            fs.mkdirSync(DATA_DIR, { recursive: true });
-        }
-        if (fs.existsSync(PROFILES_FILE)) {
-            const raw = fs.readFileSync(PROFILES_FILE, 'utf8');
-            const data = JSON.parse(raw || '{}');
-            for (const [addr, p] of Object.entries(data)) {
-                profileMap.set(addr.toLowerCase(), p);
+        // Load bundled profiles first
+        if (fs.existsSync(BUNDLED_FILE)) {
+            try {
+                const raw = fs.readFileSync(BUNDLED_FILE, 'utf8');
+                const data = JSON.parse(raw || '{}');
+                for (const [addr, p] of Object.entries(data)) {
+                    profileMap.set(addr.toLowerCase(), p);
+                }
+            } catch (rErr) {
+                console.warn('[Profiles] Notice reading bundled profiles:', rErr.message);
             }
-            console.log(`[Profiles] Loaded ${profileMap.size} player profiles from storage.`);
-        } else {
-            fs.writeFileSync(PROFILES_FILE, JSON.stringify({}, null, 2), 'utf8');
         }
+        // If on Vercel, merge any profiles saved in /tmp
+        if (isVercel && fs.existsSync(PROFILES_FILE)) {
+            try {
+                const raw = fs.readFileSync(PROFILES_FILE, 'utf8');
+                const data = JSON.parse(raw || '{}');
+                for (const [addr, p] of Object.entries(data)) {
+                    profileMap.set(addr.toLowerCase(), p);
+                }
+            } catch (tErr) {
+                console.warn('[Profiles] Notice reading tmp profiles:', tErr.message);
+            }
+        }
+        console.log(`[Profiles] Loaded ${profileMap.size} player profiles from storage.`);
     } catch (err) {
         console.warn('[Profiles] Notice loading storage:', err.message);
     }
@@ -93,7 +108,7 @@ function saveStorage() {
         }
         fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2), 'utf8');
     } catch (err) {
-        console.error('[Profiles] Failed to save profiles:', err.message);
+        console.warn('[Profiles] Storage save notice (running in serverless/read-only mode):', err.message);
     }
 }
 

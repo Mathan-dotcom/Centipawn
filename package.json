@@ -1,8 +1,7 @@
 {
   "name": "centipawn",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Centipawn Chess — Proportional-Payout Web3 Chess Arena on Base",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",

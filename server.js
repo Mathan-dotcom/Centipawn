@@ -374,7 +374,10 @@ async function handleRequest(req, res) {
 
     // Handle Vercel serverless rewrites and custom path headers
     if (req.headers['x-matched-path']) {
-        pathname = req.headers['x-matched-path'].split('?')[0];
+        const matched = req.headers['x-matched-path'].split('?')[0];
+        if (!matched.includes('api/index')) {
+            pathname = matched;
+        }
     }
 
     // CORS Headers for API
@@ -393,8 +396,16 @@ async function handleRequest(req, res) {
         res.end(JSON.stringify(data));
     };
 
-    // Parse JSON body helper
+    // Parse JSON body helper (handles pre-parsed Vercel serverless body and raw streams)
     const readBody = () => new Promise((resolve) => {
+        if (req.body !== undefined && req.body !== null) {
+            if (typeof req.body === 'object') return resolve(req.body);
+            try {
+                return resolve(JSON.parse(req.body));
+            } catch {
+                return resolve({});
+            }
+        }
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
@@ -404,6 +415,7 @@ async function handleRequest(req, res) {
                 resolve({});
             }
         });
+        req.on('error', () => resolve({}));
     });
 
     // ---------------------------------------------------------
@@ -652,7 +664,14 @@ async function handleRequest(req, res) {
     }
 
     // ---------------------------------------------------------
-    // STATIC FILE SERVING
+    // API 404 FALLTHROUGH (Never serve HTML for API calls)
+    // ---------------------------------------------------------
+    if (pathname.startsWith('/api/')) {
+        return sendJSON(404, { error: 'API endpoint not found', pathname });
+    }
+
+    // ---------------------------------------------------------
+    // STATIC FILE SERVING (Local dev & fallback)
     // ---------------------------------------------------------
     const MIME_TYPES = {
         '.html': 'text/html; charset=utf-8',
@@ -669,39 +688,43 @@ async function handleRequest(req, res) {
         '.wasm': 'application/wasm'
     };
 
-    if (pathname.startsWith('/match/') || pathname === '/match') {
-        const indexPath = path.join(__dirname, 'index.html');
-        fs.readFile(indexPath, (readErr, content) => {
-            if (readErr) {
-                res.writeHead(500);
-                res.end('Error loading file');
-                return;
-            }
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-            res.end(content);
-        });
-        return;
-    }
-
-    let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
-
-    fs.stat(filePath, (err, stats) => {
-        if (err || !stats.isFile()) {
-            // Fallback to index.html for SPA routes
-            filePath = path.join(__dirname, 'index.html');
+    return new Promise((resolve) => {
+        if (pathname.startsWith('/match/') || pathname === '/match') {
+            const indexPath = path.join(__dirname, 'index.html');
+            fs.readFile(indexPath, (readErr, content) => {
+                if (readErr) {
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    res.end('Error loading file');
+                    return resolve();
+                }
+                res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(content);
+                resolve();
+            });
+            return;
         }
 
-        const ext = path.extname(filePath).toLowerCase();
-        const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+        let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
 
-        fs.readFile(filePath, (readErr, content) => {
-            if (readErr) {
-                res.writeHead(500);
-                res.end('Error loading file');
-                return;
+        fs.stat(filePath, (err, stats) => {
+            if (err || !stats.isFile()) {
+                // Fallback to index.html for SPA routes
+                filePath = path.join(__dirname, 'index.html');
             }
-            res.writeHead(200, { 'Content-Type': contentType });
-            res.end(content);
+
+            const ext = path.extname(filePath).toLowerCase();
+            const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+            fs.readFile(filePath, (readErr, content) => {
+                if (readErr) {
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    res.end('Error loading file');
+                    return resolve();
+                }
+                res.writeHead(200, { 'Content-Type': contentType });
+                res.end(content);
+                resolve();
+            });
         });
     });
 }
