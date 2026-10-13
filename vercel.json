@@ -5,7 +5,11 @@
       "destination": "/api"
     },
     {
-      "source": "/match/:id*",
+      "source": "/match/(.*)",
+      "destination": "/"
+    },
+    {
+      "source": "/match",
       "destination": "/"
     }
   ]
