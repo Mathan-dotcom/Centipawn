@@ -1,5 +1,4 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/:match*",
@@ -7,7 +6,7 @@
     },
     {
       "source": "/match/:id*",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }
