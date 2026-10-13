@@ -4,6 +4,10 @@
     {
       "source": "/api/:match*",
       "destination": "/api"
+    },
+    {
+      "source": "/match/:id*",
+      "destination": "/index.html"
     }
   ]
 }
