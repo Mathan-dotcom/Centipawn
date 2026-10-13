@@ -1,8 +1,10 @@
 // Centipawn Chess - Main Frontend Application Controller
 // PRD Version 2.1 Specification for Base-First Hackathon Implementation
 
+if (typeof module !== 'undefined' && module.exports) module.exports = {};
 (function () {
     'use strict';
+    if (typeof window === 'undefined') return;
 
     // -------------------------------------------------------------
     // PRD LOCKED PARAMETERS (Section 2)
