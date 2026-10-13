@@ -1765,7 +1765,7 @@ const PRESET_AVATARS = [
         updateLiveStockfishEval();
 
         // Broadcast move to server for live two-player sync
-        if (state.gameId && !walletState.isSandbox) {
+        if (state.gameId) {
             fetch('/api/matches/move', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2369,7 +2369,7 @@ const PRESET_AVATARS = [
             scroll.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px;" id="empty-move-hint">Game in progress. Moves will be recorded here...</div>';
         }
 
-        if (autoStartClock && !walletState.isSandbox) {
+        if (autoStartClock) {
             try {
                 const res = await fetch('/api/matches/create', {
                     method: 'POST',
@@ -3492,6 +3492,7 @@ function initLandingSimulator() {
             if (hudRow) hudRow.style.display = 'flex';
 
             if (modal) modal.classList.add('open');
+            if (window.startMatchPolling) window.startMatchPolling();
         }
 
         window.showInviteLinkModal = showInviteLinkModal;
@@ -3609,10 +3610,20 @@ function initLandingSimulator() {
                     if (!match) return;
 
                     // Sync opponent connection in HUD
-                    if (match.playerB && match.playerB !== state.playerB.address) {
+                    if (match.playerB && match.playerB !== state.playerB.address && match.playerB !== '0x3D41f6e22c991316BDF255d648f57f43e4A199b9') {
                         state.playerB.address = match.playerB;
                         state.playerB.connected = true;
                         updateHUDs();
+
+                        // Automatically dismiss invite modal and transition creator into active Arena
+                        const inviteModal = document.getElementById('modal-invite-link');
+                        if (inviteModal && inviteModal.classList.contains('open')) {
+                            inviteModal.classList.remove('open');
+                            showToast(`⚔️ Challenger Joined (${match.playerB.slice(0, 6)}...${match.playerB.slice(-4)})! Game started.`);
+                            playSound('settle');
+                            window.showArenaView();
+                            if (!state.clockTimer) startClockTimer();
+                        }
                     }
 
                     // Sync moves from opponent
@@ -3785,6 +3796,7 @@ function initLandingSimulator() {
             if (!pendingJoinGameId) return;
 
             if (!walletState.connected) {
+                window.__autoJoinPending = true;
                 openConnectModal();
                 return;
             }
@@ -3929,6 +3941,12 @@ function initLandingSimulator() {
 
             if (walletState.connected) {
                 statusCard.style.display = 'block';
+                if (window.__autoJoinPending && pendingJoinGameId) {
+                    window.__autoJoinPending = false;
+                    setTimeout(() => {
+                        document.getElementById('btn-join-match-action')?.click();
+                    }, 350);
+                }
                 if (providerEl) providerEl.textContent = walletState.providerType || 'Connected Base Wallet';
                 if (addrEl && walletState.address) {
                     addrEl.textContent = `${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`;

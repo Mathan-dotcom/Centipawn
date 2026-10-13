@@ -77,8 +77,43 @@ try {
     isEphemeralOracle = true;
 }
 
-// In-Memory Matches Database
+// Persistent Matches Database (Serverless-Safe)
+const isVercel = !!process.env.VERCEL;
+const BUNDLED_DIR = path.join(__dirname, 'data');
+const MATCH_DATA_DIR = isVercel ? '/tmp/centipawn' : BUNDLED_DIR;
+const MATCHES_FILE = path.join(MATCH_DATA_DIR, 'matches.json');
 const matches = new Map();
+
+function loadMatches() {
+    try {
+        if (fs.existsSync(MATCHES_FILE)) {
+            const raw = fs.readFileSync(MATCHES_FILE, 'utf8');
+            const data = JSON.parse(raw || '{}');
+            for (const [k, v] of Object.entries(data)) {
+                matches.set(k.toLowerCase(), v);
+            }
+        }
+    } catch (e) {
+        console.warn('[Matches] Notice loading storage:', e.message);
+    }
+}
+
+function saveMatches() {
+    try {
+        if (!fs.existsSync(MATCH_DATA_DIR)) {
+            fs.mkdirSync(MATCH_DATA_DIR, { recursive: true });
+        }
+        const data = {};
+        for (const [k, v] of matches.entries()) {
+            data[k.toLowerCase()] = v;
+        }
+        fs.writeFileSync(MATCHES_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.warn('[Matches] Storage save notice:', e.message);
+    }
+}
+
+loadMatches();
 
 // -------------------------------------------------------------
 // DETERMINISTIC SERVER-SIDE EVALUATION ENGINE (PRD Section 10)
@@ -548,7 +583,9 @@ async function handleRequest(req, res) {
             settlement: null
         };
 
+        matches.set(gameId.toLowerCase(), match);
         matches.set(gameId, match);
+        saveMatches();
         return sendJSON(201, { success: true, match });
     }
 
@@ -556,12 +593,17 @@ async function handleRequest(req, res) {
     if (pathname === '/api/matches/join' && req.method === 'POST') {
         const body = await readBody();
         const { gameId, playerB } = body;
-        const match = matches.get(gameId);
+        let match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        if (!match) {
+            loadMatches();
+            match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        }
 
         if (!match) return sendJSON(404, { error: 'Match not found' });
         match.playerB = safeAddress(playerB, '0x3D41f6e22c991316BDF255d648f57f43e4A199b9');
         match.totalPot = match.stakeAmount * 2;
         match.status = 'ACTIVE';
+        saveMatches();
 
         return sendJSON(200, { success: true, match });
     }
@@ -570,7 +612,11 @@ async function handleRequest(req, res) {
     if (pathname === '/api/matches/cancel' && req.method === 'POST') {
         const body = await readBody();
         const { gameId, bypassTimeout } = body;
-        const match = matches.get(gameId);
+        let match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        if (!match) {
+            loadMatches();
+            match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        }
 
         if (!match) return sendJSON(404, { error: 'Match not found' });
         if (match.status !== 'CREATED') return sendJSON(400, { error: 'Only unjoined matches can be cancelled' });
@@ -581,6 +627,7 @@ async function handleRequest(req, res) {
 
         match.status = 'CANCELLED';
         match.totalPot = 0;
+        saveMatches();
 
         return sendJSON(200, {
             success: true,
@@ -595,7 +642,11 @@ async function handleRequest(req, res) {
     if (pathname === '/api/matches/settle' && req.method === 'POST') {
         const body = await readBody();
         const { gameId, endReason, finalFEN, evalCp, plies } = body;
-        const match = matches.get(gameId);
+        let match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        if (!match) {
+            loadMatches();
+            match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        }
 
         if (!match) return sendJSON(404, { error: 'Match not found' });
         if (match.status === 'SETTLED') return sendJSON(400, { error: 'Match already settled' });
@@ -610,12 +661,14 @@ async function handleRequest(req, res) {
         const receipt = await signOracleSettlement(match, endReason, evalScore, fen);
         match.status = 'SETTLED';
         match.settlement = receipt;
+        saveMatches();
 
         return sendJSON(200, { success: true, receipt });
     }
 
     // GET /api/matches: List all matches
     if (pathname === '/api/matches' && req.method === 'GET') {
+        loadMatches();
         const list = Array.from(matches.values()).map(m => ({
             gameId: m.gameId,
             playerA: m.playerA,
@@ -633,7 +686,11 @@ async function handleRequest(req, res) {
     // GET /api/matches/:gameId: Fetch single match details for invite link
     if (pathname.startsWith('/api/matches/') && req.method === 'GET') {
         const targetId = pathname.replace('/api/matches/', '').trim();
-        let match = matches.get(targetId);
+        let match = matches.get(targetId) || matches.get(targetId.toLowerCase());
+        if (!match) {
+            loadMatches();
+            match = matches.get(targetId) || matches.get(targetId.toLowerCase());
+        }
         if (!match) {
             for (const [k, v] of matches.entries()) {
                 if (k.toLowerCase() === targetId.toLowerCase()) {
@@ -652,7 +709,11 @@ async function handleRequest(req, res) {
     if (pathname === '/api/matches/move' && req.method === 'POST') {
         const body = await readBody();
         const { gameId, from, to, promotion, fen, plies, player } = body;
-        let match = matches.get(gameId);
+        let match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        if (!match) {
+            loadMatches();
+            match = matches.get(gameId) || matches.get((gameId || '').toLowerCase());
+        }
         if (!match) {
             for (const [k, v] of matches.entries()) {
                 if (k.toLowerCase() === (gameId || '').toLowerCase()) {
@@ -667,6 +728,7 @@ async function handleRequest(req, res) {
         if (from && to) {
             match.moves.push({ from, to, promotion, player, time: Date.now() });
         }
+        saveMatches();
         return sendJSON(200, { success: true, match });
     }
 
