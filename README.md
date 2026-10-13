@@ -3,11 +3,11 @@
 [![Base Sepolia](https://img.shields.io/badge/Network-Base%20Sepolia-0052FF?style=flat&logo=coinbase)](https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0)
 [![Solidity](https://img.shields.io/badge/Solidity-%5E0.8.20-363636?style=flat&logo=solidity)](contracts/EvalStakeEscrow.sol)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Stockfish](https://img.shields.io/badge/Engine-Stockfish%2010-008080?style=flat)](https://stockfishchess.org/)
+[![Engine](https://img.shields.io/badge/Engine-Stockfish%20%26%20Heuristic-008080?style=flat)](server.js)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js%20v18%2B-339933?style=flat&logo=node.js)](https://nodejs.org/)
 
 > **Continuous, Evaluation-Based Payouts on Base Sepolia.**  
-> Transforming binary winner-take-all chess wagering into an evaluation-based staking market powered by Stockfish and on-chain smart contract escrows.
+> Transforming binary winner-take-all chess wagering into an evaluation-based staking market powered by a heuristic evaluation engine (piece-square tables + mobility) and on-chain smart contract escrows.
 
 ---
 
@@ -20,7 +20,7 @@ In traditional chess wagering platforms, games conclude in a binary winner-take-
 - Standard FIDE chess rules apply throughout.
 - **Checkmate & Timeout:** 100% of the pot goes to the victor.
 - **Draw:** 50% / 50% split.
-- **Resignation:** The pot is split proportionally according to the continuous **Stockfish evaluation** of the final board state, bounded by a logistic sigmoid win-probability curve.
+- **Resignation:** The pot is split proportionally according to the continuous **heuristic evaluation engine (piece-square tables + mobility)** of the final board state, bounded by a logistic sigmoid win-probability curve.
 
 ---
 
@@ -44,7 +44,7 @@ The complete end-to-end match lifecycle has been verified on Base Sepolia:
    [`0xe739785725e8a87f06a5d839503d43ccd4c31f5654f576a2149091b8e1f598b8`](https://sepolia.basescan.org/tx/0xe739785725e8a87f06a5d839503d43ccd4c31f5654f576a2149091b8e1f598b8)
 3. **Player B Matching USDC Deposit (`joinMatch`)**:  
    [`0xc232f0ea87ae41eb1539e770f84701157e57e0e24db04d67d10d3b628e45b66f`](https://sepolia.basescan.org/tx/0xc232f0ea87ae41eb1539e770f84701157e57e0e24db04d67d10d3b628e45b66f)
-4. **Stockfish Oracle Settlement & Direct USDC Disbursement (`settle`)**:  
+4. **Oracle Settlement & Direct USDC Disbursement (`settle`)**:  
    [`0x1963398edfef7f103efa80c8cd3f8922d550f26b6c88a287e34712464c1cb605`](https://sepolia.basescan.org/tx/0x1963398edfef7f103efa80c8cd3f8922d550f26b6c88a287e34712464c1cb605)  
    - **Result**: `0.07178 USDC` disbursed to Player A, `0.12822 USDC` to Player B (Sum = `0.20000 USDC`, 0 dust).
 
@@ -59,7 +59,7 @@ The complete end-to-end match lifecycle has been verified on Base Sepolia:
 | **Checkmate** | 100% (if White won) | 100% (if Black won) | Decisive tactical victory |
 | **Timeout** | 100% (if Black flagged) | 100% (if White flagged) | Clock expiration |
 | **Draw** | 50% | 50% | Stalemate, threefold repetition, 50-move rule |
-| **Resignation (>= 20 Plies)** | $P(\text{Win}_A)$ | $1 - P(\text{Win}_A)$ | Sigmoidal Stockfish evaluation |
+| **Resignation (>= 20 Plies)** | $P(\text{Win}_A)$ | $1 - P(\text{Win}_A)$ | Sigmoidal heuristic evaluation engine (piece-square tables + mobility) |
 | **Resignation (< 20 Plies)** | 0% (if resigned) | 100% (to opponent) | Anti-rage-quit threshold forfeit |
 
 ### 2. Proportional Payout Formula (Logistic Sigmoid)
@@ -84,7 +84,7 @@ sequenceDiagram
     actor PlayerB as Player B (Black)
     participant UI as Web Frontend (Ethers.js)
     participant Escrow as EvalStakeEscrow.sol (Base Sepolia)
-    participant Oracle as Stockfish Oracle Service
+    participant Oracle as Oracle Service (Heuristic Engine)
 
     PlayerA->>Escrow: createMatch(gameId, stakeAmount, timeControl) + approve USDC
     PlayerB->>Escrow: joinMatch(gameId) + approve USDC
@@ -92,11 +92,11 @@ sequenceDiagram
     
     PlayerA->>UI: Plays Chess Moves (chess.js)
     PlayerB->>UI: Plays Chess Moves (chess.js)
-    Note over UI,Oracle: Continuous Stockfish evaluation & FEN hash tracking
+    Note over UI,Oracle: Continuous heuristic evaluation & FEN hash tracking
 
     PlayerB->>UI: Resigns (Move >= 10)
     UI->>Oracle: POST /api/evaluate-and-settle (finalFEN, moveHistory)
-    Oracle->>Oracle: Compute Stockfish Eval & Calculate BPS
+    Oracle->>Oracle: Compute Heuristic Eval & Calculate BPS
     Oracle->>Oracle: Sign EIP-191 Attestation (trustedOracleKey)
     Oracle->>Escrow: settle(gameId, settlementData, signature)
     Escrow->>Escrow: Verify ECDSA Signature & Invariants
@@ -188,7 +188,7 @@ npm test
 ```bash
 node scripts/run_e2e_match.js
 ```
-*Executes the entire lifecycle on Base Sepolia: match creation, join, 20 plies of play, resignation, Stockfish analysis, EIP-191 oracle signature, and on-chain USDC settlement.*
+*Executes the entire lifecycle on Base Sepolia: match creation, join, 20 plies of play, resignation, heuristic evaluation (piece-square tables + mobility), EIP-191 oracle signature, and on-chain USDC settlement.*
 
 ---
 

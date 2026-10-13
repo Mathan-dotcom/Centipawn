@@ -607,7 +607,7 @@ const PRESET_AVATARS = [
         document.body.dataset.view = 'arena';
         document.documentElement.classList.add('cp-scroll-enabled');
         document.body.classList.add('cp-scroll-enabled');
-        ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'loading-overlay'].forEach(id => {
+        ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'editorial-frame', 'loading-overlay'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
@@ -662,139 +662,177 @@ const PRESET_AVATARS = [
         const landing = document.createElement('div');
         landing.id = 'landing-page';
         landing.innerHTML = `
-            <!-- Block 1: Nav -->
-            <nav class="cp-nav" id="cp-nav" aria-label="Primary">
-                <div class="cp-nav__inner">
-                    <a class="cp-nav__brand" href="#top" id="landing-brand-logo" aria-label="Centipawn">
-                        <span class="cp-brand-glyph">♟</span>
-                        <span class="cp-brand-name">Centipawn</span>
-                    </a>
-                    <div class="cp-nav__center">
-                        <button class="cp-nav-link" id="nav-how-it-works">How it works</button>
-                    </div>
-                    <div class="cp-nav__actions">
-                        <button class="cp-btn cp-btn--ghost" id="btn-view-3d-starter" title="Inspect Interactive 3D Genesis Certificate">
-                            📜 3D Certificate
-                        </button>
-                        <button class="cp-btn" id="btn-connect-wallet-nav">
-                            Connect Wallet
-                        </button>
-                        <div class="cp-pill cp-pill--green" id="landing-wallet-badge" style="display:none;cursor:pointer;">
-                            <span class="cp-dot cp-dot--green"></span>
-                            <span class="cp-data" id="landing-addr">0x0000...0000</span>
-                        </div>
-                        <button class="cp-btn cp-btn--primary" id="btn-nav-enter-arena">
-                            Enter Arena
-                        </button>
+            <!-- Sticky Minimalist Navigation -->
+            <header class="landing-nav">
+                <div class="brand-section" id="landing-brand-logo" style="cursor:pointer;">
+                    <div class="brand-glyph">♟</div>
+                    <span class="brand-name">CENTIPAWN</span>
+                    <span class="mono" id="nav-network-badge" style="color:var(--accent-green);font-size:10px;margin-left:8px;letter-spacing:0.16em;">● BASE SEPOLIA 84532</span>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="landing-nav-btn mono" id="btn-view-3d-starter">
+                        <span class="btn-pip-gold"></span>
+                        <span>3D ARTIFACT</span>
+                        <span style="opacity:0.6;font-size:10px;">↗</span>
+                    </button>
+                    <button class="landing-nav-btn mono" id="btn-connect-wallet-nav">
+                        <span>CONNECT WALLET</span>
+                    </button>
+                    <button class="btn-hero-primary mono" id="btn-nav-enter-arena" style="padding:9px 18px;font-size:10px;">
+                        <span>ENTER ARENA</span>
+                        <span class="btn-arrow-mini">➔</span>
+                    </button>
+                    <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
+                        <div class="wallet-status-dot"></div>
+                        <span class="wallet-address" id="landing-addr">0x0000...0000</span>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            <!-- Main Content Container -->
-            <main class="cp-app">
-                <!-- Block 2: Hero -->
-                <section class="cp-hero" id="top">
-                    <div class="cp-hero__content">
-                        <h1 class="cp-h1">Resign without losing everything.</h1>
-                        <p class="cp-body cp-hero__sub">Two players stake USDC. The engine's evaluation decides the split.</p>
-                        <div class="cp-hero__actions">
-                            <button class="cp-btn cp-btn--primary" id="hero-play-arena">
-                                Enter Arena
-                            </button>
-                            <a class="cp-btn" id="hero-see-payouts" href="#sec-simulator">
-                                See how payouts work
-                            </a>
+            <!-- Live Dynamic Wallpaper Canvas & Scroll Cursor Aura -->
+            <canvas id="landing-live-wallpaper"></canvas>
+            <div id="landing-cursor-glow"></div>
+
+            <!-- Main Landing Content Scroll Area -->
+            <div class="landing-content">
+                <!-- Minimalist Hero Section -->
+                <section class="landing-hero scroll-reveal" id="landing-hero">
+                    <div class="hero-pill-badge mono">
+                        <span class="hero-badge-pip"></span>
+                        <span>BASE SEPOLIA // CONTINUOUS VALUATION ESCROW</span>
+                    </div>
+                    <h1 class="hero-title">Continuous Chess Escrow</h1>
+                    <p class="hero-subtitle">
+                        Position equity determines payout. Resign past Move 10 to salvage your live evaluation on Base Sepolia with zero platform rake.
+                    </p>
+                    <div class="hero-actions-row">
+                        <button class="btn-hero-primary mono" id="hero-connect-wallet" style="display:none;">
+                            <span>CONNECT WALLET TO PLAY</span>
+                            <span class="btn-arrow-mini">➔</span>
+                        </button>
+                        <button class="btn-hero-primary mono" id="hero-switch-network" style="display:none;background:#ef4444;color:#ffffff;box-shadow:0 0 20px rgba(239,68,68,0.35);">
+                            <span>SWITCH TO BASE SEPOLIA</span>
+                            <span class="btn-arrow-mini">➔</span>
+                        </button>
+                        <button class="btn-hero-primary mono" id="hero-play-arena">
+                            <span class="btn-gold-pip"></span>
+                            <span>ENTER LIVE ARENA</span>
+                            <span class="btn-arrow-mini">➔</span>
+                        </button>
+                        <button class="btn-hero-secondary mono" id="hero-create-match">
+                            <span>CREATE MATCH</span>
+                        </button>
+                        <button class="btn-hero-secondary mono" id="hero-join-match">
+                            <span>JOIN MATCH</span>
+                        </button>
+                        <button class="btn-hero-secondary mono" id="hero-view-escrow">
+                            <span>SPECIFICATION</span>
+                        </button>
+                    </div>
+                    <div id="hero-onboarding-note" class="mono" style="font-size:9.5px;color:rgba(200,196,188,0.35);margin-top:6px;letter-spacing:0.18em;text-align:center;">
+                        COINBASE SMART WALLET · METAMASK · RABBY · EIP-1193 INJECTED
+                    </div>
+                </section>
+
+                <!-- Architectural 3-Pillars Triptych -->
+                <section class="landing-pillars scroll-reveal">
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">// 01</span>
+                            <span class="pillar-tag mono">VALUATION RULE</span>
                         </div>
-                        <div class="cp-hero__eval-preview">
-                            <div class="cp-eval-preview-header">
-                                <span class="cp-label">Stockfish Evaluation Split</span>
-                                <span class="cp-data" style="color:var(--cp-green);">+1.85 Advantage (White)</span>
-                            </div>
-                            <div class="cp-eval-bar" title="Live split illustration: Bone (White) vs Graphite (Black)">
-                                <div class="cp-eval-bar__fill" style="width: 68%;"></div>
-                                <div class="cp-eval-bar__midline"></div>
-                                <span class="cp-eval-bar__label" style="left:12px;color:var(--cp-bg);">White 68% ($13.60)</span>
-                                <span class="cp-eval-bar__label" style="right:12px;color:var(--cp-bone);">Black 32% ($6.40)</span>
-                            </div>
+                        <h3 class="pillar-title">Proportional Valuation</h3>
+                        <p class="pillar-desc">
+                            Resign past Move 10 to salvage 5%–95% of pot equity computed deterministically from real-time evaluation. No total loss on close endgames.
+                        </p>
+                        <div class="pillar-footer mono">
+                            <span>FORMULA</span>
+                            <span class="pillar-accent">P(A) = [1 + e<sup>-0.004Δe</sup>]<sup>-1</sup></span>
+                        </div>
+                    </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">// 02</span>
+                            <span class="pillar-tag mono">GAME INTEGRITY</span>
+                        </div>
+                        <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
+                        <p class="pillar-desc">
+                            Resignations prior to Move 10 (20 plies) strictly forfeit 100% of deposited stakes to the opponent, mathematically preventing early rage-quits and griefing.
+                        </p>
+                        <div class="pillar-footer mono">
+                            <span>COMMITMENT</span>
+                            <span class="pillar-accent">≥ 20 PLIES REQUIRED</span>
+                        </div>
+                    </div>
+
+                    <div class="pillar-card">
+                        <div class="pillar-header">
+                            <span class="pillar-index mono">// 03</span>
+                            <span class="pillar-tag mono">SETTLEMENT INVARIANT</span>
+                        </div>
+                        <h3 class="pillar-title">Zero Platform Fee</h3>
+                        <p class="pillar-desc">
+                            Zero house take. 10,000 basis points of deposited USDC disburse directly to competitor smart accounts via verified Base Sepolia escrow contracts.
+                        </p>
+                        <div class="pillar-footer mono">
+                            <span>HOUSE RAKE</span>
+                            <span class="pillar-accent">0.00% (ZERO FEE)</span>
                         </div>
                     </div>
                 </section>
 
-                <!-- Block 3: Payout Simulator -->
-                <section class="cp-simulator" id="sec-simulator">
-                    <div class="cp-panel cp-simulator__card">
-                        <div class="cp-simulator__header">
-                            <div>
-                                <span class="cp-label">Interactive Model</span>
-                                <h2 class="cp-h2" style="margin-top:6px;">Payout Simulator</h2>
-                            </div>
-                            <div style="text-align:right;">
-                                <span class="cp-label">Total Escrow Pot</span>
-                                <div class="cp-data" style="font-size:1.4rem;color:var(--cp-amber);" id="sim-pot-amount">$20.00 USDC</div>
-                            </div>
-                        </div>
-
-                        <div class="cp-simulator__control">
-                            <div class="cp-simulator__slider-labels">
-                                <span class="cp-body" style="font-size:0.9rem;">Engine Evaluation</span>
-                                <span class="cp-data" id="sim-eval-display" style="font-size:1.1rem;color:var(--cp-bone);">+180 cp (+1.80 pawns)</span>
-                            </div>
-                            <input type="range" class="cp-slider" id="sim-eval-slider" min="-500" max="500" step="10" value="180" aria-label="Engine evaluation slider from minus 500 to plus 500 centipawns">
-                        </div>
-
-                        <div class="cp-simulator__bar-wrap">
-                            <div class="cp-eval-bar" style="height:38px;">
-                                <div class="cp-eval-bar__fill" id="sim-bar-white" style="width:67%;"></div>
-                                <div class="cp-eval-bar__midline"></div>
-                                <span class="cp-eval-bar__label" id="sim-split-white" style="left:12px;color:var(--cp-bg);">White: 67.3% · $13.46</span>
-                                <span class="cp-eval-bar__label" id="sim-split-black" style="right:12px;color:var(--cp-bone);">Black: 32.7% · $6.54</span>
-                            </div>
-                        </div>
-
-                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--cp-line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-                            <p class="cp-body" style="font-size:0.88rem;color:var(--cp-text-3);">
-                                Before move 10, resigning forfeits the pot.
-                            </p>
-                            <span class="cp-pill cp-pill--amber">5% — 95% Bound</span>
-                        </div>
+                <!-- Sleek Minimalist Contract Verification Strip -->
+                <div class="landing-contract-strip scroll-reveal">
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">ESCROW</span>
+                        <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x0451...a5C0 ↗
+                        </a>
                     </div>
-                </section>
-
-                <!-- Block 4: Three Facts -->
-                <section class="cp-facts">
-                    <div class="cp-facts__grid">
-                        <div class="cp-fact-col">
-                            <span class="cp-label">01 · Equity</span>
-                            <h3 class="cp-h3">Proportional payouts</h3>
-                            <p class="cp-body">A resigning player keeps their position equity clamped between 5% and 95% instead of suffering a total loss.</p>
-                        </div>
-                        <div class="cp-fact-col">
-                            <span class="cp-label">02 · Integrity</span>
-                            <h3 class="cp-h3">20-ply rule</h3>
-                            <p class="cp-body">Resigning before 20 plies (move 10) forfeits the entire pot, eliminating opening exploits and quick rage-quits.</p>
-                        </div>
-                        <div class="cp-fact-col">
-                            <span class="cp-label">03 · Protocol</span>
-                            <h3 class="cp-h3">0% fee</h3>
-                            <p class="cp-body">Every cent staked in the on-chain escrow settles directly to player wallets with zero house rake on Base Sepolia.</p>
-                        </div>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">USDC</span>
+                        <a href="https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x036C...CF7e ↗
+                        </a>
                     </div>
-                </section>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">ORACLE</span>
+                        <a href="https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
+                            0x410F...A3a9 ↗
+                        </a>
+                    </div>
+                    <div class="contract-pill-item">
+                        <span class="contract-pill-label mono">FEE</span>
+                        <span class="contract-pill-val fee-free mono">0% (Zero Take)</span>
+                    </div>
+                    <button class="contract-strip-btn mono" id="btn-view-specs-bottom">
+                        READ SPEC ➔
+                    </button>
+                </div>
 
-                <!-- Block 5: Footer -->
-                <footer class="cp-footer">
-                    <div class="cp-footer__inner">
-                        <div class="cp-footer__meta">
-                            <span class="cp-data" style="font-size:0.85rem;color:var(--cp-text-3);">Base Sepolia testnet · unaudited</span>
-                            <a class="cp-footer__link" href="https://sepolia.basescan.org/address/0xb7d1cb37719f9fe633198086053351ecb6f3876e" target="_blank" rel="noopener noreferrer">Contract (BaseScan) ↗</a>
-                        </div>
-                        <div class="cp-footer__links">
-                            <a class="cp-footer__link" id="footer-link-github" href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer">GitHub</a>
-                            <a class="cp-footer__link" id="footer-link-linkedin" href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-                        </div>
+                <!-- Minimalist Footer with LinkedIn & GitHub Links -->
+                <footer class="landing-footer">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:14px;">♟</span>
+                        <span class="mono" style="color:#ffffff;font-size:10px;letter-spacing:0.12em;">CENTIPAWN // BASE L2</span>
+                    </div>
+                    <span class="mono" style="font-size:10px;color:var(--dim);letter-spacing:0.1em;">EVALSTAKE CHESS PRD V2.1 · 0% PLATFORM FEE · ZERO HOUSE RAKE</span>
+                    <div class="footer-social-links">
+                        <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                            <span>GitHub</span>
+                            <span style="font-size:9px;opacity:0.6;">↗</span>
+                        </a>
+                        <a href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer" class="footer-social-link linkedin" id="footer-link-linkedin" title="LinkedIn Profile">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            <span>LinkedIn</span>
+                            <span style="font-size:9px;opacity:0.6;">↗</span>
+                        </a>
                     </div>
                 </footer>
-            </main>
+            </div>
         `;
 
         // 2. Arena Container (Live Chessboard, Clocks, Eval Bar, Move Notation)
@@ -963,7 +1001,7 @@ const PRESET_AVATARS = [
 
                     <!-- Match Tactical Actions -->
                     <div class="game-actions-row">
-                        <button class="btn-danger" id="btn-resign-action" title="Resign position with Stockfish proportional payout">
+                        <button class="btn-danger" id="btn-resign-action" title="Resign position with proportional payout (heuristic evaluation engine: piece-square tables + mobility)">
                             🏳️ Resign (Proportional)
                         </button>
                         <button class="btn-primary" id="btn-draw-action">
@@ -1051,7 +1089,7 @@ const PRESET_AVATARS = [
 
                     <div class="resign-preview-box">
                         <div class="resign-stat-row">
-                            <span style="color:var(--dim-more);">Current Stockfish Evaluation:</span>
+                            <span style="color:var(--dim-more);">Current Evaluation (heuristic evaluation engine: piece-square tables + mobility):</span>
                             <span class="resign-eval-badge" id="modal-resign-eval">+3.20</span>
                         </div>
                         <div class="resign-stat-row">
@@ -1074,7 +1112,7 @@ const PRESET_AVATARS = [
                     </div>
 
                     <p class="modal-notice-text" id="modal-resign-warning">
-                        Resignation payout is strictly based on the server/oracle Stockfish position evaluation.
+                        Resignation payout is strictly based on the server/oracle heuristic evaluation engine (piece-square tables + mobility).
                         Because you have completed ≥ 20 plies, the pot is split proportionally according to position strength.
                     </p>
 
@@ -1095,7 +1133,7 @@ const PRESET_AVATARS = [
                             <span style="font-size:24px;">⚖️</span>
                             <div>
                                 <h3 class="modal-title">Game Settlement Receipt</h3>
-                                <span class="mono" style="font-size:10px;color:var(--accent-green);">ON-CHAIN SETTLEMENT VERIFIED (BASE)</span>
+                                <span class="mono" id="modal-settle-badge" style="font-size:10px;color:var(--accent-green);">ON-CHAIN SETTLEMENT VERIFIED (BASE)</span>
                             </div>
                         </div>
                         <button class="modal-close-btn" id="modal-settle-close">✕</button>
@@ -1195,7 +1233,7 @@ const PRESET_AVATARS = [
 
                         <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;">
                             <div style="font-weight:600;color:#fbbf24;margin-bottom:4px;">Minimum 20-Ply Anti-Sandbagging Rule (Section 5.2)</div>
-                            <span style="color:var(--dim-more);">Resignation before 20 completed plies forfeits 100% to the opponent. After ≥ 20 plies, the Stockfish evaluation formula governs the payout.</span>
+                            <span style="color:var(--dim-more);">Resignation before 20 completed plies forfeits 100% to the opponent. After ≥ 20 plies, the heuristic evaluation engine (piece-square tables + mobility) governs the payout.</span>
                         </div>
 
                         <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;">
@@ -1810,12 +1848,12 @@ const PRESET_AVATARS = [
         if (fillWhiteEl) fillWhiteEl.style.height = `${whitePct}%`;
         if (fillBlackEl) fillBlackEl.style.height = `${blackPct}%`;
 
-        const cpFormatted = (evalCp / 100).toFixed(1);
+        const pawnFormatted = (evalCp / 100).toFixed(1);
         if (evalWhiteEl) {
-            evalWhiteEl.textContent = evalCp >= 0 ? `+${cpFormatted}` : '';
+            evalWhiteEl.textContent = evalCp >= 0 ? `+${pawnFormatted}` : '';
         }
         if (evalBlackEl) {
-            evalBlackEl.textContent = evalCp < 0 ? `${cpFormatted}` : '';
+            evalBlackEl.textContent = evalCp < 0 ? `${pawnFormatted}` : '';
         }
 
         // Update Proportional Split widget
@@ -1915,7 +1953,7 @@ const PRESET_AVATARS = [
                 plyBadge.className = 'ply-threshold-box over-threshold';
             }
             if (plyDesc) {
-                plyDesc.textContent = `≥ 20 Plies met! Stockfish proportional resignation enabled.`;
+                plyDesc.textContent = `≥ 20 Plies met! Proportional resignation enabled (heuristic evaluation engine: piece-square tables + mobility).`;
             }
         }
 
@@ -2047,7 +2085,7 @@ const PRESET_AVATARS = [
         const pctB = document.getElementById('modal-resign-pct-b');
         const warning = document.getElementById('modal-resign-warning');
 
-        if (evalBadge) evalBadge.textContent = evalCp >= 0 ? `+${(evalCp / 100).toFixed(1)} cp` : `${(evalCp / 100).toFixed(1)} cp`;
+        if (evalBadge) evalBadge.textContent = evalCp >= 0 ? `+${(evalCp / 100).toFixed(1)} pawns` : `${(evalCp / 100).toFixed(1)} pawns`;
         if (pliesBadge) {
             pliesBadge.textContent = `${plies} plies (${plies >= LOCKED.MIN_RESIGN_PLIES ? '≥ 20 Requirement Met' : '< 20 Plies Penalty Active'})`;
             pliesBadge.style.color = plies >= LOCKED.MIN_RESIGN_PLIES ? 'var(--accent-green)' : '#fbbf24';
@@ -2064,7 +2102,7 @@ const PRESET_AVATARS = [
             pctA.textContent = `${(payout.winProbA * 100).toFixed(1)}% of Pot`;
             valB.textContent = `${payout.payoutUSDC_B.toFixed(2)} USDC`;
             pctB.textContent = `${(100 - payout.winProbA * 100).toFixed(1)}% of Pot`;
-            warning.innerHTML = `Resignation payout is calculated from the final position strength via Stockfish evaluation. Clamped to 5%–95%.`;
+            warning.innerHTML = `Resignation payout is calculated from the final position strength via heuristic evaluation engine (piece-square tables + mobility). Clamped to 5%–95%.`;
         }
 
         modal.classList.add('open');
@@ -2123,7 +2161,6 @@ const PRESET_AVATARS = [
             const totalPot = state.totalPot;
             const payoutUSDC_A = calc.payoutUSDC_A;
             const payoutUSDC_B = calc.payoutUSDC_B;
-            const txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
             receipt = {
                 gameId: state.gameId,
@@ -2145,8 +2182,10 @@ const PRESET_AVATARS = [
                 oracleAddress: LOCKED.ORACLE_ADDRESS,
                 finalStateHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
                 oracleSignature: '0x' + Array.from({ length: 130 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
-                txHash,
-                baseScanUrl: `https://sepolia.basescan.org/tx/${txHash}`
+                isSandbox: true,
+                onChain: false,
+                txHash: null,
+                baseScanUrl: null
             };
         }
 
@@ -2160,6 +2199,22 @@ const PRESET_AVATARS = [
         const modal = document.getElementById('modal-settlement');
         const body = document.getElementById('settlement-receipt-body');
         if (!modal || !body) return;
+
+        const badgeHeader = document.getElementById('modal-settle-badge');
+        if (badgeHeader) {
+            if (r.onChain && r.txHash) {
+                badgeHeader.textContent = 'ON-CHAIN SETTLEMENT VERIFIED (BASE)';
+                badgeHeader.style.color = 'var(--accent-green)';
+            } else {
+                badgeHeader.textContent = 'SANDBOX / SIMULATED (OFF-CHAIN)';
+                badgeHeader.style.color = '#fbbf24';
+            }
+        }
+
+        const isVerifiedOnChain = Boolean(r.onChain && r.txHash);
+        const isSandboxMode = Boolean(r.isSandbox || walletState.isSandbox);
+        const signerLabel = isSandboxMode ? 'Mock signer (sandbox):' : 'Oracle Signer:';
+        const signatureLabel = isSandboxMode ? 'Mock signature (sandbox, not from the oracle server):' : 'Oracle signature:';
 
         body.innerHTML = `
             <div class="receipt-line">
@@ -2187,8 +2242,8 @@ const PRESET_AVATARS = [
                 <span style="color:#ffffff;">${r.plies} plies</span>
             </div>
             <div class="receipt-line">
-                <span style="color:var(--dim);">Final Stockfish Eval:</span>
-                <span style="color:var(--accent-cyan);font-weight:700;">${r.stockfishEval >= 0 ? '+' : ''}${(r.stockfishEval / 100).toFixed(1)} cp</span>
+                <span style="color:var(--dim);">Final Eval (heuristic evaluation engine: piece-square tables + mobility):</span>
+                <span style="color:var(--accent-cyan);font-weight:700;">${r.stockfishEval >= 0 ? '+' : ''}${(r.stockfishEval / 100).toFixed(1)} pawns</span>
             </div>
             <div class="receipt-line" style="background:rgba(52,211,153,0.06);padding:6px;border-radius:4px;">
                 <span style="color:var(--accent-green);font-weight:700;">Player A Payout:</span>
@@ -2203,12 +2258,25 @@ const PRESET_AVATARS = [
                 <span style="font-size:9px;color:var(--dim-more);word-break:break-all;">${r.finalFEN}</span>
             </div>
             <div class="receipt-line">
-                <span style="color:var(--dim);">Oracle Signer:</span>
+                <span style="color:var(--dim);">${signerLabel}</span>
                 <span style="color:var(--accent-cyan);">${r.oracleAddress}</span>
             </div>
+            ${r.oracleSignature ? `
             <div class="receipt-line">
-                <span style="color:var(--dim);">Base Sepolia Tx Hash:</span>
-                <a href="${r.baseScanUrl}" target="_blank" class="receipt-hash-link">${r.txHash.slice(0, 18)}...${r.txHash.slice(-8)} ↗</a>
+                <span style="color:var(--dim);">${signatureLabel}</span>
+                <span style="font-size:9px;color:var(--dim-more);word-break:break-all;">${r.oracleSignature}</span>
+            </div>
+            ` : ''}
+            <div class="receipt-line">
+                <span style="color:var(--dim);">Settlement Status:</span>
+                ${isVerifiedOnChain ? `
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="background:rgba(52,211,153,0.15);color:var(--accent-green);font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(52,211,153,0.3);">VERIFIED ON-CHAIN</span>
+                        <a href="https://sepolia.basescan.org/tx/${r.txHash}" target="_blank" class="receipt-hash-link">${r.txHash.slice(0, 14)}...${r.txHash.slice(-8)} ↗</a>
+                    </div>
+                ` : `
+                    <span style="background:rgba(251,191,36,0.15);color:#fbbf24;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;border:1px solid rgba(251,191,36,0.3);">SANDBOX / SIMULATED: no on-chain transaction</span>
+                `}
             </div>
         `;
 
@@ -2235,8 +2303,19 @@ const PRESET_AVATARS = [
 
             const linkEl = document.getElementById('summary-basescan-link');
             if (linkEl) {
-                linkEl.href = r.baseScanUrl || `https://sepolia.basescan.org/tx/${r.txHash}`;
-                linkEl.textContent = `${r.txHash.slice(0, 10)}...${r.txHash.slice(-6)} ↗`;
+                if (isVerifiedOnChain) {
+                    linkEl.href = r.baseScanUrl || `https://sepolia.basescan.org/tx/${r.txHash}`;
+                    linkEl.textContent = `${r.txHash.slice(0, 10)}...${r.txHash.slice(-6)} ↗`;
+                    linkEl.style.pointerEvents = 'auto';
+                    linkEl.style.color = '';
+                    linkEl.style.fontSize = '';
+                } else {
+                    linkEl.removeAttribute('href');
+                    linkEl.textContent = 'SANDBOX / SIMULATED: no on-chain transaction';
+                    linkEl.style.pointerEvents = 'none';
+                    linkEl.style.color = '#fbbf24';
+                    linkEl.style.fontSize = '10px';
+                }
             }
         }
     }

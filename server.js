@@ -56,13 +56,19 @@ const LOCKED_PARAMS = {
 
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
 let oracleKey = (process.env.ORACLE_KEY || '').trim();
-if (!oracleKey) {
-    throw new Error('[Security] ORACLE_KEY not detected in process.env. Configure ORACLE_KEY in .env');
-}
-if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
+const isEphemeralOracle = !oracleKey;
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
-const oracleWallet = new ethers.Wallet(oracleKey, provider);
-console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+let oracleWallet;
+
+if (isEphemeralOracle) {
+    oracleWallet = ethers.Wallet.createRandom().connect(provider);
+    console.warn('No ORACLE_KEY set: running in EPHEMERAL SANDBOX ORACLE mode. Signatures will NOT be accepted by the deployed escrow, so no on-chain settlement is possible.');
+    console.log(`[Oracle] Initialized ephemeral sandbox signer: ${oracleWallet.address}`);
+} else {
+    if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
+    oracleWallet = new ethers.Wallet(oracleKey, provider);
+    console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+}
 
 // In-Memory Matches Database
 const matches = new Map();
@@ -165,9 +171,19 @@ function evaluatePosition(fen) {
             }
         }
 
-        // Mobility factor
-        const moves = chess.moves().length;
-        evalCp += (chess.turn() === 'w' ? moves * 5 : -moves * 5);
+        // Mobility factor: white moves minus black moves
+        const turn = chess.turn();
+        const currentMoves = chess.moves().length;
+        const tokens = fen.split(' ');
+        tokens[1] = turn === 'w' ? 'b' : 'w';
+        tokens[3] = '-';
+        let otherMoves = 0;
+        try {
+            otherMoves = new Chess(tokens.join(' ')).moves().length;
+        } catch {}
+        const whiteMoves = turn === 'w' ? currentMoves : otherMoves;
+        const blackMoves = turn === 'b' ? currentMoves : otherMoves;
+        evalCp += (whiteMoves - blackMoves) * 5;
 
         return evalCp;
     } catch {
@@ -262,7 +278,7 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
     let onChainMined = false;
 
     try {
-        if (ethers.isAddress(ESCROW_CONTRACT_ADDRESS)) {
+        if (!isEphemeralOracle && ethers.isAddress(ESCROW_CONTRACT_ADDRESS)) {
             const escrow = new ethers.Contract(
                 ESCROW_CONTRACT_ADDRESS,
                 [
@@ -306,9 +322,7 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
         console.warn(`[Oracle] Note on chain broadcast:`, onChainErr.message);
     }
 
-    if (!txHash) {
-        txHash = ethers.keccak256(ethers.toUtf8Bytes(`BASE_SETTLE:${match.gameId}:${timestamp}:${oracleSignature}`));
-    }
+    const onChain = onChainMined && !!txHash;
 
     const totalPot = match.stakeAmount * 2;
     const payoutUSDC_A = Number(((totalPot * calc.payoutBpsToA) / 10000).toFixed(2));
@@ -335,8 +349,9 @@ async function signOracleSettlement(match, endReason, stockfishEval, finalFEN) {
         finalStateHash,
         oracleSignature,
         timestamp,
-        txHash,
-        baseScanUrl: `https://sepolia.basescan.org/tx/${txHash}`
+        onChain,
+        txHash: onChain ? txHash : null,
+        baseScanUrl: onChain ? `https://sepolia.basescan.org/tx/${txHash}` : null
     };
 }
 
@@ -405,6 +420,7 @@ async function handleRequest(req, res) {
             usdcAddress: usdc,
             usdcAddressLength: usdc.length,
             oracleAddress: oracleWallet.address,
+            ephemeralOracle: isEphemeralOracle,
             escrowContract: ESCROW_CONTRACT_ADDRESS,
             activeMatchesCount: matches.size
         });
