@@ -151,6 +151,7 @@ function getProfile(rawAddress) {
             identiconUrl: generateIdenticonSvg(checkAddr),
             avatarSvg: generateIdenticonSvg(checkAddr),
             isDefault: false,
+            onboarded: Boolean(existing.onboarded),
             createdAt: existing.createdAt,
             updatedAt: existing.updatedAt
         };
@@ -165,6 +166,7 @@ function getProfile(rawAddress) {
         identiconUrl: generateIdenticonSvg(checkAddr),
         avatarSvg: generateIdenticonSvg(checkAddr),
         isDefault: true,
+        onboarded: false,
         createdAt: null,
         updatedAt: null
     };
@@ -173,28 +175,36 @@ function getProfile(rawAddress) {
 /**
  * Create or update a profile for an address
  */
-function upsertProfile(rawAddress, rawUsername, avatarId = 'knight-neon') {
+function upsertProfile(rawAddress, rawUsername, avatarId = 'knight-neon', onboarded = undefined) {
     if (!rawAddress || !ethers.isAddress(rawAddress)) {
         throw new Error('Invalid Ethereum wallet address format');
-    }
-    const v = validateUsername(rawUsername);
-    if (!v.valid) {
-        throw new Error(v.error);
     }
 
     const checkAddr = ethers.getAddress(rawAddress);
     const key = checkAddr.toLowerCase();
     const existing = profileMap.get(key);
 
+    let finalUsername = existing ? existing.username : null;
+    if (rawUsername) {
+        const v = validateUsername(rawUsername);
+        if (!v.valid) {
+            throw new Error(v.error);
+        }
+        finalUsername = v.username;
+    } else if (!finalUsername) {
+        throw new Error('Username must be a non-empty string');
+    }
+
     // Validate avatarId against presets
     const validPreset = PRESET_AVATARS.find(a => a.id === avatarId);
-    const resolvedAvatarId = validPreset ? validPreset.id : 'knight-neon';
+    const resolvedAvatarId = validPreset ? validPreset.id : (existing ? existing.avatarId : 'knight-neon');
 
     const now = Date.now();
     const profile = {
         address: key, // stored lowercase
-        username: v.username,
+        username: finalUsername,
         avatarId: resolvedAvatarId,
+        onboarded: onboarded !== undefined ? Boolean(onboarded) : (existing ? Boolean(existing.onboarded) : false),
         createdAt: existing ? existing.createdAt : now,
         updatedAt: now
     };

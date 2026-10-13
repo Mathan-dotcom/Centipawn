@@ -57,8 +57,7 @@ const LOCKED_PARAMS = {
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
 let oracleKey = (process.env.ORACLE_KEY || '').trim();
 if (!oracleKey) {
-    console.warn('[Security] Notice: ORACLE_KEY not detected in process.env. Using default Base Sepolia dev oracle key. Configure ORACLE_KEY in production deployment.');
-    oracleKey = '0xd816571171d8df7d745e238f5102003568302c85de1a92f9b4cb8a00cd098269';
+    throw new Error('[Security] ORACLE_KEY not detected in process.env. Configure ORACLE_KEY in .env');
 }
 if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
@@ -444,12 +443,12 @@ async function handleRequest(req, res) {
     // POST /api/profile: Upsert player username & avatar
     if (pathname === '/api/profile' && req.method === 'POST') {
         const body = await readBody();
-        const { address, username, avatarId } = body;
+        const { address, username, avatarId, onboarded } = body;
         if (!address) {
             return sendJSON(400, { error: 'Wallet address is required' });
         }
         try {
-            const profile = profiles.upsertProfile(address, username, avatarId);
+            const profile = profiles.upsertProfile(address, username, avatarId, onboarded);
             return sendJSON(200, {
                 success: true,
                 profile
@@ -506,7 +505,7 @@ async function handleRequest(req, res) {
             increment: tc.inc,
             createdAt: Date.now(),
             joinDeadline: Date.now() + LOCKED_PARAMS.JOIN_TIMEOUT_MS,
-            status: 'ACTIVE',
+            status: 'CREATED',
             fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
             moves: [],
             plies: 0,

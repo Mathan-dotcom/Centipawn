@@ -87,7 +87,8 @@ async function main() {
     console.log('\n[Player A] Address:', playerA.address);
 
     // Create / load a persistent test Player B wallet
-    const playerBKey = '0x5cfab30ac960741792c56021ccc59563fea373d1f5f360fce05329d501286ade';
+    const playerBKey = process.env.PLAYER_B_KEY;
+    if (!playerBKey) throw new Error('PLAYER_B_KEY not detected in process.env. Configure PLAYER_B_KEY in .env');
     const playerB = new ethers.Wallet(playerBKey, provider);
     console.log('[Player B] Address:', playerB.address);
 
@@ -123,9 +124,9 @@ async function main() {
     console.log(`Player A USDC (Raw): ${initialBalA.toString()} (${ethers.formatUnits(initialBalA, 6)} USDC)`);
     console.log(`Player B USDC (Raw): ${initialBalB.toString()} (${ethers.formatUnits(initialBalB, 6)} USDC)`);
 
-    // Stake Amount: 0.1 USDC (100,000 units with 6 decimals)
-    const STAKE_RAW = 100000n; // 0.1 USDC
-    const STAKE_API = 0.1;
+    // Stake Amount: 0.05 USDC (50,000 units with 6 decimals)
+    const STAKE_RAW = 50000n; // 0.05 USDC
+    const STAKE_API = 0.05;
     const gameId = ethers.id(`match_onchain_${Date.now()}`);
     console.log('\n--- STEP 6.1: CREATING MATCH ON-CHAIN & IN API ---');
     console.log('Game ID:', gameId);

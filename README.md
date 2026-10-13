@@ -4,7 +4,7 @@
 [![Solidity](https://img.shields.io/badge/Solidity-%5E0.8.20-363636?style=flat&logo=solidity)](contracts/EvalStakeEscrow.sol)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Stockfish](https://img.shields.io/badge/Engine-Stockfish%2010-008080?style=flat)](https://stockfishchess.org/)
-[![Vercel Serverless](https://img.shields.io/badge/Deploy-Vercel-black?style=flat&logo=vercel)](https://vercel.com)
+[![Node.js](https://img.shields.io/badge/Runtime-Node.js%20v18%2B-339933?style=flat&logo=node.js)](https://nodejs.org/)
 
 > **Continuous, Evaluation-Based Payouts on Base Sepolia.**  
 > Transforming binary winner-take-all chess wagering into an evaluation-based staking market powered by Stockfish and on-chain smart contract escrows.
@@ -162,16 +162,16 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Ensure your `.env` contains:
-```ini
-PORT=3000
-NETWORK="Base Sepolia"
-CHAIN_ID=84532
-USDC_ADDRESS="0x036CbD53842c5426634e7929541eC2318f3dCF7e"
-ESCROW_CONTRACT="0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0"
-ORACLE_KEY="<YOUR_ORACLE_PRIVATE_KEY>"
-DEPLOYER_KEY="<YOUR_DEPLOYER_PRIVATE_KEY>"
-```
+
+| Variable | Description | Example / Default |
+| :--- | :--- | :--- |
+| `PORT` | Local HTTP server port | `3000` |
+| `NETWORK` | Target blockchain network name | `Base Sepolia` |
+| `CHAIN_ID` | EVM Chain ID for Base Sepolia | `84532` |
+| `USDC_ADDRESS` | Circle Official Testnet USDC contract address | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| `ESCROW_CONTRACT` | Deployed `EvalStakeEscrow.sol` contract address | `0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0` |
+| `ORACLE_KEY` | Private key of the trusted Oracle attestation signer | `0x...` |
+| `DEPLOYER_KEY` | Private key used for contract deployments & test runners | `0x...` |
 
 ### 4. Run the Local Server
 ```bash
@@ -192,26 +192,28 @@ node scripts/run_e2e_match.js
 
 ---
 
-## 🌐 Deployment to Vercel
+## 🌐 Public Access & Hosting
 
-Centipawn is configured for deployment to **Vercel** with static edge hosting for the frontend and serverless execution for the API/Oracle backend.
+Centipawn requires a **persistent, long-running Node.js process** (`server.js`) to maintain active real-time match state, handle move synchronization, and compute deterministic Stockfish evaluation signatures.
 
-### Option 1: Via Vercel CLI
-```bash
-npx vercel
-npx vercel --prod
-```
+> [!WARNING]
+> **Do NOT use Vercel Serverless**: Serverless runtimes are stateless and terminate background execution upon HTTP return. Running on serverless causes active match state loss and oracle attestation connection drops.
 
-### Option 2: Via GitHub & Vercel Dashboard
-1. Push your repository to GitHub.
-2. In [vercel.com](https://vercel.com), select **Add New Project** and import **Centipawn**.
-3. In **Settings -> Environment Variables**, configure:
-   - `NETWORK`: `Base Sepolia`
-   - `CHAIN_ID`: `84532`
-   - `USDC_ADDRESS`: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
-   - `ESCROW_CONTRACT`: `0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0`
-   - `ORACLE_KEY`: `<YOUR_ORACLE_PRIVATE_KEY>`
-4. Click **Deploy**.
+### Recommended Production Deployment
+Deploy `server.js` to a continuous container or long-running PaaS host:
+- **Render** (Web Service, `npm start`)
+- **Railway** / **Fly.io** / **DigitalOcean App Platform**
+- **Docker / VPS** (Node 18+ LTS)
+- **Public Dev Tunnel**: For local testing and live multi-network invites, expose port 3000 via Cloudflare Tunnel (`cloudflared tunnel --url http://localhost:3000`) or ngrok (`ngrok http 3000`).
+
+---
+
+## ⚠️ Known Limitations
+
+1. **In-Memory Match State**: Active match sessions, clocks, and live move history are stored in-memory in the running `server.js` process. A server restart wipes uncommitted active sessions (though deposited smart contract funds remain protected by the 10-minute timeout refund on-chain).
+2. **Single Oracle**: Attestations and Stockfish centipawn evaluations are signed by a single designated trusted oracle key (`0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9`). Production roadmap entails migrating to a decentralized oracle committee or ZK-SNARK evaluation proofs.
+3. **Testnet Only**: The platform is strictly configured and deployed for **Base Sepolia (Chain ID 84532)** with Circle Testnet USDC. Mainnet deployment is not supported in this version.
+4. **Unaudited**: The smart contracts (`EvalStakeEscrow.sol`) and oracle attestation mechanisms have not undergone an external third-party security audit. Code is provided for hackathon demonstration and experimental wagering only.
 
 ---
 

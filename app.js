@@ -37,7 +37,121 @@
     };
 
     // Preset Avatars Catalog
-    const PRESET_AVATARS = [
+    
+    // -------------------------------------------------------------
+    // DYNAMIC BACKGROUND CANVAS — "DRIFTING BOARD" (§5)
+    // -------------------------------------------------------------
+    const CpBackground = (() => {
+        let canvas, ctx, w, h, raf, last = 0, running = false;
+        let trace = [], t = 0, mouse = { x: -999, y: -999 };
+        const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const STEP = 1000 / 30;
+
+        function resize() {
+            if (!canvas) return;
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+            w = canvas.width = window.innerWidth * dpr;
+            h = canvas.height = window.innerHeight * dpr;
+            canvas.style.width = window.innerWidth + 'px';
+            canvas.style.height = window.innerHeight + 'px';
+            trace = [];
+            let y = h * 0.62;
+            const n = window.innerWidth < 480 ? 60 : 120;
+            for (let i = 0; i <= n; i++) {
+                y += (Math.random() - 0.5) * h * 0.035;
+                y = Math.max(h * 0.45, Math.min(h * 0.8, y));
+                trace.push(y);
+            }
+        }
+
+        function grid() {
+            const size = Math.max(w, h) / 14;
+            const off = (t * 4) % (size * 2);
+            for (let r = -2; r < h / size + 2; r++) {
+                for (let c = -2; c < w / size + 2; c++) {
+                    if ((r + c) % 2 === 0) continue;
+                    ctx.fillStyle = 'rgba(236,231,220,0.022)';
+                    ctx.fillRect(c * size + off - size, r * size, size, size);
+                }
+            }
+        }
+
+        function evalTrace() {
+            const n = trace.length - 1;
+            const shift = (t * 0.6) % 1;
+            ctx.beginPath();
+            for (let i = 0; i <= n; i++) {
+                const x = ((i - shift) / n) * w;
+                const y = trace[i];
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = 'rgba(111,174,125,0.35)';
+            ctx.lineWidth = 1.5 * (w / (window.innerWidth || 1));
+            ctx.stroke();
+            // midline = "even position"
+            ctx.beginPath();
+            ctx.moveTo(0, h * 0.62); ctx.lineTo(w, h * 0.62);
+            ctx.strokeStyle = 'rgba(236,231,220,0.06)';
+            ctx.lineWidth = 1; ctx.stroke();
+            if (Math.floor(t) !== Math.floor(t - 0.02)) {
+                trace.shift();
+                let y = trace[trace.length - 1] + (Math.random() - 0.5) * h * 0.035;
+                trace.push(Math.max(h * 0.45, Math.min(h * 0.8, y)));
+            }
+        }
+
+        function glow() {
+            if ((window.innerWidth || 0) < 480 || mouse.x < 0) return;
+            const g = ctx.createRadialGradient(mouse.x, mouse.y, 0, mouse.x, mouse.y, 280);
+            g.addColorStop(0, 'rgba(217,164,65,0.07)');
+            g.addColorStop(1, 'rgba(217,164,65,0)');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        }
+
+        function frame(now) {
+            raf = requestAnimationFrame(frame);
+            if (document.hidden || now - last < STEP) return;
+            last = now; t += 0.02;
+            ctx.clearRect(0, 0, w, h);
+            grid(); evalTrace(); glow();
+        }
+
+        function onMove(e) {
+            if (!w) return;
+            const dpr = w / (window.innerWidth || 1);
+            mouse.x = e.clientX * dpr; mouse.y = e.clientY * dpr;
+        }
+
+        return {
+            mount() {
+                if (running) return;
+                canvas = document.getElementById('cp-bg');
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    canvas.id = 'cp-bg';
+                    canvas.setAttribute('aria-hidden', 'true');
+                    document.body.prepend(canvas);
+                }
+                ctx = canvas.getContext('2d');
+                resize();
+                window.addEventListener('resize', resize);
+                window.addEventListener('pointermove', onMove, { passive: true });
+                running = true;
+                if (reduce) { ctx.clearRect(0, 0, w, h); grid(); evalTrace(); return; }
+                raf = requestAnimationFrame(frame);
+            },
+            unmount() {
+                running = false;
+                cancelAnimationFrame(raf);
+                window.removeEventListener('resize', resize);
+                window.removeEventListener('pointermove', onMove);
+                if (ctx) ctx.clearRect(0, 0, w, h);
+            }
+        };
+    })();
+    window.CpBackground = CpBackground;
+
+const PRESET_AVATARS = [
         { id: 'knight-neon', label: 'Neon Knight', icon: '♞', color: '#70d6ff' },
         { id: 'bishop-cyber', label: 'Cyber Bishop', icon: '♝', color: '#a78bfa' },
         { id: 'queen-gold', label: 'Golden Queen', icon: '♛', color: '#f59e0b' },
@@ -451,6 +565,9 @@
 
     // Window Navigation Controllers
     window.showLandingPage = function() {
+        document.body.dataset.view = 'landing';
+        document.documentElement.classList.add('cp-scroll-enabled');
+        document.body.classList.add('cp-scroll-enabled');
         const landing = document.getElementById('landing-page');
         const arena = document.getElementById('arena-container');
         if (arena) {
@@ -461,29 +578,35 @@
             landing.style.display = 'flex';
             void landing.offsetWidth;
             landing.classList.add('active');
-            landing.querySelectorAll('.scroll-reveal').forEach(el => el.classList.add('revealed'));
         }
+        CpBackground.mount();
         syncLandingPageUI();
-        if (window.refreshScrollReveal) {
-            setTimeout(window.refreshScrollReveal, 100);
-        }
-        if (window.startLandingWallpaper) {
-            window.startLandingWallpaper();
+        if (window.initLandingSimulator) {
+            window.initLandingSimulator();
         }
     };
 
     window.hideLandingPage = function() {
         const landing = document.getElementById('landing-page');
+        const arena = document.getElementById('arena-container');
         if (landing) {
             landing.classList.remove('active');
             setTimeout(() => { landing.style.display = 'none'; }, 300);
         }
-        if (window.stopLandingWallpaper) {
-            window.stopLandingWallpaper();
+        if (arena) {
+            arena.classList.remove('active');
+            setTimeout(() => { arena.style.display = 'none'; }, 300);
         }
+        delete document.body.dataset.view;
+        document.documentElement.classList.remove('cp-scroll-enabled');
+        document.body.classList.remove('cp-scroll-enabled');
+        CpBackground.unmount();
     };
 
     window.showArenaView = function() {
+        document.body.dataset.view = 'arena';
+        document.documentElement.classList.add('cp-scroll-enabled');
+        document.body.classList.add('cp-scroll-enabled');
         ['bg', 'dof', 'gl', 'grain', 'grain2', 'vig', 'hint', 'starter-enter-btn', 'loading-overlay'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -499,6 +622,7 @@
             void arena.offsetWidth;
             arena.classList.add('active');
         }
+        CpBackground.mount();
         if (state.gameId && window.history && window.history.replaceState) {
             const targetPath = '/match/' + state.gameId;
             if (window.location.pathname !== targetPath) {
@@ -512,9 +636,6 @@
         if (window.startMatchPolling) {
             window.startMatchPolling();
         }
-        if (window.stopLandingWallpaper) {
-            window.stopLandingWallpaper();
-        }
     };
 
     window.hideArenaView = function() {
@@ -522,6 +643,12 @@
         if (arena) {
             arena.classList.remove('active');
             setTimeout(() => { arena.style.display = 'none'; }, 300);
+        }
+        if (document.body.dataset.view === 'arena') {
+            delete document.body.dataset.view;
+            document.documentElement.classList.remove('cp-scroll-enabled');
+            document.body.classList.remove('cp-scroll-enabled');
+            CpBackground.unmount();
         }
     };
 
@@ -535,903 +662,139 @@
         const landing = document.createElement('div');
         landing.id = 'landing-page';
         landing.innerHTML = `
-            <!-- Primary In-Fiction Classified Nav -->
-            <nav class="nav" id="nav" aria-label="Primary">
-                <a class="nav__mark" data-col style="--c: 1 / 5" href="#top" id="landing-brand-logo" aria-label="Centipawn — back to top">
-                    <span class="nav__tag" data-nav-tag>CONTINUOUS ESCROW PROTOCOL · 84532</span>
-                    <span class="nav__logo" data-nav-logo style="opacity: 1;">
-                        <span class="brand-glyph" style="color:var(--red);margin-right:6px;">♟</span> CENTIPAWN
-                    </span>
-                </a>
-
-                <ul class="nav__links" data-col style="--c: 5 / 10">
-                    <li><a href="#synopsis" class="landing-nav-link" data-blood><span class="blood__label">Manifest</span></a></li>
-                    <li><a href="#sec-simulator" class="landing-nav-link" data-blood><span class="blood__label">Simulator</span></a></li>
-                    <li><a href="#sec-challenges" class="landing-nav-link" data-blood><span class="blood__label">Lobby</span></a></li>
-                    <li><a href="#sec-architecture" class="landing-nav-link" data-blood><span class="blood__label">Invariants</span></a></li>
-                    <li><a href="#sec-rules" class="landing-nav-link" data-blood><span class="blood__label">Specs</span></a></li>
-                </ul>
-
-                <div class="nav__right" style="grid-column: 10 / 13; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                    <button class="nav__sound active" id="landing-sound-toggle" type="button" data-sound-toggle aria-pressed="true" aria-label="Toggle Sound" title="Toggle Sound SFX">
-                        <span class="nav__wave" aria-hidden="true">
-                            <i></i><i></i><i></i><i></i><i></i>
-                        </span>
-                    </button>
-                    <button class="btn" id="btn-view-3d-starter" title="Inspect Interactive 3D Genesis Certificate" style="padding:0.65em 1.1em;font-size:10px;">
-                        📜 3D Certificate
-                    </button>
-                    <button class="btn" id="btn-connect-wallet-nav" style="padding:0.65em 1.1em;font-size:10px;">
-                        🔑 Connect Wallet
-                    </button>
-                    <button class="btn btn--primary" id="btn-nav-enter-arena">
-                        <span class="btn__label">⚔️ Enter Arena</span>
-                    </button>
-                    <div class="wallet-badge-btn" id="landing-wallet-badge" style="display:none;">
-                        <div class="wallet-status-dot"></div>
-                        <span class="wallet-address mono" id="landing-addr">0x0000...0000</span>
+            <!-- Block 1: Nav -->
+            <nav class="cp-nav" id="cp-nav" aria-label="Primary">
+                <div class="cp-nav__inner">
+                    <a class="cp-nav__brand" href="#top" id="landing-brand-logo" aria-label="Centipawn">
+                        <span class="cp-brand-glyph">♟</span>
+                        <span class="cp-brand-name">Centipawn</span>
+                    </a>
+                    <div class="cp-nav__center">
+                        <button class="cp-nav-link" id="nav-how-it-works">How it works</button>
                     </div>
-                    <button class="nav__toggle" id="landing-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="menu" aria-label="Open menu">
-                        <span class="nav__toggle-window" aria-hidden="true">
-                            <span class="nav__toggle-stack" data-menu-label>
-                                <span>Menu</span>
-                                <span>Close</span>
-                            </span>
-                        </span>
-                    </button>
+                    <div class="cp-nav__actions">
+                        <button class="cp-btn cp-btn--ghost" id="btn-view-3d-starter" title="Inspect Interactive 3D Genesis Certificate">
+                            📜 3D Certificate
+                        </button>
+                        <button class="cp-btn" id="btn-connect-wallet-nav">
+                            Connect Wallet
+                        </button>
+                        <div class="cp-pill cp-pill--green" id="landing-wallet-badge" style="display:none;cursor:pointer;">
+                            <span class="cp-dot cp-dot--green"></span>
+                            <span class="cp-data" id="landing-addr">0x0000...0000</span>
+                        </div>
+                        <button class="cp-btn cp-btn--primary" id="btn-nav-enter-arena">
+                            Enter Arena
+                        </button>
+                    </div>
                 </div>
             </nav>
 
-            <!-- Fullscreen Tactical Drawer Menu -->
-            <div class="menu" id="menu" data-menu aria-hidden="true">
-                <div class="menu__edge" aria-hidden="true"></div>
-                <ul class="menu__list">
-                    <li><a href="#synopsis" class="landing-nav-link" data-menu-link><span>01</span>Manifest</a></li>
-                    <li><a href="#sec-simulator" class="landing-nav-link" data-menu-link><span>02</span>Simulator</a></li>
-                    <li><a href="#sec-challenges" class="landing-nav-link" data-menu-link><span>03</span>Match Lobby</a></li>
-                    <li><a href="#sec-architecture" class="landing-nav-link" data-menu-link><span>04</span>Four Invariants</a></li>
-                    <li><a href="#sec-rules" class="landing-nav-link" data-menu-link><span>05</span>Settlement Specs</a></li>
-                </ul>
-            </div>
-
-            <!-- Organic Blood Scrollbar Element -->
-            <div class="scrollbar" data-scrollbar aria-hidden="true">
-                <div class="scrollbar__track">
-                    <div class="scrollbar__thumb" id="landing-scroll-thumb"></div>
-                    <svg class="scrollbar__ink" viewBox="0 0 16 1000" preserveAspectRatio="none" data-scrollbar-ink focusable="false">
-                        <path class="scrollbar__stroke scrollbar__stroke--heavy" d="M 8 0 C 5 140, 11 250, 7 400 S 12 640, 8 780 S 6 920, 9 1000"></path>
-                        <path class="scrollbar__stroke scrollbar__stroke--thin" d="M 8 0 C 11 160, 5 280, 9 430 S 4 660, 8 800 S 11 930, 7 1000"></path>
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Live Dynamic Wallpaper Canvas & Cursor Aura -->
-            <canvas id="landing-live-wallpaper"></canvas>
-            <div id="landing-cursor-glow"></div>
-
             <!-- Main Content Container -->
-            <main class="landing-content">
-                <!-- 1. Hero Section -->
-                <header class="hero" id="top">
-                    <div class="hero__pin">
-                        <div class="hero__mobile-plate" data-hero-mobile-plate aria-hidden="true"></div>
-                        <div class="hero__grade" aria-hidden="true"></div>
-                        <div class="hero__center">
-                            <p class="eyebrow eyebrow--red hero__presents" data-col style="--c: 3 / 11" data-hero-fade>
-                                BASE SEPOLIA [CHAIN 84532] · FIDE RULES · STOCKFISH 10 ORACLE
-                            </p>
-                            <h1 class="hero__giant-title" data-col style="--c: 3 / 11" data-hero-lockup>CENTIPAWN</h1>
-                            <p class="hero__giant-sub" data-col style="--c: 3 / 11">CONTINUOUS CHESS ESCROW PROTOCOL</p>
-                            <p class="hero__desc" data-col style="--c: 3 / 11; max-width: 68ch; font-size: 15px; line-height: 1.65; color: var(--bone); text-align: justify; text-justify: inter-word; margin: 0 auto;">
-                                In traditional chess wagering, an endgame blunder forfeits 100% of your stake. In Centipawn, Stockfish evaluates the final position: resign past Move 10 and salvage your live position equity on Base Sepolia with zero house rake.
-                            </p>
-                            <div class="hero__actions" data-col style="--c: 3 / 11" data-hero-fade>
-                                <button class="btn btn--primary" id="hero-connect-wallet" style="display:none;">
-                                    <span class="btn__label">🔑 CONNECT WALLET TO PLAY ➔</span>
-                                </button>
-                                <button class="btn btn--primary" id="hero-switch-network" style="display:none;">
-                                    <span class="btn__label">⚠️ SWITCH TO BASE SEPOLIA ➔</span>
-                                </button>
-                                <button class="btn btn--primary" id="hero-play-arena">
-                                    <span class="btn__label">⚔️ ENTER LIVE ARENA ➔</span>
-                                </button>
-                                <button class="btn" id="hero-create-match">
-                                    ⚡ CREATE ESCROW MATCH
-                                </button>
-                                <button class="btn" id="hero-join-match">
-                                    🤝 JOIN OPEN MATCH
-                                </button>
-                                <button class="btn" id="hero-view-escrow">
-                                    📜 SETTLEMENT SPEC
-                                </button>
-                            </div>
-
-                            <!-- Judge & Demonstration State Switcher -->
-                            <div class="demo-chips-container" data-col style="--c: 3 / 11">
-                                <span class="demo-chips-label mono">JUDGE DEMO STATES:</span>
-                                <button class="demo-chip-btn mono" data-demo-state="DISCONNECTED">01 DISCONNECTED</button>
-                                <button class="demo-chip-btn mono" data-demo-state="WRONG_NETWORK">02 WRONG NET</button>
-                                <button class="demo-chip-btn mono" data-demo-state="ZERO_BALANCE">03 ZERO BALANCE</button>
-                                <button class="demo-chip-btn mono" data-demo-state="FUNDED">04 FUNDED (100 USDC)</button>
-                            </div>
-
-                            <div id="hero-onboarding-note" class="mono" data-col style="--c: 3 / 11; font-size: 10px; color: var(--ash); margin-top: 4px; text-align: center;">
-                                Coinbase Smart Wallet · MetaMask · Rabby · Base Sepolia Testnet
-                            </div>
-
-                            <!-- 4 Metric Cards -->
-                            <div class="hero-metrics-grid" data-col style="--c: 2 / 12">
-                                <div class="metric-card">
-                                    <span class="metric-label">PROTOCOL FEE</span>
-                                    <span class="metric-val" style="color:var(--accent-green);">0% (Zero Take)</span>
-                                    <span class="metric-sub">100% of pot disbursed</span>
-                                </div>
-                                <div class="metric-card">
-                                    <span class="metric-label">ANTI-SANDBAG</span>
-                                    <span class="metric-val">≥ 20 Plies</span>
-                                    <span class="metric-sub">Move 10 threshold enforced</span>
-                                </div>
-                                <div class="metric-card">
-                                    <span class="metric-label">SIGMOID CLAMP</span>
-                                    <span class="metric-val">5% — 95%</span>
-                                    <span class="metric-sub">Capital protection guaranteed</span>
-                                </div>
-                                <div class="metric-card">
-                                    <span class="metric-label">JOIN WINDOW</span>
-                                    <span class="metric-val">10 Minutes</span>
-                                    <span class="metric-sub">100% creator stake refund</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="hero__cue" data-hero-fade>
-                            <span class="hero__cue-label">Descend</span>
-                            <span class="hero__cue-line" aria-hidden="true"></span>
-                        </div>
-                    </div>
-                </header>
-
-                <!-- 2. Route Map / Settlement Manifest -->
-                <section class="route-map" id="synopsis" data-route-layout="split" data-route-map aria-labelledby="route-map-title">
-                    <div class="route-map__pin" data-route-pin>
-                        <div class="route-map__fallback" aria-hidden="true"></div>
-                        <canvas class="route-map__canvas" data-route-canvas aria-hidden="true"></canvas>
-                        <div class="route-map__scrim" aria-hidden="true"></div>
-                        <svg class="route-map__arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" data-route-arc>
-                            <defs>
-                                <linearGradient id="route-arc-fade" gradientUnits="userSpaceOnUse" data-route-arc-grad>
-                                    <stop offset="0" stop-color="#ff211a" stop-opacity="0"></stop>
-                                    <stop offset="0.22" stop-color="#ff211a" stop-opacity="0.55"></stop>
-                                    <stop offset="0.78" stop-color="#ff211a" stop-opacity="0.55"></stop>
-                                    <stop offset="1" stop-color="#ff211a" stop-opacity="0"></stop>
-                                </linearGradient>
-                            </defs>
-                            <path d="" data-route-arc-path></path>
-                        </svg>
-                        <p class="route-map__hud route-map__hud--origin" data-route-hud>
-                            <span>23:58</span> <span>Move 01 Genesis</span>
-                        </p>
-                        <p class="route-map__hud route-map__hud--checkpoint" data-route-hud>
-                            <span>02:41</span> <span>Move 10 Anti-Sandbag Lock</span>
-                        </p>
-                        <p class="route-map__hud route-map__hud--hospital" data-route-hud>
-                            <span>04:17</span> <span>Endgame Settlement</span>
-                        </p>
-                        <div class="route-map__copy">
-                            <h2 class="sr-only" id="route-map-title">Synopsis — continuous chess equity settlement</h2>
-                            <p class="route-map__kicker" data-route-kicker>Settlement Manifest · Record 84532-CP</p>
-                            <p class="route-map__lede" data-route-lede>
-                                <span class="route-map__lede-line">
-                                    <span class="route-map__lede-reveal">
-                                        <span data-lede-line><span class="route-map__lede-ink">One blunder.</span></span>
-                                    </span>
-                                </span>
-                                <span class="route-map__lede-line">
-                                    <span class="route-map__lede-reveal">
-                                        <span data-lede-line><span class="route-map__lede-ink">One endgame.</span></span>
-                                    </span>
-                                </span>
-                                <span class="route-map__lede-line">
-                                    <span class="route-map__lede-reveal">
-                                        <span data-lede-line><span class="route-map__lede-ink">Zero total loss.</span></span>
-                                    </span>
-                                </span>
-                            </p>
-                            <div class="route-map__body" data-route-body>
-                                <p>
-                                    Every competitive chess player knows the frustration of outplaying an opponent for 40 moves, only to make a mouse-slip blunder in the endgame and forfeit 100% of their staked capital.
-                                </p>
-                                <p>
-                                    Centipawn solves this with continuous algorithmic escrow. Resign past Move 10, and Stockfish calculates your fair mathematical equity on Base Sepolia with zero house rake.
-                                </p>
-                            </div>
-                            <dl class="route-map__credits" data-route-credits>
-                                <div>
-                                    <dt>Protocol Oracle</dt>
-                                    <dd>Stockfish 10</dd>
-                                </div>
-                                <div>
-                                    <dt>Consensus L2</dt>
-                                    <dd>Base Sepolia (84532)</dd>
-                                </div>
-                                <div>
-                                    <dt>Platform Take</dt>
-                                    <dd class="route-map__date">0.00% (Zero Fee)</dd>
-                                </div>
-                            </dl>
-                            <div class="route-map__readout" data-route-readout>
-                                <span>Move 01 · Locked Stake</span>
-                                <span>Move 10 · Anti-Sandbag Cleared</span>
-                                <strong>Settlement · Sigmoid Clamped</strong>
-                            </div>
-                        </div>
-                        <div class="route-map__lock" data-route-lock>
-                            <span>Protocol lock</span>
-                            <strong>04:17:08</strong>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 3. Feature Showcase // Interactive Sigmoid Payout Simulator -->
-                <section class="section grid trailer" id="sec-simulator">
-                    <div class="trailer__head" data-col style="--c: 1 / 13">
-                        <p class="eyebrow eyebrow--red" data-reveal>PRD Section 11 // Continuous Mathematical Proofs</p>
-                        <p class="trailer__runtime eyebrow" data-reveal>Live Interactive Simulator</p>
-                    </div>
-
-                    <div class="trailer__frame trailer__frame--feature" data-col style="--c: 1 / 13">
-                        <div class="simulator-card">
-                            <!-- Formula Banner -->
-                            <div class="formula-strip">
-                                <div>
-                                    <span class="formula-code">P(Win_A) = 1 / (1 + e^(-0.004 × eval_cp))</span>
-                                </div>
-                                <span class="formula-badge mono">CLAMPED [500 BPS — 9500 BPS]</span>
-                            </div>
-
-                            <!-- Controls -->
-                            <div class="sim-controls-grid">
-                                <div class="sim-control-row">
-                                    <div class="sim-label-row">
-                                        <span class="sim-label">TOTAL ESCROW POT STAKE</span>
-                                        <span class="sim-val-badge mono" id="sim-pot-display">100.00 USDC</span>
-                                    </div>
-                                    <div class="sim-pot-btns-row">
-                                        <button class="sim-pot-btn" data-pot="10">10.00 USDC</button>
-                                        <button class="sim-pot-btn" data-pot="50">50.00 USDC</button>
-                                        <button class="sim-pot-btn active" data-pot="100">100.00 USDC</button>
-                                        <button class="sim-pot-btn" data-pot="250">250.00 USDC</button>
-                                    </div>
-                                </div>
-
-                                <div class="sim-control-row">
-                                    <div class="sim-label-row">
-                                        <span class="sim-label">STOCKFISH BOARD EVALUATION</span>
-                                        <div>
-                                            <span class="sim-val-badge mono" id="sim-eval-val" style="color:var(--text-white);">+320 CP</span>
-                                            <span class="mono" id="sim-eval-pawns" style="color:var(--red-ember);font-size:11px;margin-left:6px;">(+3.20 Pawns)</span>
-                                        </div>
-                                    </div>
-                                    <input type="range" class="sim-slider" id="sim-eval-slider" min="-800" max="800" step="10" value="320">
-                                    <div class="sim-presets-row">
-                                        <button class="sim-preset-btn" data-cp="-600">Decisive Black (-600)</button>
-                                        <button class="sim-preset-btn" data-cp="-250">Black Advantage (-250)</button>
-                                        <button class="sim-preset-btn" data-cp="0">Dead Even (0)</button>
-                                        <button class="sim-preset-btn active" data-cp="320">White Advantage (+320)</button>
-                                        <button class="sim-preset-btn" data-cp="550">White Dominant (+550)</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Analytics Grid -->
-                            <div class="sim-analytics-grid">
-                                <!-- White Card -->
-                                <div class="player-calc-card white-card">
-                                    <div class="player-card-header">
-                                        <span class="player-card-role mono">PLAYER A (WHITE)</span>
-                                        <span class="mono" id="sim-pct-white" style="font-size:13px;font-weight:700;color:var(--text-white);">78.2%</span>
-                                    </div>
-                                    <div class="player-payout-val" id="sim-payout-white">78.24 USDC</div>
-                                    <div class="player-card-meta">
-                                        <span>ON-CHAIN BASIS POINTS:</span>
-                                        <strong id="sim-bps-white" style="color:#ffffff;">7824 BPS</strong>
-                                    </div>
-                                </div>
-
-                                <!-- Black Card -->
-                                <div class="player-calc-card black-card">
-                                    <div class="player-card-header">
-                                        <span class="player-card-role mono">PLAYER B (BLACK)</span>
-                                        <span class="mono" id="sim-pct-black" style="font-size:13px;font-weight:700;color:var(--red-ember);">21.8%</span>
-                                    </div>
-                                    <div class="player-payout-val" id="sim-payout-black">21.76 USDC</div>
-                                    <div class="player-card-meta">
-                                        <span>ON-CHAIN BASIS POINTS:</span>
-                                        <strong id="sim-bps-black" style="color:var(--red-ember);">2176 BPS</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Visual Ratio Bar -->
-                            <div class="sim-ratio-track" title="Real-Time Proportional Equity Distribution">
-                                <div class="sim-ratio-white" id="sim-bar-white" style="width: 78.2%;"></div>
-                                <div class="sim-ratio-black" id="sim-bar-black" style="width: 21.8%;"></div>
-                            </div>
-
-                            <!-- Real-World Insight Callout -->
-                            <div class="sim-insight-box" id="sim-insight-text">
-                                Position favors <strong>White (+3.20)</strong>. Under traditional wagering, resigning forfeits 100% ($0.00). In Centipawn, Black salvages <strong>21.76 USDC (21.8%)</strong>, and White captures <strong>78.24 USDC (78.2%)</strong> without grinding a lost clock.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="trailer__archive" data-col style="--c: 1 / 5" data-reveal>
-                        <p class="eyebrow eyebrow--red">Mathematical Invariants</p>
-                        <p>Sigmoid curve dampens extreme outliers while guaranteeing capital protection between 500 and 9500 BPS.</p>
-                    </div>
-
-                    <div class="trailer__frame trailer__frame--teaser" data-col style="--c: 5 / 9">
-                        <img class="trailer__still" src="/media/still-street.webp" alt="Sigmoid Curve vs Linear" aria-hidden="true" style="object-position:center 45%;">
-                        <span class="trailer__scrim" aria-hidden="true"></span>
-                        <span class="trailer__caption">
-                            <span class="trailer__caption-kicker">Secondary · File 01</span>
-                            <strong style="color:#fff;font-family:var(--font-display);font-size:16px;">Sigmoid Curve vs Linear</strong>
-                            <p style="font-size:11px;color:var(--ash);margin-top:6px;line-height:1.5;">Smooth exponential saturation prevents a single minor advantage from snowballing into total liquidation.</p>
-                        </span>
-                    </div>
-
-                    <div class="trailer__frame trailer__frame--teaser" data-col style="--c: 9 / 13">
-                        <img class="trailer__still" src="/media/still-forest.webp" alt="EIP-191 Oracle Attestation" aria-hidden="true" style="object-position:center 40%;">
-                        <span class="trailer__scrim" aria-hidden="true"></span>
-                        <span class="trailer__caption">
-                            <span class="trailer__caption-kicker">Secondary · File 02</span>
-                            <strong style="color:#fff;font-family:var(--font-display);font-size:16px;">EIP-191 Oracle Attestation</strong>
-                            <p style="font-size:11px;color:var(--ash);margin-top:6px;line-height:1.5;">Stockfish computes the final FEN position, and cryptographic signature proves basis points on Base Sepolia.</p>
-                        </span>
-                    </div>
-                </section>
-
-                <!-- City Drift 1 -->
-                <section class="city-drift" data-city-drift data-city-flip="false" data-city-view="flythrough" style="--cd-pull-top:-17vh;--cd-pull-bottom:-24vh" aria-hidden="true">
-                    <div class="city-drift__pin" data-city-pin>
-                        <canvas class="city-drift__canvas" data-city-canvas></canvas>
-                        <p class="city-drift__hud" data-city-hud>
-                            <span>04:41</span> <span>En route · Base Sepolia Consensus</span>
-                        </p>
-                    </div>
-                </section>
-
-                <!-- 4. Interstitial Callout 1 (Dispatch) -->
-                <section class="interstitial interstitial--centre interstitial--dispatch" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-car.webp')" data-interstitial data-image="/media/still-car.webp">
-                    <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
-                    <div class="interstitial__inner">
-                        <p class="interstitial__meta">
-                            <span class="interstitial__stamp" data-int-stamp>23:58</span>
-                            <span class="interstitial__label">Protocol Genesis</span>
-                        </p>
-                        <p class="interstitial__line" data-int-line>
-                            <span class="interstitial__ink">A 40-move masterpiece forfeited to a single blunder. Traditional escrow awards 100% to the victor regardless of positional dominance.</span>
-                        </p>
-                    </div>
-                    <div class="interstitial__dispatch" data-int-dispatch aria-hidden="true">
-                        <span class="interstitial__dispatch-beam" data-int-dispatch-beam></span>
-                        <span class="interstitial__dispatch-origin"></span>
-                        <span class="interstitial__dispatch-line" data-int-dispatch-line></span>
-                        <span class="interstitial__dispatch-copy" data-int-dispatch-copy>
-                            <strong>Oracle attestation active</strong>
-                            <span>Block confirmation · 84532:07</span>
-                        </span>
-                    </div>
-                </section>
-
-                <!-- 5. Active Match Lobby // Evidence Stills Grid -->
-                <section class="stills grid" id="sec-challenges">
-                    <div class="stills__head" data-col style="--c: 1 / 13">
-                        <p class="eyebrow eyebrow--red">Match Lobby</p>
-                        <p class="stills__archive">Recovered evidence · Active Escrow Challenges 84532-CP</p>
-                    </div>
-
-                    <div class="challenges-filter-row" data-col style="--c: 1 / 13">
-                        <button class="challenge-filter-pill active" data-filter="all">ALL CHALLENGES (3)</button>
-                        <button class="challenge-filter-pill" data-filter="rapid">RAPID (5+3)</button>
-                        <button class="challenge-filter-pill" data-filter="blitz">BLITZ (3+2)</button>
-                        <button class="challenge-filter-pill" data-filter="classical">CLASSICAL (10+0)</button>
-                    </div>
-
-                    <div class="stills-challenges-grid" data-col style="--c: 1 / 13">
-                        <!-- Match 1: Rapid -->
-                        <div class="landing-challenge-card" data-category="rapid" data-stake="10.0" data-tc="1">
-                            <div class="challenge-card-top">
-                                <span class="challenge-tc-badge mono">5+3 RAPID</span>
-                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
-                            </div>
-                            <div class="challenge-stake-box">
-                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
-                                <div class="challenge-stake-val">10.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
-                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 20.00 USDC · 0% FEE</span>
-                            </div>
-                            <div class="challenge-player-row">
-                                <div class="challenge-player-avatar">♚</div>
-                                <div>
-                                    <div class="challenge-player-name">GrandmasterZero</div>
-                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x892a...42C1 · CREATOR</span>
-                                </div>
-                            </div>
-                            <button class="btn btn--primary btn-challenge-accept">
-                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
+            <main class="cp-app">
+                <!-- Block 2: Hero -->
+                <section class="cp-hero" id="top">
+                    <div class="cp-hero__content">
+                        <h1 class="cp-h1">Resign without losing everything.</h1>
+                        <p class="cp-body cp-hero__sub">Two players stake USDC. The engine's evaluation decides the split.</p>
+                        <div class="cp-hero__actions">
+                            <button class="cp-btn cp-btn--primary" id="hero-play-arena">
+                                Enter Arena
                             </button>
-                        </div>
-
-                        <!-- Match 2: Blitz -->
-                        <div class="landing-challenge-card" data-category="blitz" data-stake="1.0" data-tc="0">
-                            <div class="challenge-card-top">
-                                <span class="challenge-tc-badge mono">3+2 BLITZ</span>
-                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
-                            </div>
-                            <div class="challenge-stake-box">
-                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
-                                <div class="challenge-stake-val">1.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
-                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 2.00 USDC · 0% FEE</span>
-                            </div>
-                            <div class="challenge-player-row">
-                                <div class="challenge-player-avatar">♞</div>
-                                <div>
-                                    <div class="challenge-player-name">Satoshi_Kasparov</div>
-                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x3D41...99b9 · CREATOR</span>
-                                </div>
-                            </div>
-                            <button class="btn btn--primary btn-challenge-accept">
-                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
-                            </button>
-                        </div>
-
-                        <!-- Match 3: Classical -->
-                        <div class="landing-challenge-card" data-category="classical" data-stake="25.0" data-tc="2">
-                            <div class="challenge-card-top">
-                                <span class="challenge-tc-badge mono">10+0 CLASSICAL</span>
-                                <span class="challenge-status-pulse"><span class="eyebrow-dot" style="background:var(--accent-green);"></span> WAITING FOR OPPONENT</span>
-                            </div>
-                            <div class="challenge-stake-box">
-                                <span class="mono" style="font-size:10px;color:var(--ash);display:block;margin-bottom:2px;">STAKE PER PLAYER</span>
-                                <div class="challenge-stake-val">25.00 <span style="font-size:14px;color:var(--ash);">USDC</span></div>
-                                <span class="mono" style="font-size:9px;color:var(--accent-green);">POT: 50.00 USDC · 0% FEE</span>
-                            </div>
-                            <div class="challenge-player-row">
-                                <div class="challenge-player-avatar">♛</div>
-                                <div>
-                                    <div class="challenge-player-name">DeepPawn_Alpha</div>
-                                    <span class="mono" style="font-size:9px;color:var(--ash);">0x71a2...98E1 · CREATOR</span>
-                                </div>
-                            </div>
-                            <button class="btn btn--primary btn-challenge-accept">
-                                <span class="btn__label">⚔️ ACCEPT CHALLENGE</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Custom Match Card -->
-                    <div class="create-challenge-card" id="btn-landing-create-challenge" data-col style="--c: 1 / 13; margin-top: 1.5rem; display: flex; flex-direction: column; align-items: center; padding: 2rem; background: var(--ink-2); border: 1px dashed var(--hairline); text-align: center; cursor: pointer;">
-                        <div style="font-size:32px;filter:drop-shadow(0 0 10px rgba(255,33,26,0.6));">♟</div>
-                        <div style="font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--bone);text-transform:uppercase;margin-top:8px;">Deploy Custom Match</div>
-                        <p style="font-size:12px;color:var(--ash);max-width:320px;line-height:1.5;margin-top:6px;">Choose your USDC stake (0.10 to 25 USDC) and time control on Base Sepolia.</p>
-                        <button class="btn btn--primary" style="margin-top:12px;">
-                            <span class="btn__label">⚡ CREATE MATCH</span>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- City Drift 2 -->
-                <section class="city-drift" data-city-drift data-city-flip="false" data-city-view="aerial" style="--cd-pull-top:-8vh;--cd-pull-bottom:-22vh" aria-hidden="true">
-                    <div class="city-drift__pin" data-city-pin>
-                        <div class="city-drift__heat" data-city-heat aria-hidden="true"></div>
-                        <canvas class="city-drift__canvas" data-city-canvas></canvas>
-                        <div class="city-drift__waypoint" data-city-waypoint aria-hidden="true">
-                            <span class="city-drift__waypoint-dot"></span>
-                            <span class="city-drift__waypoint-text">
-                                <span class="city-drift__waypoint-stamp">04:29</span>
-                                <span class="city-drift__waypoint-label">Oracle Signal Confirmed · Base Sepolia</span>
-                            </span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 6. Interstitial Callout 2 (Right) -->
-                <section class="interstitial interstitial--right" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-street.webp')" data-interstitial data-image="/media/still-street.webp">
-                    <div class="interstitial__plate" data-int-plate style="--plate-h:118vh;--plate-top:50%"></div>
-                    <div class="interstitial__inner">
-                        <p class="interstitial__meta">
-                            <span class="interstitial__stamp" data-int-stamp>01:36</span>
-                            <span class="interstitial__label">Game Integrity</span>
-                        </p>
-                        <p class="interstitial__line" data-int-line>
-                            <span class="interstitial__ink">Resigning before Move 10 strictly forfeits <mark class="interstitial__hl">100%</mark>. Beyond 20 completed plies, pure <mark class="interstitial__hl">Stockfish evaluation</mark> governs payout.</span>
-                        </p>
-                    </div>
-                    <div class="interstitial__inner interstitial__inner--second" data-int-second>
-                        <p class="interstitial__meta">
-                            <span class="interstitial__stamp" data-int-stamp>02:04</span>
-                            <span class="interstitial__label">Continuous Equity</span>
-                        </p>
-                        <p class="interstitial__line" data-int-line>
-                            <span class="interstitial__ink">Cross move 10 and every single centipawn of board advantage is mathematically <mark class="interstitial__hl">protected</mark>.</span>
-                        </p>
-                    </div>
-                    <div class="interstitial__connector" data-int-connector aria-hidden="true">
-                        <span class="interstitial__connector-line">
-                            <span class="interstitial__connector-track"></span>
-                            <span class="interstitial__connector-draw" data-int-connector-draw></span>
-                        </span>
-                        <span class="interstitial__connector-marker" data-int-connector-marker>
-                            <span class="interstitial__connector-pointer"></span>
-                            <span class="interstitial__connector-copy">
-                                <strong>03:46</strong>
-                                <span>Stockfish Depth 10 Verified</span>
-                            </span>
-                        </span>
-                    </div>
-                </section>
-
-                <!-- 7. Statement Scarlet Wash Section (24-Stop Dispersion Linear Gradient) -->
-                <section class="statement statement--scarlet statement-scarlet-section" data-statement data-texture="true">
-                    <div class="statement__plate statement__plate--keyed" aria-hidden="true">
-                        <img src="/media/poster-hand-keyed.webp" alt="" data-statement-plate>
-                    </div>
-                    <div class="statement__wash" aria-hidden="true"></div>
-                    <div class="statement__flare" data-statement-flare aria-hidden="true"></div>
-                    <div class="statement__inner">
-                        <p class="statement__kicker">[ CONTINUOUS ESCROW ]</p>
-                        <h2 class="statement__type">
-                            <span class="statement__line" data-statement-line style="--blur:3px">
-                                <span class="statement__line-inner"><span class="statement__ink"> Every </span></span>
-                            </span>
-                            <span class="statement__line" data-statement-line style="--blur:2px">
-                                <span class="statement__line-inner"><span class="statement__ink"> Centipawn<span class="statement__gap" aria-hidden="true"></span> Matters </span></span>
-                            </span>
-                            <span class="statement__line" data-statement-line style="--blur:5px">
-                                <span class="statement__line-inner"><span class="statement__ink"> On </span></span>
-                            </span>
-                            <span class="statement__line" data-statement-line style="--blur:11px">
-                                <span class="statement__line-inner"><span class="statement__ink"> Base </span></span>
-                            </span>
-                        </h2>
-                        <p class="statement__note">Stockfish evaluates the position. The smart contract calculates the sigmoid. The pot is disbursed instantly.</p>
-                        <div style="grid-column: 1 / 13; display: flex; justify-content: center; margin-top: 2.5rem;">
-                            <button class="btn btn--primary" id="cta-play-arena">
-                                <span class="btn__label">⚔️ ENTER CENTIPAWN ARENA NOW ➔</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="statement__fall" aria-hidden="true">
-                        <canvas data-statement-fall></canvas>
-                    </div>
-                </section>
-
-                <!-- 8. Interstitial Callout 3 (Left) -->
-                <section class="interstitial interstitial--left" style="--int-height:95vh;--int-pull-top:0vh;--int-pull-bottom:0vh;--int-image:url('/media/still-forest.webp')" data-interstitial data-image="/media/still-forest.webp">
-                    <div class="interstitial__plate" data-int-plate style="--plate-h:120vh;--plate-top:50%"></div>
-                    <div class="interstitial__inner">
-                        <p class="interstitial__meta">
-                            <span class="interstitial__stamp" data-int-stamp>05:12</span>
-                            <span class="interstitial__label">On-Chain Settlement</span>
-                        </p>
-                        <p class="interstitial__line" data-int-line>
-                            <span class="interstitial__ink">Between player and payout: <mark class="interstitial__hl">zero rake</mark>, 100% decentralized escrow, and immutable mathematics.</span>
-                        </p>
-                    </div>
-                </section>
-
-                <!-- 9. Cast Rows // Seven Protocol Invariants -->
-                <section class="section grid cast" id="sec-architecture">
-                    <div class="cast__field" data-col style="--c: 1 / 13" data-cast-field aria-hidden="true"></div>
-                    <p class="eyebrow eyebrow--red" data-col style="--c: 1 / 5">Protocol Invariants & Rules</p>
-                    <ul class="cast__list" data-col style="--c: 1 / 13">
-                        <li class="cast__row" style="--shift:-6%" data-cast-row>
-                            <span class="cast__index">01</span>
-                            <h3 class="cast__name" data-cast-name data-real="Sigmoid Payout"> Sigmoid Payout </h3>
-                            <span class="cast__meta">k = 0.004</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">k = 0.004 continuous curve</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:9%" data-cast-row>
-                            <span class="cast__index">02</span>
-                            <h3 class="cast__name" data-cast-name data-real="Anti-Sandbagging"> Anti-Sandbagging </h3>
-                            <span class="cast__meta">Move 10 Threshold</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">≥ 20 plies mandatory</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:-11%" data-cast-row>
-                            <span class="cast__index">03</span>
-                            <h3 class="cast__name" data-cast-name data-real="Capital Clamp"> Capital Clamp </h3>
-                            <span class="cast__meta">5% - 95% Bound</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">500 bps to 9500 bps bound</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:5%" data-cast-row>
-                            <span class="cast__index">04</span>
-                            <h3 class="cast__name" data-cast-name data-real="Zero Protocol Take"> Zero Protocol Take </h3>
-                            <span class="cast__meta">0% Fee</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">0 bps platform fee</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:-8%" data-cast-row>
-                            <span class="cast__index">05</span>
-                            <h3 class="cast__name" data-cast-name data-real="Stockfish 10"> Stockfish 10 </h3>
-                            <span class="cast__meta">Fixed Depth 10</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">fixed depth 10 evaluation</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:10%" data-cast-row>
-                            <span class="cast__index">06</span>
-                            <h3 class="cast__name" data-cast-name data-real="EIP-712 ECDSA"> EIP-712 ECDSA </h3>
-                            <span class="cast__meta">Signed Proof</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">ECDSA cryptographic proof</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                        <li class="cast__row" style="--shift:-4%" data-cast-row>
-                            <span class="cast__index">07</span>
-                            <h3 class="cast__name" data-cast-name data-real="Join Timeout"> Join Timeout </h3>
-                            <span class="cast__meta">600s Refund</span>
-                            <span class="cast__scrawl" data-cast-scrawl>
-                                <span class="cast__scrawl-text">600 seconds 100% creator return</span>
-                                <svg class="cast__scrawl-rule" viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true">
-                                    <path d="M 2 9 C 26 3, 52 11, 76 5 S 108 10, 118 4" data-scrawl-rule></path>
-                                    <path d="M 6 12 C 30 7, 58 13, 82 8 S 110 12, 116 8" data-scrawl-rule></path>
-                                </svg>
-                            </span>
-                        </li>
-                    </ul>
-
-                    <div class="pillars-grid" data-col style="--c: 1 / 13; margin-top: 3rem;">
-                        <div class="pillar-card">
-                            <span class="pillar-index mono">01 // CONTINUOUS EQUITY</span>
-                            <h3 class="pillar-title">Sigmoidal Payouts</h3>
-                            <p class="pillar-desc">
-                                Resigning past Move 10 maps final Stockfish centipawns into 5%–95% win probability. No sudden total liquidation on tight tactical endgames.
-                            </p>
-                        </div>
-                        <div class="pillar-card">
-                            <span class="pillar-index mono">02 // GAME INTEGRITY</span>
-                            <h3 class="pillar-title">20-Ply Anti-Sandbag</h3>
-                            <p class="pillar-desc">
-                                Resigning before Move 10 (20 completed plies) strictly forfeits 100% of the pot to the opponent, stopping opening griefing and rage-quits.
-                            </p>
-                        </div>
-                        <div class="pillar-card">
-                            <span class="pillar-index mono">03 // ECONOMIC PURITY</span>
-                            <h3 class="pillar-title">0% Platform Fee</h3>
-                            <p class="pillar-desc">
-                                Centipawn takes zero house rake. 100% of deposited USDC is disbursed directly to players via verified Base Sepolia smart contracts.
-                            </p>
-                        </div>
-                        <div class="pillar-card">
-                            <span class="pillar-index mono">04 // ORACLE ATTESTATION</span>
-                            <h3 class="pillar-title">EIP-191 Signatures</h3>
-                            <p class="pillar-desc">
-                                Stockfish 10 computes the definitive FEN evaluation. The oracle key cryptographically signs basis points directly for smart contract execution.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- 10. Windshield / Comparison Matrix & Specs -->
-                <section class="windshield" id="sec-rules" data-texture>
-                    <div class="windshield__glass" data-ws-glass>
-                        <img class="windshield__source" src="/media/resident-bg.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" data-ws-plate>
-                        <div class="windshield__card windshield__card--rest" data-ws-card data-index="0" aria-hidden="false">
-                            <p class="windshield__eyebrow">The flaw of traditional chess</p>
-                            <p class="windshield__title">Binary Forfeiture</p>
-                        </div>
-                        <div class="windshield__card" data-ws-card data-index="1" aria-hidden="true">
-                            <p class="windshield__eyebrow">And</p>
-                            <p class="windshield__title">Endgame Tilt</p>
-                        </div>
-                        <div class="windshield__card" data-ws-card data-index="2" aria-hidden="true">
-                            <p class="windshield__eyebrow">The mathematical remedy</p>
-                            <p class="windshield__title">Sigmoid Escrow</p>
-                        </div>
-                        <div class="windshield__card" data-ws-card data-index="3" aria-hidden="true">
-                            <p class="windshield__eyebrow">Live on testnet</p>
-                            <p class="windshield__title">Base Sepolia 84532</p>
-                        </div>
-                        <div class="windshield__card" data-ws-card data-index="4" aria-hidden="true">
-                            <p class="windshield__eyebrow">Continuous chess wagering</p>
-                            <p class="windshield__title">Centipawn</p>
-                        </div>
-                        <div class="windshield__wipers" data-ws-wipers aria-hidden="true">
-                            <div class="windshield__wiper" data-ws-wiper>
-                                <span class="windshield__arm"></span>
-                                <span class="windshield__blade"></span>
-                            </div>
-                        </div>
-                        <div class="windshield__veil" data-ws-veil aria-hidden="true">
-                            <span></span><span></span>
-                        </div>
-                        <div class="windshield__vignette" aria-hidden="true"></div>
-                    </div>
-
-                    <div class="comparison-table-wrap" style="width:100%;max-width:1100px;margin-top:1.5rem;position:relative;z-index:1;">
-                        <table class="comparison-table">
-                            <thead>
-                                <tr>
-                                    <th>Match Scenario</th>
-                                    <th>Traditional Binary Wagering</th>
-                                    <th>Centipawn Web3 Protocol</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="td-scenario">Late Tactical Slip (Move 42)</td>
-                                    <td class="td-binary">100% Liquidation. Player loses entire deposited stake.</td>
-                                    <td class="td-centipawn"><strong>Retains 70%–85% equity</strong> proportional to final Stockfish evaluation.</td>
-                                </tr>
-                                <tr>
-                                    <td class="td-scenario">Opponent Clock Stalling</td>
-                                    <td class="td-binary">Losing player drags clock to zero out of spite.</td>
-                                    <td class="td-centipawn"><strong>Incentivized early resignation</strong> to lock in remaining 5%–35% pot equity.</td>
-                                </tr>
-                                <tr>
-                                    <td class="td-scenario">Draw / Stalemate Resolution</td>
-                                    <td class="td-binary">Hefty platform rake (up to 10%) deducted from refund.</td>
-                                    <td class="td-centipawn"><strong>Exact 50 / 50 split</strong> with 0% protocol fee disbursed on Base.</td>
-                                </tr>
-                                <tr>
-                                    <td class="td-scenario">Settlement Custody</td>
-                                    <td class="td-binary">Centralized server database custody with withdrawal limits.</td>
-                                    <td class="td-centipawn"><strong>Verified Base Sepolia Escrow</strong> (Chain ID 84532) smart contract.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Verified Base Sepolia Contract Strip -->
-                    <div class="landing-contract-strip scroll-reveal" id="sec-contracts" style="width:100%;max-width:1100px;margin-top:2rem;position:relative;z-index:1;">
-                        <div class="contract-pill-item">
-                            <span class="contract-pill-label mono">ESCROW CONTRACT</span>
-                            <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                                0x0451...a5C0 ↗
+                            <a class="cp-btn" id="hero-see-payouts" href="#sec-simulator">
+                                See how payouts work
                             </a>
                         </div>
-                        <div class="contract-pill-item">
-                            <span class="contract-pill-label mono">CIRCLE TESTNET USDC</span>
-                            <a href="https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                                0x036C...CF7e ↗
-                            </a>
+                        <div class="cp-hero__eval-preview">
+                            <div class="cp-eval-preview-header">
+                                <span class="cp-label">Stockfish Evaluation Split</span>
+                                <span class="cp-data" style="color:var(--cp-green);">+1.85 Advantage (White)</span>
+                            </div>
+                            <div class="cp-eval-bar" title="Live split illustration: Bone (White) vs Graphite (Black)">
+                                <div class="cp-eval-bar__fill" style="width: 68%;"></div>
+                                <div class="cp-eval-bar__midline"></div>
+                                <span class="cp-eval-bar__label" style="left:12px;color:var(--cp-bg);">White 68% ($13.60)</span>
+                                <span class="cp-eval-bar__label" style="right:12px;color:var(--cp-bone);">Black 32% ($6.40)</span>
+                            </div>
                         </div>
-                        <div class="contract-pill-item">
-                            <span class="contract-pill-label mono">STOCKFISH 10 ORACLE</span>
-                            <a href="https://sepolia.basescan.org/address/0x410F8184bDdC5A98e7A45c2e695c6AF7D106A3a9" target="_blank" rel="noopener noreferrer" class="contract-pill-val mono">
-                                0x410F...A3a9 ↗
-                            </a>
-                        </div>
-                        <div class="contract-pill-item">
-                            <span class="contract-pill-label mono">PROTOCOL FEE</span>
-                            <span class="contract-pill-val fee-free mono">0.00% (ZERO TAKE)</span>
-                        </div>
-                        <button class="contract-strip-btn mono" id="btn-view-specs-bottom">
-                            READ SPEC ➔
-                        </button>
-                    </div>
-
-                    <div class="windshield__actions" style="margin-top:1.5rem;position:relative;z-index:1;">
-                        <button class="btn btn--primary" id="btn-view-specs">
-                            <span class="btn__label">📜 Open PRD Settlement Rules</span>
-                        </button>
-                        <a class="btn" href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer">
-                            Basescan Explorer ↗
-                        </a>
                     </div>
                 </section>
+
+                <!-- Block 3: Payout Simulator -->
+                <section class="cp-simulator" id="sec-simulator">
+                    <div class="cp-panel cp-simulator__card">
+                        <div class="cp-simulator__header">
+                            <div>
+                                <span class="cp-label">Interactive Model</span>
+                                <h2 class="cp-h2" style="margin-top:6px;">Payout Simulator</h2>
+                            </div>
+                            <div style="text-align:right;">
+                                <span class="cp-label">Total Escrow Pot</span>
+                                <div class="cp-data" style="font-size:1.4rem;color:var(--cp-amber);" id="sim-pot-amount">$20.00 USDC</div>
+                            </div>
+                        </div>
+
+                        <div class="cp-simulator__control">
+                            <div class="cp-simulator__slider-labels">
+                                <span class="cp-body" style="font-size:0.9rem;">Engine Evaluation</span>
+                                <span class="cp-data" id="sim-eval-display" style="font-size:1.1rem;color:var(--cp-bone);">+180 cp (+1.80 pawns)</span>
+                            </div>
+                            <input type="range" class="cp-slider" id="sim-eval-slider" min="-500" max="500" step="10" value="180" aria-label="Engine evaluation slider from minus 500 to plus 500 centipawns">
+                        </div>
+
+                        <div class="cp-simulator__bar-wrap">
+                            <div class="cp-eval-bar" style="height:38px;">
+                                <div class="cp-eval-bar__fill" id="sim-bar-white" style="width:67%;"></div>
+                                <div class="cp-eval-bar__midline"></div>
+                                <span class="cp-eval-bar__label" id="sim-split-white" style="left:12px;color:var(--cp-bg);">White: 67.3% · $13.46</span>
+                                <span class="cp-eval-bar__label" id="sim-split-black" style="right:12px;color:var(--cp-bone);">Black: 32.7% · $6.54</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--cp-line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                            <p class="cp-body" style="font-size:0.88rem;color:var(--cp-text-3);">
+                                Before move 10, resigning forfeits the pot.
+                            </p>
+                            <span class="cp-pill cp-pill--amber">5% — 95% Bound</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Block 4: Three Facts -->
+                <section class="cp-facts">
+                    <div class="cp-facts__grid">
+                        <div class="cp-fact-col">
+                            <span class="cp-label">01 · Equity</span>
+                            <h3 class="cp-h3">Proportional payouts</h3>
+                            <p class="cp-body">A resigning player keeps their position equity clamped between 5% and 95% instead of suffering a total loss.</p>
+                        </div>
+                        <div class="cp-fact-col">
+                            <span class="cp-label">02 · Integrity</span>
+                            <h3 class="cp-h3">20-ply rule</h3>
+                            <p class="cp-body">Resigning before 20 plies (move 10) forfeits the entire pot, eliminating opening exploits and quick rage-quits.</p>
+                        </div>
+                        <div class="cp-fact-col">
+                            <span class="cp-label">03 · Protocol</span>
+                            <h3 class="cp-h3">0% fee</h3>
+                            <p class="cp-body">Every cent staked in the on-chain escrow settles directly to player wallets with zero house rake on Base Sepolia.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Block 5: Footer -->
+                <footer class="cp-footer">
+                    <div class="cp-footer__inner">
+                        <div class="cp-footer__meta">
+                            <span class="cp-data" style="font-size:0.85rem;color:var(--cp-text-3);">Base Sepolia testnet · unaudited</span>
+                            <a class="cp-footer__link" href="https://sepolia.basescan.org/address/0xb7d1cb37719f9fe633198086053351ecb6f3876e" target="_blank" rel="noopener noreferrer">Contract (BaseScan) ↗</a>
+                        </div>
+                        <div class="cp-footer__links">
+                            <a class="cp-footer__link" id="footer-link-github" href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer">GitHub</a>
+                            <a class="cp-footer__link" id="footer-link-linkedin" href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                        </div>
+                    </div>
+                </footer>
             </main>
-
-            <!-- 11. Full-Bleed Crimson Footer -->
-            <footer class="footer grid">
-                <div class="footer__top" data-col style="--c: 1 / 13">
-                    <span class="footer__rating">Chain 84532 · Base Sepolia Testnet</span>
-                    <ul class="footer__social" aria-label="Official Centipawn channels">
-                        <li>
-                            <a href="https://github.com/Mathan-dotcom/Centipawn" target="_blank" rel="noopener noreferrer" class="footer-social-link github" id="footer-link-github" title="Centipawn GitHub Repository">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                                <span>GitHub ↗</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="https://www.linkedin.com/in/mathankumaar/" target="_blank" rel="noopener noreferrer" class="footer-social-link linkedin" id="footer-link-linkedin" title="LinkedIn Profile">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px;"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-                                <span>LinkedIn ↗</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="footer__markwrap" data-col-bleed data-footer-markwrap>
-                    <h2 class="sr-only">Centipawn — Continuous Chess Escrow</h2>
-                    <div class="footer__mark" aria-hidden="true" data-footer-mark>CENTIPAWN</div>
-                    <p class="footer__byline">
-                        <span>Continuous Chess Escrow</span>
-                        EvalStake PRD v2.1
-                    </p>
-                </div>
-
-                <ul class="footer__studios" data-col style="--c: 1 / 13" data-footer-logos aria-label="Centipawn infrastructure partners">
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">BASE</span></li>
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">COINBASE</span></li>
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">CIRCLE USDC</span></li>
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">STOCKFISH 10</span></li>
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">ETHEREUM</span></li>
-                    <li class="footer__studio-mark"><span class="mono" style="font-size:16px;font-weight:900;letter-spacing:0.1em;color:#000;">FIDE RULES</span></li>
-                </ul>
-
-                <div class="footer__legalwrap" data-col style="--c: 1 / 13">
-                    <div class="footer__legal">
-                        <span class="footer__date">Base Sepolia Smart Contract Escrow (Chain ID 84532)</span>
-                        <ul>
-                            <li><span>0% Platform Take</span></li>
-                            <li>
-                                <a href="https://sepolia.basescan.org/address/0x0451c13fadBF8Fd8A6f1311d5d125778FC2ca5C0" target="_blank" rel="noopener noreferrer">
-                                    Verified Contract ↗
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <p class="footer__disclaimer">
-                        Centipawn Protocol v2.1. Peer-to-peer non-custodial chess wagering protocol governed by continuous Stockfish evaluation oracles on Base Sepolia. Anti-sandbagging invariant strictly enforced before Move 10 (20 completed plies). Mathematical sigmoid curve guarantees proportional capital distribution without house rake.
-                    </p>
-                </div>
-            </footer>
-
-            <!-- Film Grain Overlay from Resident Evil -->
-            <div class="grain-overlay grain-overlay--svg" data-grain data-grain-variant="svg" data-grain-animate="true" style="--grain-strength-desktop:0.12;--grain-strength-mobile:0.075;--grain-size:7.8125rem;--grain-image:url('/media/texture-grain.webp');--grain-contrast:125%;--grain-brightness:60%;--grain-speed:1s;--grain-z:10001" aria-hidden="true">
-                <svg class="grain-overlay__svg" focusable="false">
-                    <filter id="resident-grain-filter" x="-20%" y="-20%" width="140%" height="140%">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="2" stitchTiles="stitch"></feTurbulence>
-                        <feColorMatrix type="saturate" values="0"></feColorMatrix>
-                    </filter>
-                </svg>
-                <span class="grain-overlay__layer grain-overlay__layer--dark" style="--grain-filter:url('#resident-grain-filter')"></span>
-                <span class="grain-overlay__layer grain-overlay__layer--light" style="--grain-filter:url('#resident-grain-filter')"></span>
-            </div>
-
-            <!-- Custom SVG Blood Drip & Film Grain Filters -->
-            <svg class="sr-only" aria-hidden="true" focusable="false">
-                <filter id="blood-drip" x="-30%" y="-40%" width="160%" height="180%">
-                    <feTurbulence id="blood-turbulence" type="fractalNoise" baseFrequency="0.07 0.11" numOctaves="3" seed="7" result="noise" />
-                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
-                </filter>
-                <filter id="blood-drip-fine" x="-12%" y="-18%" width="124%" height="136%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.9 1.1" numOctaves="2" seed="4" result="n" />
-                    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" xChannelSelector="R" yChannelSelector="G" />
-                </filter>
-            </svg>
         `;
 
         // 2. Arena Container (Live Chessboard, Clocks, Eval Bar, Move Notation)
@@ -1515,16 +878,8 @@
                         <div class="player-clock" id="clock-player-b">05:00</div>
                     </div>
 
-                    <!-- Board & Live Stockfish Eval Bar -->
+                    <!-- Board Wrapper -->
                     <div class="board-eval-wrapper">
-                        <!-- Vertical Live Eval Bar -->
-                        <div class="eval-bar-container" title="Live Stockfish Centipawn Evaluation">
-                            <div class="eval-bar-label black-score" id="eval-label-black"></div>
-                            <div class="eval-bar-black" id="eval-fill-black" style="height: 50%;"></div>
-                            <div class="eval-bar-white" id="eval-fill-white" style="height: 50%;"></div>
-                            <div class="eval-bar-label white-score" id="eval-label-white">+0.0</div>
-                        </div>
-
                         <!-- 8x8 Chessboard Grid -->
                         <div class="chessboard-box" id="chessboard"></div>
                     </div>
@@ -1662,6 +1017,28 @@
         const modalsRoot = document.createElement('div');
         modalsRoot.id = 'modals-root';
         modalsRoot.innerHTML = `
+            <!-- ============================================================== -->
+            <!-- MODAL: POST-LOGIN ONBOARDING — "THE BRIEFING" (§8)             -->
+            <!-- ============================================================== -->
+            <div class="cp-overlay" id="briefing-overlay" role="dialog" aria-modal="true" aria-labelledby="briefing-step-title">
+                <div class="cp-briefing-modal">
+                    <div class="cp-briefing-header">
+                        <span class="cp-label">The Briefing</span>
+                        <span class="cp-pill cp-pill--amber" id="briefing-step-indicator">1 / 6</span>
+                    </div>
+                    <div class="cp-briefing-body" id="briefing-step-content">
+                        <!-- Dynamic step injected here -->
+                    </div>
+                    <div class="cp-briefing-footer">
+                        <button class="cp-btn cp-btn--ghost" id="briefing-btn-back" style="visibility:hidden;">Back</button>
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <button class="cp-btn cp-btn--ghost" id="briefing-btn-skip">Skip</button>
+                            <button class="cp-btn cp-btn--primary" id="briefing-btn-next">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ============================================================== -->
             <!-- MODAL: RESIGNATION CONFIRMATION (PRD Section 13)               -->
             <!-- ============================================================== -->
@@ -1909,7 +1286,7 @@
                                 <div class="wallet-opt-title">Coinbase Smart Wallet</div>
                                 <div class="wallet-opt-desc">Passkey / FaceID / TouchID / Google / Apple login. Base-native smart account.</div>
                             </div>
-                            <span class="mono" style="font-size:10px;color:var(--dim);">PASSKEY</span>
+                            <span class="wallet-opt-badge">PASSKEY</span>
                         </div>
 
                         <!-- Instant Sandbox Demo Wallet -->
@@ -1919,7 +1296,7 @@
                                 <div class="wallet-opt-title">Instant Judge Sandbox Wallet</div>
                                 <div class="wallet-opt-desc">Generates a live on-chain cryptographic keypair for instant zero-setup evaluation.</div>
                             </div>
-                            <span class="mono" style="font-size:10px;color:var(--accent-cyan);">EVAL KEYPAIR</span>
+                            <span class="wallet-opt-badge">EVAL KEYPAIR</span>
                         </div>
                     </div>
                 </div>
@@ -3304,7 +2681,193 @@
     // -------------------------------------------------------------
     // LANDING PAGE INTERACTIVE MODULES (Simulator, Sound, Challenges)
     // -------------------------------------------------------------
-    function initLandingSimulator() {
+    
+    // -------------------------------------------------------------
+    // POST-LOGIN ONBOARDING — "THE BRIEFING" CONTROLLER (§8)
+    // -------------------------------------------------------------
+    const BriefingOnboarding = (() => {
+        let currentStep = 1;
+        const totalSteps = 6;
+
+        function getStepContent(step) {
+            if (step === 1) {
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">What Centipawn is</h3>
+                    <p class="cp-body">
+                        Real chess with real USDC stakes held in an on-chain escrow. Rather than winner-take-all, payouts are decided by a chess engine's continuous evaluation. Testnet only.
+                    </p>
+                `;
+            } else if (step === 2) {
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">How a match works</h3>
+                    <div class="cp-diagram-steps">
+                        <div class="cp-diagram-step"><div style="color:var(--cp-amber);margin-bottom:4px;">1. Create</div>Choose stake & time</div>
+                        <div class="cp-diagram-step"><div style="color:var(--cp-amber);margin-bottom:4px;">2. Share link</div>Send invite to rival</div>
+                        <div class="cp-diagram-step"><div style="color:var(--cp-amber);margin-bottom:4px;">3. Stakes lock</div>Opponent matches</div>
+                        <div class="cp-diagram-step"><div style="color:var(--cp-amber);margin-bottom:4px;">4. Play</div>Engine tracks eval</div>
+                    </div>
+                    <p class="cp-body" style="font-size:0.88rem;">
+                        Both stakes lock inside a non-custodial smart escrow contract on Base Sepolia until game completion.
+                    </p>
+                `;
+            } else if (step === 3) {
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">How you get paid</h3>
+                    <p class="cp-body">
+                        Checkmate or timeout pays the full pot. Draws split 50/50. Resignations split proportionally according to the engine's live evaluation.
+                    </p>
+                    <div style="background:var(--cp-surface-2);border:1px solid var(--cp-line);border-radius:var(--cp-radius-sm);padding:14px;margin-top:10px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;" class="cp-data">
+                            <span>Evaluation: +200 cp</span>
+                            <span style="color:var(--cp-green);">White 69% · Black 31%</span>
+                        </div>
+                        <div class="cp-eval-bar" style="height:22px;">
+                            <div class="cp-eval-bar__fill" style="width:69%;"></div>
+                            <div class="cp-eval-bar__midline"></div>
+                        </div>
+                    </div>
+                `;
+            } else if (step === 4) {
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">The 20-ply rule</h3>
+                    <p class="cp-body">
+                        Resign before 20 plies (move 10) and your opponent takes the pot. Resign after move 10 and the split follows the engine eval, clamped between 5% and 95%.
+                    </p>
+                    <div style="display:flex;gap:12px;margin-top:10px;">
+                        <div class="cp-panel" style="flex:1;padding:12px;">
+                            <span class="cp-label" style="color:var(--cp-red);">Plies 1 — 19</span>
+                            <div class="cp-body" style="font-size:0.85rem;margin-top:4px;">100% Forfeit to opponent</div>
+                        </div>
+                        <div class="cp-panel" style="flex:1;padding:12px;">
+                            <span class="cp-label" style="color:var(--cp-green);">Plies 20+</span>
+                            <div class="cp-body" style="font-size:0.85rem;margin-top:4px;">5% — 95% Proportional split</div>
+                        </div>
+                    </div>
+                `;
+            } else if (step === 5) {
+                const isConn = walletState.connected && walletState.address;
+                const isBase = walletState.chainId === LOCKED.CHAIN_ID;
+                const ethBal = typeof walletState.balanceETH === 'number' ? walletState.balanceETH : 0;
+                const usdcBal = typeof walletState.balanceUSDC === 'number' ? walletState.balanceUSDC : 0;
+
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">Before you play</h3>
+                    <div class="cp-checklist">
+                        <div class="cp-checklist-item">
+                            <span>Wallet connected</span>
+                            <span>${isConn ? '<span style="color:var(--cp-green);">✓ ' + walletState.address.slice(0,6) + '...' + walletState.address.slice(-4) + '</span>' : '<span style="color:var(--cp-red);">✗ Disconnected</span>'}</span>
+                        </div>
+                        <div class="cp-checklist-item">
+                            <span>Base Sepolia Network</span>
+                            <span>${isBase ? '<span style="color:var(--cp-green);">✓ Chain 84532</span>' : '<span style="color:var(--cp-red);">✗ Wrong Chain</span>'}</span>
+                        </div>
+                        <div class="cp-checklist-item">
+                            <span>ETH for gas</span>
+                            <span>${ethBal > 0 ? '<span style="color:var(--cp-green);">✓ ' + ethBal.toFixed(4) + ' ETH</span>' : '<a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank" rel="noopener noreferrer" style="color:var(--cp-amber);text-decoration:underline;">0.000 ETH (Get Gas ↗)</a>'}</span>
+                        </div>
+                        <div class="cp-checklist-item">
+                            <span>USDC balance</span>
+                            <span>${usdcBal > 0 ? '<span style="color:var(--cp-green);">✓ ' + usdcBal.toFixed(2) + ' USDC</span>' : '<a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" style="color:var(--cp-amber);text-decoration:underline;">0.00 USDC (Circle Faucet ↗)</a>'}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (step === 6) {
+                return `
+                    <h3 class="cp-h2" id="briefing-step-title">Create or join</h3>
+                    <p class="cp-body" style="margin-bottom:16px;">
+                        Every game ends with a settlement receipt and a BaseScan link.
+                    </p>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button class="cp-btn cp-btn--primary" id="briefing-cta-create" style="width:100%;">
+                            Create a match
+                        </button>
+                        <button class="cp-btn" id="briefing-cta-join" style="width:100%;">
+                            Join with a link
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function render() {
+            const body = document.getElementById('briefing-step-content');
+            const ind = document.getElementById('briefing-step-indicator');
+            const backBtn = document.getElementById('briefing-btn-back');
+            const nextBtn = document.getElementById('briefing-btn-next');
+            if (!body) return;
+
+            body.style.opacity = '0';
+            body.style.transform = 'translateY(8px)';
+
+            setTimeout(() => {
+                body.innerHTML = getStepContent(currentStep);
+                if (ind) ind.textContent = `${currentStep} / ${totalSteps}`;
+                if (backBtn) backBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+                if (nextBtn) nextBtn.textContent = currentStep === totalSteps ? 'Finish' : 'Next';
+
+                body.style.opacity = '1';
+                body.style.transform = 'translateY(0)';
+
+                document.getElementById('briefing-cta-create')?.addEventListener('click', () => {
+                    closeAndMarkOnboarded();
+                    document.getElementById('modal-lobby')?.classList.add('open');
+                });
+                document.getElementById('briefing-cta-join')?.addEventListener('click', () => {
+                    closeAndMarkOnboarded();
+                    document.getElementById('modal-join-match')?.classList.add('open');
+                });
+            }, 80);
+        }
+
+        async function closeAndMarkOnboarded() {
+            const overlay = document.getElementById('briefing-overlay');
+            if (overlay) overlay.classList.remove('open');
+            if (walletState.address && walletState.connected) {
+                try {
+                    await fetch('/api/profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            address: walletState.address,
+                            onboarded: true
+                        })
+                    });
+                    if (walletState.profile) {
+                        walletState.profile.onboarded = true;
+                    }
+                } catch (e) {
+                    console.warn('Failed to persist onboarded state:', e);
+                }
+            }
+        }
+
+        return {
+            open(step = 1) {
+                currentStep = step;
+                const overlay = document.getElementById('briefing-overlay');
+                if (overlay) overlay.classList.add('open');
+                render();
+            },
+            close: closeAndMarkOnboarded,
+            next() {
+                if (currentStep < totalSteps) {
+                    currentStep++;
+                    render();
+                } else {
+                    closeAndMarkOnboarded();
+                }
+            },
+            back() {
+                if (currentStep > 1) {
+                    currentStep--;
+                    render();
+                }
+            }
+        };
+    })();
+    window.BriefingOnboarding = BriefingOnboarding;
+
+function initLandingSimulator() {
         const slider = document.getElementById('sim-eval-slider');
         if (!slider) return;
 
@@ -3623,6 +3186,25 @@
     // EVENT LISTENERS & USER CONTROLS
     // -------------------------------------------------------------
     function setupEventListeners() {
+
+        // Briefing modal controls (§8)
+        document.getElementById('nav-how-it-works')?.addEventListener('click', () => {
+            BriefingOnboarding.open();
+        });
+        document.getElementById('briefing-btn-next')?.addEventListener('click', () => {
+            BriefingOnboarding.next();
+        });
+        document.getElementById('briefing-btn-back')?.addEventListener('click', () => {
+            BriefingOnboarding.back();
+        });
+        document.getElementById('briefing-btn-skip')?.addEventListener('click', () => {
+            BriefingOnboarding.close();
+        });
+        document.getElementById('hero-see-payouts')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('sec-simulator')?.scrollIntoView({ behavior: 'smooth' });
+        });
+
         // Navigation Tabs
         const btnArena = document.getElementById('tab-btn-arena');
         const btnLobby = document.getElementById('tab-btn-lobby');
