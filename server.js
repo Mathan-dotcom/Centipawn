@@ -55,19 +55,26 @@ const LOCKED_PARAMS = {
 };
 
 // Oracle Signer Key (Trusted Oracle for V1 PRD Section 14)
-let oracleKey = (process.env.ORACLE_KEY || '').trim();
-const isEphemeralOracle = !oracleKey;
+let rawKey = (process.env.ORACLE_KEY || '').trim().replace(/^["']|["']$/g, '');
 const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC || 'https://sepolia.base.org');
 let oracleWallet;
+let isEphemeralOracle = true;
 
-if (isEphemeralOracle) {
+try {
+    if (rawKey && rawKey.length >= 64) {
+        if (!rawKey.startsWith('0x')) rawKey = '0x' + rawKey;
+        oracleWallet = new ethers.Wallet(rawKey, provider);
+        isEphemeralOracle = false;
+        console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+    } else {
+        oracleWallet = ethers.Wallet.createRandom().connect(provider);
+        console.warn('No ORACLE_KEY set: running in EPHEMERAL SANDBOX ORACLE mode.');
+        console.log(`[Oracle] Initialized ephemeral sandbox signer: ${oracleWallet.address}`);
+    }
+} catch (walletErr) {
+    console.warn('[Oracle] Notice initializing signer wallet, fallback to ephemeral:', walletErr.message);
     oracleWallet = ethers.Wallet.createRandom().connect(provider);
-    console.warn('No ORACLE_KEY set: running in EPHEMERAL SANDBOX ORACLE mode. Signatures will NOT be accepted by the deployed escrow, so no on-chain settlement is possible.');
-    console.log(`[Oracle] Initialized ephemeral sandbox signer: ${oracleWallet.address}`);
-} else {
-    if (!oracleKey.startsWith('0x')) oracleKey = '0x' + oracleKey;
-    oracleWallet = new ethers.Wallet(oracleKey, provider);
-    console.log(`[Oracle] Initialized trusted signer: ${oracleWallet.address}`);
+    isEphemeralOracle = true;
 }
 
 // In-Memory Matches Database
